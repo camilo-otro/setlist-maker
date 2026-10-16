@@ -5,7 +5,8 @@
   "description": "Shared React components for desktop, web and mobile",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

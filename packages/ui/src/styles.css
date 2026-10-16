@@ -1,0 +1,107 @@
+/*
+ * Design tokens and shared component styles. Apps import this once.
+ * Theme: follows the OS by default; `data-theme="light"` or `"dark"` on <html> overrides it.
+ */
+:root {
+  color-scheme: light;
+  --sm-bg: #f7f7f8;
+  --sm-surface: #ffffff;
+  --sm-sidebar: #efeff2;
+  --sm-border: #dcdce1;
+  --sm-text: #1c1c21;
+  --sm-text-muted: #5f5f69;
+  --sm-hover: #e4e4e9;
+  --sm-accent: #6d28d9;
+  --sm-accent-soft: #ede9fe;
+  --sm-accent-text: #5b21b6;
+  --sm-focus: #7c3aed;
+
+  --sm-radius: 8px;
+  --sm-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --sm-bg: #141417;
+    --sm-surface: #1c1c21;
+    --sm-sidebar: #18181c;
+    --sm-border: #2e2e36;
+    --sm-text: #ececf1;
+    --sm-text-muted: #a0a0ac;
+    --sm-hover: #26262d;
+    --sm-accent: #a78bfa;
+    --sm-accent-soft: #2e2550;
+    --sm-accent-text: #c4b5fd;
+    --sm-focus: #a78bfa;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --sm-bg: #141417;
+  --sm-surface: #1c1c21;
+  --sm-sidebar: #18181c;
+  --sm-border: #2e2e36;
+  --sm-text: #ececf1;
+  --sm-text-muted: #a0a0ac;
+  --sm-hover: #26262d;
+  --sm-accent: #a78bfa;
+  --sm-accent-soft: #2e2550;
+  --sm-accent-text: #c4b5fd;
+  --sm-focus: #a78bfa;
+}
+
+/* Page header */
+.sm-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sm-page-header__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.sm-page-header__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty state */
+.sm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 420px;
+  margin: 12vh auto 0;
+  padding: 32px;
+  text-align: center;
+}
+
+.sm-empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+}
+
+.sm-empty-state__title {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.sm-empty-state__body {
+  margin: 0;
+  color: var(--sm-text-muted);
+  line-height: 1.5;
+}

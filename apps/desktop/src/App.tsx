@@ -1,10 +1,11 @@
-import { SCHEMA_VERSION } from '@setlist/core';
-import { AppTitle } from '@setlist/ui';
+import { HashRouter } from 'react-router';
+import { AppRoutes } from './AppRoutes';
 
+// Hash URLs work when the app is loaded from local files, as Tauri does in production builds.
 export function App() {
   return (
-    <main>
-      <AppTitle subtitle={`Data model v${SCHEMA_VERSION}`} />
-    </main>
+    <HashRouter>
+      <AppRoutes />
+    </HashRouter>
   );
 }

@@ -2,5 +2,6 @@ pnpm-lock.yaml
 dist/
 misc/
 **/src-tauri/target/
+**/src-tauri/gen/
 # Hand-aligned for readability
 roadmap.yml
