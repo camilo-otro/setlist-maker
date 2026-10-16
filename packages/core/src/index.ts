@@ -3,6 +3,7 @@ export const SCHEMA_VERSION = 1;
 
 export { newId } from './id';
 export * from './ordering';
+export * from './songs';
 export * from './schemas/common';
 export * from './schemas/band';
 export * from './schemas/sharing';

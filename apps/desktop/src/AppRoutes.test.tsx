@@ -25,7 +25,7 @@ const render = (path: string, overrides: Partial<Workspace> = {}) =>
 
 describe('AppRoutes', () => {
   it.each([
-    ['/library', 'Library', 'No songs yet'],
+    ['/library', 'Library', 'Loading songs'],
     ['/gigs', 'Gigs', 'No gigs planned'],
     ['/templates', 'Templates', 'No templates yet'],
     ['/stats', 'Stats', 'Nothing to show yet'],
