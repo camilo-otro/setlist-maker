@@ -1,0 +1,321 @@
+# Source of truth for GitHub labels, milestones and issues.
+# Consumed by .github/workflows/seed-roadmap.yml. Items are matched by name/title,
+# so re-running only creates what is missing. Existing issues aren't modified.
+
+labels:
+  - { name: "area:core",     color: "1d76db", description: "Shared domain package (types, schemas, logic)" }
+  - { name: "area:storage",  color: "5319e7", description: "Repository interface, SQLite, migrations" }
+  - { name: "area:ui",       color: "0e8a16", description: "Shared React components" }
+  - { name: "area:desktop",  color: "006b75", description: "Tauri desktop shell" }
+  - { name: "area:infra",    color: "bfdadc", description: "Tooling, CI, releases" }
+  - { name: "area:web",      color: "c5def5", description: "Web app" }
+  - { name: "area:mobile",   color: "d4c5f9", description: "Mobile app" }
+  - { name: "type:feature",  color: "a2eeef", description: "New functionality" }
+  - { name: "type:chore",    color: "ededed", description: "Setup, refactor, maintenance" }
+  - { name: "type:spike",    color: "fbca04", description: "Research / decision" }
+  - { name: "priority:high", color: "b60205", description: "Needed for MVP" }
+  - { name: "priority:low",  color: "c2e0c6", description: "Nice to have" }
+
+milestones:
+  - title: "Phase 0 — Foundations"
+    description: "Monorepo, CI, core schemas, storage interface, empty desktop app builds."
+  - title: "Phase 1 — Song library"
+    description: "Song CRUD, search/filter, tags, status, CSV import."
+  - title: "Phase 2 — Gigs & setlist builder"
+    description: "Venues, gigs, multi-set editor with drag and drop."
+  - title: "Phase 3 — Cloning & templates"
+    description: "Clone setlists from any gig or template, lineage."
+  - title: "Phase 4 — History & insights"
+    description: "Performance snapshots, song history, stats."
+  - title: "Phase 5 — Output & stage use"
+    description: "Print/PDF, stage mode, backup/restore."
+  - title: "Phase 6 — Release & distribution"
+    description: "Signed installers, auto-update, release pipeline."
+  - title: "Phase 7 — Multi-platform & sync"
+    description: "Web app, sync backend, mobile app."
+
+issues:
+  # ───────────────────────── Phase 0 ─────────────────────────
+  - title: "Decide desktop shell: Tauri 2 vs Electron"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:spike", "area:desktop", "priority:high"]
+    body: |
+      Compare Tauri 2 and Electron for installer size, SQLite access, DnD support in the webview, and the path to mobile.
+      **Done when:** decision recorded in `docs/adr/0001-desktop-shell.md`.
+
+  - title: "Set up pnpm monorepo (packages/core, storage, ui; apps/desktop)"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:chore", "area:infra", "priority:high"]
+    body: |
+      - pnpm workspaces, shared tsconfig, ESLint, Prettier
+      - Vitest configured per package
+      **Done when:** `pnpm -r build` and `pnpm -r test` succeed locally.
+
+  - title: "CI: lint, typecheck and test on pull requests"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:chore", "area:infra", "priority:high"]
+    body: |
+      GitHub Actions workflow on `pull_request` and `push` to `main`: install, lint, typecheck, test.
+      **Done when:** PRs show a required green check.
+
+  - title: "CI: build desktop app on Windows and macOS"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:chore", "area:infra", "area:desktop"]
+    body: |
+      Matrix build of `apps/desktop` (unsigned) and upload as workflow artifacts.
+      **Done when:** a PR produces downloadable test builds.
+
+  - title: "Core: Zod schemas and TS types for all entities"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:feature", "area:core", "priority:high"]
+    body: |
+      Band, Song, Venue, Gig, Setlist, SetBlock, SetEntry, Performance, plus base fields (`id` UUIDv7, `createdAt`, `updatedAt`, `deletedAt`, `version`). See ROADMAP.md → Data model.
+      **Done when:** schemas exported from `@setlist/core` with unit tests for valid and invalid samples.
+
+  - title: "Core: fractional-index ordering helpers"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:feature", "area:core", "priority:high"]
+    body: |
+      `keyBetween(a, b)`, `move(items, from, to)` that return a single new position key. Used for set entries and set blocks.
+      **Done when:** property tests confirm the order is stable after random moves.
+
+  - title: "Storage: Repository interface"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:feature", "area:storage", "priority:high"]
+    body: |
+      Async interface per aggregate (songs, venues, gigs, setlists, performances) with transactions. No platform imports.
+      Include an in-memory implementation for tests.
+
+  - title: "Storage: SQLite implementation + migrations (Drizzle)"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:feature", "area:storage", "area:desktop", "priority:high"]
+    body: |
+      Tables, indexes, soft-delete filtering, migration runner on app start.
+      **Done when:** the shared repository contract tests pass against SQLite.
+
+  - title: "Desktop: app shell with navigation (Library, Gigs, Templates, Stats)"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:feature", "area:desktop", "area:ui"]
+    body: |
+      Sidebar layout, routing, light/dark theme, empty states.
+
+  # ───────────────────────── Phase 1 ─────────────────────────
+  - title: "Song library: list view with sort and search"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:ui", "priority:high"]
+    body: |
+      Table with title, artist, key, BPM, duration, status, tags. Fast text search, sortable columns, and virtualized for large catalogues.
+
+  - title: "Song library: create / edit / archive song"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:ui", "area:core", "priority:high"]
+    body: |
+      Form validated by the core schema. Archiving sets `status: retired` (soft). Deleting is a soft delete and is blocked if the song has performances.
+
+  - title: "Song library: tags and status filters"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Filter by tags (multi-select), status, original vs cover, key, BPM range.
+
+  - title: "Song library: CSV import with column mapping"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:core", "area:ui", "priority:high"]
+    body: |
+      Upload CSV, map columns to fields, preview, and detect duplicates by normalized title + artist.
+      Parsing and mapping logic lives in core (reusable on web).
+
+  - title: "Song detail panel"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Side panel with all fields and notes. Placeholder area for history (filled in Phase 4).
+
+  # ───────────────────────── Phase 2 ─────────────────────────
+  - title: "Venues: CRUD"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Simple list and form. Venue picker with inline "create new".
+
+  - title: "Gigs: create / edit / cancel"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui", "area:core", "priority:high"]
+    body: |
+      Date, venue, times, notes, status. Creating a gig creates an empty setlist with one set block ("Set 1").
+
+  - title: "Gigs: upcoming and past views"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui", "priority:high"]
+    body: |
+      Upcoming list sorted by date with countdown. Past list grouped by year.
+
+  - title: "Setlist editor: multiple set blocks (add, rename, reorder, delete)"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui", "priority:high"]
+    body: |
+      For example "Set 1", "Set 2", "Encore". Set blocks are reorderable with drag and drop.
+
+  - title: "Setlist editor: drag songs from library into sets"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui", "priority:high"]
+    body: |
+      Library panel beside the editor, using dnd-kit. Dropping at a position creates a SetEntry with a fractional position.
+      Keyboard-accessible alternative: "Add to set" plus arrow keys.
+
+  - title: "Setlist editor: reorder within and move between sets"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui", "area:core", "priority:high"]
+    body: |
+      Drag and drop within a set and across set blocks. Each move persists by updating a single row. Undo/redo for the last N actions.
+
+  - title: "Setlist editor: breaks, notes and segues"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Insert non-song entries (break or note), toggle "segue into next", and override the key per entry.
+
+  - title: "Setlist editor: running time and warnings"
+    milestone: "Phase 2 — Gigs & setlist builder"
+    labels: ["type:feature", "area:core", "area:ui"]
+    body: |
+      Per-set and total duration, with a target length per set. Warn about duplicate songs, retired songs, and songs with missing durations.
+
+  # ───────────────────────── Phase 3 ─────────────────────────
+  - title: "Core: cloneSetlist() pure function"
+    milestone: "Phase 3 — Cloning & templates"
+    labels: ["type:feature", "area:core", "priority:high"]
+    body: |
+      Deep copy with new IDs and `clonedFromId` set. Options: drop retired songs, reset key overrides, keep or strip notes.
+      **Done when:** unit tests cover all options.
+
+  - title: "Clone setlist into a new or existing gig"
+    milestone: "Phase 3 — Cloning & templates"
+    labels: ["type:feature", "area:ui", "priority:high"]
+    body: |
+      "Start from…" picker on the gig page: search past gigs, upcoming gigs and templates with a preview. Ask before replacing an existing setlist.
+
+  - title: "Templates: save setlist as template, manage templates"
+    milestone: "Phase 3 — Cloning & templates"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Templates view (for example "Wedding 3×45", "Bar 2×60"). Templates aren't tied to a gig.
+
+  - title: "Show 'cloned from' lineage on setlists"
+    milestone: "Phase 3 — Cloning & templates"
+    labels: ["type:feature", "area:ui", "priority:low"]
+    body: |
+      A link back to the source setlist or gig, plus a diff view showing songs added and removed compared with the source.
+
+  # ───────────────────────── Phase 4 ─────────────────────────
+  - title: "Mark gig as played → snapshot performances"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:core", "area:storage", "priority:high"]
+    body: |
+      Convert the setlist into Performance records (title/key snapshots, set name, position) in one transaction. Allow edits to "what we actually played" before confirming.
+
+  - title: "Import historical gigs (backfill)"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:core", "area:ui", "priority:high"]
+    body: |
+      Bulk-create past gigs from CSV (date, venue, ordered songs) so the history starts with real data.
+
+  - title: "Core: song statistics"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:core", "priority:high"]
+    body: |
+      Times played, first and last played, days since last played, average position, opener/closer counts, and per-venue counts. Pure functions over performances.
+
+  - title: "Song history timeline in song detail"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Each performance with date, venue, set and position, and rating/notes.
+
+  - title: "Stats dashboard"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      Most and least played, "not played in N gigs", gigs per month, and a breakdown of originals vs covers.
+
+  - title: "Post-gig rating and notes per song"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:ui", "priority:low"]
+    body: |
+      Quick 1–5 rating and a note on each performance after marking the gig as played.
+
+  - title: "Builder hints from history"
+    milestone: "Phase 4 — History & insights"
+    labels: ["type:feature", "area:ui", "priority:low"]
+    body: |
+      In the library panel: last-played badge, "played here last time" marker, and sorting by staleness.
+
+  # ───────────────────────── Phase 5 ─────────────────────────
+  - title: "Print / PDF setlist"
+    milestone: "Phase 5 — Output & stage use"
+    labels: ["type:feature", "area:ui", "priority:high"]
+    body: |
+      Large-font layout, one page per set, optional key/BPM/notes columns, and a print preview.
+
+  - title: "Stage mode (full-screen setlist)"
+    milestone: "Phase 5 — Output & stage use"
+    labels: ["type:feature", "area:ui"]
+    body: |
+      High-contrast full-screen view with the current and next song. Keyboard or pedal (arrow keys) to advance.
+
+  - title: "JSON backup and restore"
+    milestone: "Phase 5 — Output & stage use"
+    labels: ["type:feature", "area:core", "area:storage", "priority:high"]
+    body: |
+      Versioned interchange document validated by the core schemas, with automatic local backups on app start (keep the last N).
+
+  - title: "CSV export (songs, gigs, performances)"
+    milestone: "Phase 5 — Output & stage use"
+    labels: ["type:feature", "area:core", "priority:low"]
+    body: |
+      For spreadsheets and sharing with band members.
+
+  # ───────────────────────── Phase 6 ─────────────────────────
+  - title: "Release workflow: tag → signed installers on GitHub Releases"
+    milestone: "Phase 6 — Release & distribution"
+    labels: ["type:chore", "area:infra", "area:desktop", "priority:high"]
+    body: |
+      On `v*` tags: build Windows (.msi/.exe) and macOS (.dmg, notarized), and attach them to a draft release. Signing secrets are stored in repo secrets.
+
+  - title: "Auto-update"
+    milestone: "Phase 6 — Release & distribution"
+    labels: ["type:feature", "area:desktop"]
+    body: |
+      Tauri updater pointing at GitHub Releases, with an in-app "update available" prompt.
+
+  - title: "Opt-in error reporting"
+    milestone: "Phase 6 — Release & distribution"
+    labels: ["type:feature", "area:desktop", "priority:low"]
+    body: |
+      Local error log viewer, plus optional remote reporting that's off by default.
+
+  # ───────────────────────── Phase 7 ─────────────────────────
+  - title: "Spike: sync backend and conflict strategy"
+    milestone: "Phase 7 — Multi-platform & sync"
+    labels: ["type:spike", "area:storage"]
+    body: |
+      Evaluate Supabase, PocketBase and a custom API. Conflict resolution per row using `version`/`updatedAt`, with soft deletes as tombstones.
+      **Done when:** ADR written.
+
+  - title: "Web app reusing core and ui packages"
+    milestone: "Phase 7 — Multi-platform & sync"
+    labels: ["type:feature", "area:web"]
+    body: |
+      Vite app with an IndexedDB or HTTP Repository implementation.
+
+  - title: "Band accounts and member roles"
+    milestone: "Phase 7 — Multi-platform & sync"
+    labels: ["type:feature", "area:core", "area:storage"]
+    body: |
+      Multiple users per band, with roles (admin can edit, member can view).
+
+  - title: "Mobile app (view setlists, stage mode)"
+    milestone: "Phase 7 — Multi-platform & sync"
+    labels: ["type:feature", "area:mobile"]
+    body: |
+      Tauri mobile or React Native using `@setlist/core`. Read-only first, with touch drag and drop later.

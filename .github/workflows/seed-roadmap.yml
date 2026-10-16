@@ -1,0 +1,35 @@
+name: Seed roadmap
+
+# Creates missing labels, milestones and issues from roadmap.yml.
+# Matches by name/title, so it is safe to re-run. Existing items are not modified.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only log what would be created"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Convert roadmap.yml to JSON
+        run: yq -o=json roadmap.yml > "$RUNNER_TEMP/roadmap.json"
+
+      - name: Create labels, milestones and issues
+        uses: actions/github-script@v7
+        env:
+          ROADMAP_JSON: ${{ runner.temp }}/roadmap.json
+          DRY_RUN: ${{ inputs.dry_run }}
+        with:
+          script: |
+            const seed = require('./.github/scripts/seed-roadmap.js');
+            await seed({ github, context, core });
