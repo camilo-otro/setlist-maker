@@ -136,6 +136,7 @@ issues:
     labels: ["type:chore", "area:backend", "priority:high"]
     body: |
       Script in `supabase/seed/` that loads the CSV export of the existing project's song catalog (`id, title, artist, duration, ref_link`; 6,573 rows) into `catalog_tracks`, upserting in batches keyed on `spotify_id`. Re-running only adds or updates rows.
+      The CSV isn't in the repo (`misc/songs.csv` is git-ignored), so the script takes its path as an argument, for example `pnpm seed:catalog misc/songs.csv`.
 
       | CSV column | `catalog_tracks` | Notes |
       |---|---|---|
