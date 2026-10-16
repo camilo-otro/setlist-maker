@@ -19,13 +19,13 @@ jobs:
   seed:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Convert roadmap.yml to JSON
         run: yq -o=json roadmap.yml > "$RUNNER_TEMP/roadmap.json"
 
       - name: Create labels, milestones and issues
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           ROADMAP_JSON: ${{ runner.temp }}/roadmap.json
           DRY_RUN: ${{ inputs.dry_run }}
