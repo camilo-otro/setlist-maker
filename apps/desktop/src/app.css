@@ -55,8 +55,52 @@ body {
   font-weight: 700;
 }
 
-.sidebar__brand span {
+.sidebar__app-name,
+.sidebar__band-name {
+  display: block;
+}
+
+.sidebar__app-name {
   color: var(--sm-text);
+}
+
+.sidebar__band-name {
+  color: var(--sm-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.sidebar__notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* Loading and error screens shown while storage opens */
+.app-status {
+  max-width: 560px;
+  margin: 20vh auto 0;
+  padding: 0 24px;
+  color: var(--sm-text-muted);
+  text-align: center;
+}
+
+.app-status h1 {
+  color: var(--sm-text);
+  font-size: 1.25rem;
+}
+
+.app-status pre {
+  overflow-x: auto;
+  padding: 12px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-surface);
+  text-align: left;
+  white-space: pre-wrap;
 }
 
 .sidebar__nav {

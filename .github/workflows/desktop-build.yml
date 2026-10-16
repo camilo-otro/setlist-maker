@@ -81,6 +81,10 @@ jobs:
       - name: Build installers
         run: pnpm --filter @setlist/desktop tauri build --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
+      # After the build, so the web assets the Rust crate embeds exist.
+      - name: Rust tests
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --target ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin' || matrix.target }}
+
       - uses: actions/upload-artifact@v7
         with:
           name: setlist-maker-${{ matrix.name }}

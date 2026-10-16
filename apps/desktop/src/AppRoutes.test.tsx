@@ -1,14 +1,26 @@
+import { createMemoryRepository } from '@setlist/storage';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { AppRoutes } from './AppRoutes';
 import { NAV_ITEMS } from './layout/AppLayout';
+import { WorkspaceContextProvider } from './storage/WorkspaceProvider';
+import { ensureBand, type Workspace } from './storage/workspace';
 
-const render = (path: string) =>
+let workspace: Workspace;
+
+beforeAll(async () => {
+  const repository = createMemoryRepository();
+  workspace = { repository, band: await ensureBand(repository), persistent: true };
+});
+
+const render = (path: string, overrides: Partial<Workspace> = {}) =>
   renderToStaticMarkup(
-    <MemoryRouter initialEntries={[path]}>
-      <AppRoutes />
-    </MemoryRouter>,
+    <WorkspaceContextProvider workspace={{ ...workspace, ...overrides }}>
+      <MemoryRouter initialEntries={[path]}>
+        <AppRoutes />
+      </MemoryRouter>
+    </WorkspaceContextProvider>,
   );
 
 describe('AppRoutes', () => {
@@ -29,5 +41,11 @@ describe('AppRoutes', () => {
     const current = html.match(/<a [^>]*aria-current="page"[^>]*>/g) ?? [];
     expect(current).toHaveLength(1);
     expect(current[0]).toContain('href="/gigs"');
+  });
+
+  it('shows the band name, and warns only when changes are not saved', () => {
+    expect(render('/library')).toContain('My band');
+    expect(render('/library')).not.toContain('changes aren&#x27;t saved');
+    expect(render('/library', { persistent: false })).toContain('changes aren&#x27;t saved');
   });
 });
