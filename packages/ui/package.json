@@ -1,0 +1,23 @@
+{
+  "name": "@setlist/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared React components for desktop, web and mobile",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

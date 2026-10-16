@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Only log what would be created"
+        description: 'Only log what would be created'
         type: boolean
         default: true
 

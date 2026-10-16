@@ -10,15 +10,15 @@ Setlist Maker is desktop-first (Windows and macOS), but the same UI and domain c
 
 ## Options
 
-| | Tauri 2 | Electron |
-|---|---|---|
-| Installer size | ~5–15 MB (uses the OS webview) | ~80–150 MB (bundles Chromium) |
-| Memory use | Low | Higher (a Chromium instance per app) |
-| Rendering engine | WebView2 (Windows), WKWebView (macOS) — differs per OS | Chromium everywhere — identical behaviour |
-| Native code | Rust | Node.js |
-| SQLite | Official SQL plugin, or a Rust-side database | `better-sqlite3` and similar |
-| Mobile | iOS and Android from the same project | None |
-| Auto-update, signing | Built-in updater plugin, GitHub Releases | Mature tooling (electron-builder) |
+|                      | Tauri 2                                                | Electron                                  |
+| -------------------- | ------------------------------------------------------ | ----------------------------------------- |
+| Installer size       | ~5–15 MB (uses the OS webview)                         | ~80–150 MB (bundles Chromium)             |
+| Memory use           | Low                                                    | Higher (a Chromium instance per app)      |
+| Rendering engine     | WebView2 (Windows), WKWebView (macOS) — differs per OS | Chromium everywhere — identical behaviour |
+| Native code          | Rust                                                   | Node.js                                   |
+| SQLite               | Official SQL plugin, or a Rust-side database           | `better-sqlite3` and similar              |
+| Mobile               | iOS and Android from the same project                  | None                                      |
+| Auto-update, signing | Built-in updater plugin, GitHub Releases               | Mature tooling (electron-builder)         |
 
 ## Decision
 

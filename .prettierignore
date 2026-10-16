@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+dist/
+misc/
+**/src-tauri/target/
+# Hand-aligned for readability
+roadmap.yml
