@@ -1,10 +1,8 @@
 import { IdSchema, keysBetween } from '@setlist/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TABLE_NAMES, type Repository, type RepositoryOptions } from './repository';
-import { NotFoundError } from './rows';
+import { TABLE_NAMES, type Repository, type RepositoryOptions } from '../repository';
+import { NotFoundError } from '../rows';
 
-// The core tsconfig has no DOM or Node types; every runtime that runs these tests has setTimeout.
-declare function setTimeout(callback: () => void, ms: number): unknown;
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -172,6 +170,17 @@ export function describeRepositoryContract(
         expect(await repo.setlists.list({ bandId, isTemplate: true })).toEqual([template]);
         expect(await repo.setlists.list({ bandId })).toHaveLength(2);
         expect(await repo.setlists.list()).toHaveLength(3);
+      });
+
+      it('rejects filters on fields the table does not have', async () => {
+        await expect(repo.songs.list({ gigId: null } as never)).rejects.toThrow('Unknown field');
+      });
+
+      it('filters on true/false fields', async () => {
+        const original = await repo.songs.create({ bandId, title: 'Ours', isOriginal: true });
+        await repo.songs.create({ bandId, title: 'Cover' });
+        expect(await repo.songs.list({ bandId, isOriginal: true })).toEqual([original]);
+        expect(await repo.songs.list({ bandId, isOriginal: false })).toHaveLength(1);
       });
 
       it('lists rows with a position in position order', async () => {
