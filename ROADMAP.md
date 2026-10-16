@@ -71,7 +71,7 @@ Adding a song starts with a search box instead of an empty form.
 3. Picking a result pre-fills the band's song: title, artists, duration and artwork, plus the catalog and Spotify IDs. The band then sets its own key, tempo, tuning and notes.
 
 - **The catalog is global and read-only for clients.** One row per recording, shared by every band and never synced to devices. The band's own `Song` rows are what sync.
-- **Seeded from an existing Supabase project.** A re-runnable script copies the general song catalog from that project into this one, matching duplicates by ISRC or Spotify ID.
+- **Seeded from an existing Supabase project.** A CSV export of its general song catalog (6,573 tracks, each with a Spotify link) is loaded by a re-runnable script keyed on Spotify ID. A second pass fills in ISRC, album, year and artwork from Spotify.
 - **Key and BPM don't come from Spotify.** Spotify stopped giving audio features to new apps in late 2024, and a band's key and tempo often differ from the recording anyway. A suggestion service (for example GetSongBPM) is an optional extra.
 - **Manual entry stays** for originals, songs that aren't on Spotify, and adding songs offline.
 - **Spotify's rules apply:** show Spotify attribution and a link back wherever its data appears, and confirm what may be stored long-term in the catalog before launch.

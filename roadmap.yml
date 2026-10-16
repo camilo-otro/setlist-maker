@@ -135,8 +135,26 @@ issues:
     milestone: "Phase 1 — Song library"
     labels: ["type:chore", "area:backend", "priority:high"]
     body: |
-      Script in `supabase/seed/` that reads the general song catalog from the existing project (read-only credentials), maps its columns to `catalog_tracks`, normalizes titles and artists, and upserts in batches. Duplicates are matched by ISRC, then Spotify ID, then normalized title + artist. Re-running only adds or updates rows.
-      **Done when:** row counts reconcile with the source and a second run changes nothing.
+      Script in `supabase/seed/` that loads the CSV export of the existing project's song catalog (`id, title, artist, duration, ref_link`; 6,573 rows) into `catalog_tracks`, upserting in batches keyed on `spotify_id`. Re-running only adds or updates rows.
+
+      | CSV column | `catalog_tracks` | Notes |
+      |---|---|---|
+      | `ref_link` | `spotify_id` | Track ID parsed from `https://open.spotify.com/track/<id>`. Every row has one and all are unique. Rows without a valid link are reported and skipped. |
+      | `title` | `title` | As is. Some include version suffixes such as "- Remastered"; strip them only in the search key, not the stored title. |
+      | `artist` | `artists` | One-element array. Don't split on commas or "&": names like "Blood, Sweat & Tears" are one act. The enrichment step fills in the real artist list. |
+      | `duration` | `duration_sec` | **Decimal minutes**, not minutes.seconds (3.34 = 3:20, and 2,605 rows have decimals ≥ .60). `round(duration × 60)`. |
+      | `id` | (not kept) | The Spotify ID is the identity. |
+      | (constant) | `source` | `'seed'` |
+
+      The CSV has no ISRC, album, release year or artwork; those come from "Enrich the seeded catalog from Spotify".
+      **Done when:** 6,573 rows are loaded, a second run changes nothing, and spot checks match Spotify.
+
+  - title: "Enrich the seeded catalog from Spotify"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:chore", "area:backend"]
+    body: |
+      Look up each seeded track by its Spotify ID and fill in ISRC, album, release year, artwork and the full artist list, replacing the approximate CSV duration with Spotify's exact one. Runs in small batches within Spotify's rate limits, resumes where it stopped, and only touches rows not yet enriched. Check the current Development Mode endpoint limits as part of the Spotify spike.
+      **Done when:** seeded rows show artwork in search results, and tracks Spotify no longer has are flagged rather than deleted.
 
   - title: "Edge Function: catalog-search with Spotify fallback"
     milestone: "Phase 1 — Song library"
