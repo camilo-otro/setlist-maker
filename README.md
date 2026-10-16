@@ -43,3 +43,33 @@ These builds aren't signed with a developer certificate yet, so the OS warns bef
 
 - **Windows:** on the SmartScreen prompt, choose _More info_ → _Run anyway_.
 - **macOS:** after dragging the app to Applications, run `xattr -cr "/Applications/Setlist Maker.app"` once, then open it normally. Without that, macOS reports the app as damaged.
+
+## Supabase
+
+The backend lives in [`supabase/`](supabase): `config.toml` for the local stack and numbered SQL files in `migrations/`. The Supabase CLI is a dev dependency, so run it with `pnpm exec supabase …`.
+
+**Local development** (needs Docker Desktop running):
+
+```sh
+pnpm exec supabase start                 # local Supabase with all migrations applied; prints URLs and keys
+pnpm exec supabase migration new <name>  # new empty migration in supabase/migrations
+pnpm exec supabase db reset              # rebuild the local database from the migrations
+pnpm exec supabase stop
+```
+
+**Deploying:** the **Supabase** workflow applies every migration to a throwaway database on pull requests that touch `supabase/`. After merging to `main`, it pushes new migrations to the hosted project. Released migrations are never edited; change the schema by adding a new one.
+
+**One-time setup** for the hosted project. Keep these values out of the repo and out of chat.
+
+1. Find the project ID in the Supabase dashboard URL: `supabase.com/dashboard/project/<project-id>`.
+2. Link your local CLI (opens a browser to log in, then asks for the database password):
+
+   ```sh
+   pnpm exec supabase login
+   pnpm exec supabase link --project-ref <project-id>
+   ```
+
+3. In GitHub, go to **Settings → Secrets and variables → Actions** and add:
+   - Secret `SUPABASE_ACCESS_TOKEN`: create one under _Account → Access Tokens_ in the Supabase dashboard.
+   - Secret `SUPABASE_DB_PASSWORD`: the database password set when the project was created.
+   - Variable `SUPABASE_PROJECT_ID`: the project ID from step 1 (not secret).
