@@ -8,5 +8,7 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    // Tauri watches its own Rust sources; Vite watching the build output hits locked files.
+    watch: { ignored: ['**/src-tauri/**'] },
   },
 });
