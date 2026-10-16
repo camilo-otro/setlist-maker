@@ -44,6 +44,9 @@ importers:
       '@setlist/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@setlist/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@setlist/ui':
         specifier: workspace:*
         version: link:../../packages/ui

@@ -35,6 +35,8 @@ pnpm build
 
 Shared packages export their TypeScript source directly, so there's no build step between them: Vite, Vitest and `tsc` read the `.ts` files. Only apps produce build output.
 
+The desktop app keeps its data in a SQLite file, `setlist-maker.db`, in its data folder: `%APPDATA%\io.github.camilootro.setlistmaker` on Windows and `~/Library/Application Support/io.github.camilootro.setlistmaker` on macOS. Deleting the file resets the app. `pnpm dev:desktop` (browser only) keeps data in memory instead, and says so in the sidebar.
+
 ## Test builds
 
 Every pull request that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.

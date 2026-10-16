@@ -176,6 +176,13 @@ issues:
     body: |
       Spotify no longer provides key or tempo to new apps. Evaluate a source such as GetSongBPM, look it up by title + artist inside the Edge Function, and show it as a suggestion the band can accept or change.
 
+  - title: "Desktop: connect SQLite storage"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:desktop", "area:storage", "priority:high"]
+    body: |
+      Open the SQLite repository from #8 in the desktop app. Rust holds a single connection (Tauri's SQL plugin pools connections, which would split our BEGIN/COMMIT transactions) and exposes `db_execute` and `db_select` commands. The database lives in the app data folder; migrations run on startup; the first launch creates the band. The browser preview falls back to the in-memory repository.
+      **Done when:** data survives restarting the desktop app.
+
   - title: "Song library: list view with sort and search"
     milestone: "Phase 1 — Song library"
     labels: ["type:feature", "area:ui", "priority:high"]

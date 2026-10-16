@@ -1,5 +1,6 @@
 import { CalendarDays, ChartColumn, LayoutTemplate, Library, ListMusic } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
+import { useWorkspace } from '../storage/WorkspaceProvider';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 export const NAV_ITEMS = [
@@ -10,13 +11,23 @@ export const NAV_ITEMS = [
 ] as const;
 
 export function AppLayout() {
+  const { band, persistent } = useWorkspace();
+
   return (
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar__brand">
           <ListMusic size={20} aria-hidden="true" />
-          <span>Setlist Maker</span>
+          <div>
+            <span className="sidebar__app-name">Setlist Maker</span>
+            <span className="sidebar__band-name">{band.name}</span>
+          </div>
         </div>
+        {!persistent && (
+          <p className="sidebar__notice" role="status">
+            Browser preview: changes aren&apos;t saved.
+          </p>
+        )}
         <nav className="sidebar__nav" aria-label="Main">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} className="sidebar__link">
