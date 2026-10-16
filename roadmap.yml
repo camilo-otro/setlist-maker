@@ -72,7 +72,7 @@ issues:
     milestone: "Phase 0 — Foundations"
     labels: ["type:feature", "area:core", "priority:high"]
     body: |
-      Band, BandMember, Invite, ShareLink, Song, Venue, Gig, Setlist, SetBlock, SetEntry, Performance, plus base fields (`id` UUIDv7, `createdAt`, `updatedAt`, `updatedBy`, `deletedAt`, `version`). See ROADMAP.md → Data model.
+      Band, BandMember, Invite, ShareLink, CatalogTrack, Song (with `catalogTrackId`, `spotifyId`, `isrc`, `artworkUrl`), Venue, Gig, Setlist, SetBlock, SetEntry, Performance, plus base fields (`id` UUIDv7, `createdAt`, `updatedAt`, `updatedBy`, `deletedAt`, `version`). See ROADMAP.md → Data model.
       **Done when:** schemas exported from `@setlist/core` with unit tests for valid and invalid samples.
 
   - title: "Core: fractional-index ordering helpers"
@@ -109,7 +109,54 @@ issues:
     body: |
       Sidebar layout, routing, light/dark theme, empty states.
 
+  - title: "Backend: create the Supabase project and local development setup"
+    milestone: "Phase 0 — Foundations"
+    labels: ["type:chore", "area:backend", "area:infra", "priority:high"]
+    body: |
+      A dedicated Supabase project for Setlist Maker (separate from the existing catalog project). `supabase/` folder with config and migrations, `supabase start` for local development, and a CI job that applies migrations on merge to `main`. Secrets live in Supabase and GitHub secrets, never in the repo.
+      **Done when:** a migration merged to `main` is applied to the project automatically.
+
   # ───────────────────────── Phase 1 ─────────────────────────
+  - title: "Spotify: register the app and review the Developer Terms"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:spike", "area:backend", "priority:high"]
+    body: |
+      Create the Spotify developer app and store its client ID and secret as Supabase secrets. Confirm which data may be stored long-term in the shared catalog, the attribution and branding rules, and rate limits.
+      **Done when:** findings recorded in `docs/adr/0003-spotify.md`, including what the catalog may keep.
+
+  - title: "Catalog: catalog_tracks table and search"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:backend", "priority:high"]
+    body: |
+      Postgres table: `spotify_id` and `isrc` (unique when present), title, artists, album, release year, duration, artwork URL, source (`seed` or `spotify`). Accent-insensitive trigram index on title and artists. Row-level security makes it readable by anyone and writable only by Edge Functions and the seed script.
+      **Done when:** a search over the seeded catalog returns ranked results quickly.
+
+  - title: "Seed the catalog from the existing Supabase project"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:chore", "area:backend", "priority:high"]
+    body: |
+      Script in `supabase/seed/` that reads the general song catalog from the existing project (read-only credentials), maps its columns to `catalog_tracks`, normalizes titles and artists, and upserts in batches. Duplicates are matched by ISRC, then Spotify ID, then normalized title + artist. Re-running only adds or updates rows.
+      **Done when:** row counts reconcile with the source and a second run changes nothing.
+
+  - title: "Edge Function: catalog-search with Spotify fallback"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:backend", "priority:high"]
+    body: |
+      `catalog-search?q=` callable with the anon key (no sign-up). Searches the catalog first; on a miss, calls Spotify search with a cached client-credentials token, upserts the results into the catalog and returns them. Rate limited per device, and returns catalog-only results when Spotify is unavailable.
+      **Done when:** repeated searches are served from the catalog without calling Spotify.
+
+  - title: "Song library: add songs from search"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:ui", "area:core", "priority:high"]
+    body: |
+      Search-as-you-type in the "Add song" dialog, with artwork, artists, year and duration in the results. Picking one pre-fills the song form and stores the catalog and Spotify IDs. Already-added songs are marked. "Add manually" stays available for originals and works offline. Spotify attribution and an "Open in Spotify" link wherever its data appears.
+
+  - title: "Suggest key and BPM for new songs"
+    milestone: "Phase 1 — Song library"
+    labels: ["type:feature", "area:backend", "priority:low"]
+    body: |
+      Spotify no longer provides key or tempo to new apps. Evaluate a source such as GetSongBPM, look it up by title + artist inside the Edge Function, and show it as a suggestion the band can accept or change.
+
   - title: "Song library: list view with sort and search"
     milestone: "Phase 1 — Song library"
     labels: ["type:feature", "area:ui", "priority:high"]
@@ -133,6 +180,7 @@ issues:
     labels: ["type:feature", "area:core", "area:ui", "priority:high"]
     body: |
       Upload CSV, map columns to fields, preview, and detect duplicates by normalized title + artist.
+      Match each row to the catalog (via `catalog-search`) and let the user confirm or skip matches, so imported songs get artwork and IDs too.
       Parsing and mapping logic lives in core (reusable on web).
 
   - title: "Song detail panel"
@@ -218,11 +266,11 @@ issues:
       A link back to the source setlist or gig, plus a diff view showing songs added and removed compared with the source.
 
   # ───────────────────────── Phase 4 ─────────────────────────
-  - title: "Backend: Supabase project, Postgres schema and row-level security"
+  - title: "Backend: band data schema and row-level security"
     milestone: "Phase 4 — Sharing & collaboration"
     labels: ["type:feature", "area:backend", "priority:high"]
     body: |
-      Schema mirroring `@setlist/core`, kept in `supabase/` with migrations. Row-level security so only members of a band can read it, and only owners/editors can write. Viewers are read-only.
+      Band data tables mirroring `@setlist/core` in Setlist Maker's Supabase project (created in Phase 0), added as migrations in `supabase/`. Row-level security so only members of a band can read it, and only owners/editors can write. Viewers are read-only.
       **Done when:** policy tests prove a user can't read or write another band's rows.
 
   - title: "Sync: connect local SQLite to the backend"
