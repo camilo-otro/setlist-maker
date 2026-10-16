@@ -1,0 +1,89 @@
+name: Desktop build
+
+# Builds unsigned test installers for Windows and macOS and attaches them to the run as artifacts.
+# Only runs when something the desktop app is built from changes, since Rust builds take minutes.
+on:
+  pull_request:
+    paths:
+      - apps/desktop/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/desktop-build.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/desktop/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/desktop-build.yml
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust-targets: x86_64-pc-windows-msvc
+            bundles: msi,nsis
+            artifacts: |
+              apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+              apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          - name: macOS
+            os: macos-latest
+            # One app that runs natively on both Apple Silicon and Intel Macs.
+            target: universal-apple-darwin
+            rust-targets: aarch64-apple-darwin x86_64-apple-darwin
+            bundles: app,dmg
+            artifacts: |
+              apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install Rust
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add ${{ matrix.rust-targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          key: ${{ matrix.target }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build installers
+        run: pnpm --filter @setlist/desktop tauri build --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: setlist-maker-${{ matrix.name }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+          retention-days: 14
