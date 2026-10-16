@@ -34,3 +34,12 @@ pnpm build
 | `apps/desktop`     | `@setlist/desktop` | Desktop app: Tauri 2 shell (`src-tauri`) + React UI |
 
 Shared packages export their TypeScript source directly, so there's no build step between them: Vite, Vitest and `tsc` read the `.ts` files. Only apps produce build output.
+
+## Test builds
+
+Every pull request that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
+
+These builds aren't signed with a developer certificate yet, so the OS warns before opening them:
+
+- **Windows:** on the SmartScreen prompt, choose _More info_ → _Run anyway_.
+- **macOS:** after dragging the app to Applications, run `xattr -cr "/Applications/Setlist Maker.app"` once, then open it normally. Without that, macOS reports the app as damaged.
