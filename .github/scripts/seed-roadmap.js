@@ -11,8 +11,9 @@ module.exports = async ({ github, context, core }) => {
 
   // Labels
   const existingLabels = new Set(
-    (await github.paginate(github.rest.issues.listLabelsForRepo, { owner, repo, per_page: 100 }))
-      .map((l) => l.name.toLowerCase())
+    (
+      await github.paginate(github.rest.issues.listLabelsForRepo, { owner, repo, per_page: 100 })
+    ).map((l) => l.name.toLowerCase()),
   );
   for (const label of roadmap.labels ?? []) {
     if (existingLabels.has(label.name.toLowerCase())) continue;
@@ -23,15 +24,25 @@ module.exports = async ({ github, context, core }) => {
 
   // Milestones
   const milestoneNumbers = new Map(
-    (await github.paginate(github.rest.issues.listMilestones, { owner, repo, state: 'all', per_page: 100 }))
-      .map((m) => [m.title, m.number])
+    (
+      await github.paginate(github.rest.issues.listMilestones, {
+        owner,
+        repo,
+        state: 'all',
+        per_page: 100,
+      })
+    ).map((m) => [m.title, m.number]),
   );
   for (const m of roadmap.milestones ?? []) {
     if (milestoneNumbers.has(m.title)) continue;
     core.info(`milestone + ${m.title}`);
     if (!dryRun) {
       const { data } = await github.rest.issues.createMilestone({
-        owner, repo, title: m.title, description: m.description, due_on: m.due_on,
+        owner,
+        repo,
+        title: m.title,
+        description: m.description,
+        due_on: m.due_on,
       });
       milestoneNumbers.set(m.title, data.number);
     }
@@ -40,9 +51,16 @@ module.exports = async ({ github, context, core }) => {
 
   // Issues (pull requests are excluded from the title match)
   const existingIssues = new Set(
-    (await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', per_page: 100 }))
+    (
+      await github.paginate(github.rest.issues.listForRepo, {
+        owner,
+        repo,
+        state: 'all',
+        per_page: 100,
+      })
+    )
       .filter((i) => !i.pull_request)
-      .map((i) => i.title)
+      .map((i) => i.title),
   );
   for (const issue of roadmap.issues ?? []) {
     if (existingIssues.has(issue.title)) continue;
@@ -53,7 +71,8 @@ module.exports = async ({ github, context, core }) => {
     core.info(`issue     + ${issue.title}`);
     if (!dryRun) {
       await github.rest.issues.create({
-        owner, repo,
+        owner,
+        repo,
         title: issue.title,
         body: issue.body,
         labels: issue.labels ?? [],
@@ -64,5 +83,7 @@ module.exports = async ({ github, context, core }) => {
   }
 
   const verb = dryRun ? 'Would create' : 'Created';
-  core.notice(`${verb} ${created.labels} labels, ${created.milestones} milestones, ${created.issues} issues.`);
+  core.notice(
+    `${verb} ${created.labels} labels, ${created.milestones} milestones, ${created.issues} issues.`,
+  );
 };

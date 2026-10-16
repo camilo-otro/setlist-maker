@@ -30,6 +30,7 @@ Build our own sync on Supabase: **local outbox → push RPC → pull by server s
 ## Design
 
 ### Server
+
 - Each synced Postgres table mirrors its client table and has `id`, `band_id`, `version`, `updated_at`, `updated_by` and `deleted_at`.
 - A trigger stamps every insert and update with **`server_seq`**, taken from one global sequence. Clients sync by this number, never by their own clocks, so clock skew can't lose changes.
 - **`sync_push(ops)`** is a Postgres function called through Supabase RPC.
@@ -39,18 +40,21 @@ Build our own sync on Supabase: **local outbox → push RPC → pull by server s
 - Row-level security still applies to all direct table access, as a second line of defence.
 
 ### Client
+
 - Every local write updates the row **and** appends an operation to a local `outbox` table in the same transaction. Each operation holds an ID, the table, the row ID and **only the changed fields**.
 - Sync loop: **push** the outbox in order, then **pull** from the last `server_seq` the device saw. Pulled rows are applied in one transaction. Fields that still have unsent local changes are kept and re-sent on the next push.
 - The loop runs on app start, after local edits (debounced), when Realtime signals a change, when the connection comes back, and every 60 seconds while the window is focused.
 - A Supabase Realtime **broadcast per band** carries only "new changes up to seq N". Data always travels through pull, so a missed message just means a slightly later sync.
 
 ### Conflict rules
+
 - **Last write wins per field**, in the order the server receives writes. Two people editing different fields of the same song both keep their changes.
 - **Deletes are soft** (`deleted_at`). An edit to a deleted row doesn't bring it back.
 - **Ordering** uses fractional index keys. If two devices generate the same key, ties are broken by row ID, so all devices show the same order.
 - **Performance records** (gig history) are insert-only and never conflict.
 
 ### Edge cases
+
 - **Solo bands** don't record outbox operations. The first share uploads a full snapshot, then normal sync starts.
 - **Removed members:** the server rejects their pulls for that band, and the app deletes that band's local data.
 - **Tombstone cleanup:** tombstones older than 90 days are purged. A device whose cursor is older than that does a full resync of the band.
