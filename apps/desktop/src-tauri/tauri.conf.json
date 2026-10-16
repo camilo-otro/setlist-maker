@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Setlist Maker",
   "version": "0.1.0",
-  "identifier": "io.github.camilo-otro.setlistmaker",
+  "identifier": "io.github.camilootro.setlistmaker",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
