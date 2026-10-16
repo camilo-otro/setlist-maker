@@ -78,7 +78,9 @@ Adding a song starts with a search box instead of an empty form.
 
 ## Data model (v1)
 
-All entities share base fields: `id` (UUID v7), `createdAt`, `updatedAt`, `updatedBy?`, `deletedAt?`, `version`.
+The source of truth is the Zod schemas in [`packages/core/src/schemas`](packages/core/src/schemas); this is a summary.
+
+Synced entities share base fields: `id` (UUID v7), `createdAt`, `updatedAt`, `updatedBy?`, `deletedAt?`, `version`. Every entity except `Band` and `CatalogTrack` also has a `bandId`, so sync and access rules can work per band. Fields marked `?` are stored as `null` when empty, never left out, so every row has the same keys.
 
 ```ts
 Band        { name }                                     // the unit of sharing; one per workspace for now
@@ -108,10 +110,11 @@ Setlist     { bandId, gigId?, name, isTemplate, clonedFromId?, notes? }
               // gigId null + isTemplate true  → reusable template
               // clonedFromId                  → lineage for "cloned from" UI
 
-SetBlock    { setlistId, name, position }                 // "Set 1", "Set 2", "Encore"
+SetBlock    { bandId, setlistId, name, position, targetDurationSec? }   // "Set 1", "Set 2", "Encore"
 
-SetEntry    { setBlockId, position, kind: 'song' | 'break' | 'note',
+SetEntry    { bandId, setBlockId, position, kind: 'song' | 'break' | 'note',
               songId?, label?, segueToNext: boolean, keyOverride?, notes? }
+              // songs need songId; notes need a label; only songs can segue or override the key
 
 Performance { bandId, gigId, songId, playedAt, setName, positionInSet,
               songTitleSnapshot, keySnapshot?, rating?: 1..5, notes? }
