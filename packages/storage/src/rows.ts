@@ -25,7 +25,10 @@ export interface StoredRow {
   [field: string]: unknown;
 }
 
-export const SCHEMAS: Record<TableName, { parse(value: unknown): unknown }> = {
+export const SCHEMAS: Record<
+  TableName,
+  { parse(value: unknown): unknown; shape: Record<string, unknown> }
+> = {
   bands: BandSchema,
   songs: SongSchema,
   venues: VenueSchema,
@@ -35,6 +38,19 @@ export const SCHEMAS: Record<TableName, { parse(value: unknown): unknown }> = {
   setEntries: SetEntrySchema,
   performances: PerformanceSchema,
 };
+
+/** Every field of a table's rows, in schema order. These are also the database columns. */
+export function fieldsOf(table: TableName): string[] {
+  return Object.keys(SCHEMAS[table].shape);
+}
+
+/** Rejects filters on fields the table doesn't have, rather than silently matching nothing. */
+export function checkWhere(table: TableName, where: object) {
+  const fields = fieldsOf(table);
+  for (const key of Object.keys(where)) {
+    if (!fields.includes(key)) throw new Error(`Unknown field "${key}" for ${table}`);
+  }
+}
 
 export class NotFoundError extends Error {
   override name = 'NotFoundError';

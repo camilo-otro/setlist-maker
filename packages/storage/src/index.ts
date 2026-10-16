@@ -6,3 +6,4 @@ export const STORAGE_SCHEMA_VERSION = SCHEMA_VERSION;
 export * from './repository';
 export { NotFoundError } from './rows';
 export { createMemoryRepository } from './memory';
+export * from './sqlite';

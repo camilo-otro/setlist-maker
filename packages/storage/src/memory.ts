@@ -1,3 +1,4 @@
+import { assembleRepository } from './assemble';
 import {
   TABLE_NAMES,
   type ReadOptions,
@@ -9,6 +10,7 @@ import {
   buildDeletedRow,
   buildNewRow,
   buildUpdatedRow,
+  checkWhere,
   compareRows,
   copyRow,
   matches,
@@ -18,7 +20,6 @@ import {
 } from './rows';
 
 type State = Map<TableName, Map<string, StoredRow>>;
-type Run = <R>(work: () => R) => Promise<R>;
 
 /**
  * Repository kept in memory, for tests and prototypes. Behaves like the SQLite version: same
@@ -28,17 +29,8 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
   const ctx = writeContext(options);
   const state: State = new Map(TABLE_NAMES.map((name) => [name, new Map()]));
 
-  // Everything outside a transaction queues behind the running transaction.
-  let queue: Promise<unknown> = Promise.resolve();
-  const exclusive = <R>(work: () => R | Promise<R>): Promise<R> => {
-    const result = queue.then(work);
-    queue = result.catch(() => undefined);
-    return result;
-  };
-  const immediate: Run = async (work) => work();
-
-  function tables(run: Run) {
-    const table = (name: TableName) => {
+  return assembleRepository(
+    (name, run) => {
       const rows = () => state.get(name)!;
       const find = (id: string) => {
         const row = rows().get(id);
@@ -57,38 +49,26 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
             return row && (read.includeDeleted || !row.deletedAt) ? copyRow(row) : null;
           }),
         list: (where: object = {}, read: ReadOptions = {}) =>
-          run(() =>
-            [...rows().values()]
+          run(() => {
+            checkWhere(name, where);
+            return [...rows().values()]
               .filter((row) => (read.includeDeleted || !row.deletedAt) && matches(row, where))
               .sort(compareRows)
-              .map((row) => copyRow(row)),
-          ),
+              .map((row) => copyRow(row));
+          }),
         create: (values: object) => run(() => save(buildNewRow(name, values, ctx))),
         update: (id: string, patch: object) =>
           run(() => save(buildUpdatedRow(name, find(id), patch, ctx))),
         remove: (id: string) => run(() => save(buildDeletedRow(find(id), ctx))),
       };
-    };
-    return Object.fromEntries(TABLE_NAMES.map((name) => [name, table(name)]));
-  }
-
-  const tx = {
-    ...tables(immediate),
-    // A nested transaction is part of the one already running.
-    transaction: <R>(work: (inner: Repository) => Promise<R>) => work(tx as unknown as Repository),
-  };
-
-  return {
-    ...tables(exclusive),
-    transaction: <R>(work: (inner: Repository) => Promise<R>) =>
-      exclusive(async () => {
-        const snapshot: State = new Map([...state].map(([name, rows]) => [name, new Map(rows)]));
-        try {
-          return await work(tx as unknown as Repository);
-        } catch (error) {
-          for (const [name, rows] of snapshot) state.set(name, rows);
-          throw error;
-        }
-      }),
-  } as unknown as Repository;
+    },
+    {
+      // Rows are replaced, never mutated, so copying each table's map is a full snapshot.
+      begin: (): State => new Map([...state].map(([name, rows]) => [name, new Map(rows)])),
+      commit: () => {},
+      rollback: (snapshot) => {
+        for (const [name, rows] of snapshot) state.set(name, rows);
+      },
+    },
+  );
 }

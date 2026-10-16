@@ -62,7 +62,7 @@ Build our own sync on Supabase: **local outbox → push RPC → pull by server s
 
 ## Consequences
 
-- Desktop keeps the original plan: plain SQLite in Tauri with Drizzle migrations (#8). No Rust code is needed; Rust is only required to build Tauri itself.
+- Desktop keeps the original plan: plain SQLite in Tauri with our own numbered SQL migrations (#8; Drizzle was dropped there as a second schema to maintain). No Rust code is needed; Rust is only required to build Tauri itself.
 - Phase 4 grows by several issues (protocol, push, pull, realtime, first share). The protocol is pure TypeScript in `core`/`storage`, so web (SQLite in WebAssembly) and mobile reuse it.
 - Correctness rests on our tests. A simulated server with several fake devices, random offline periods and random operations must always converge (#52).
 - If concurrent editing becomes heavier later, the per-field operations in the outbox are a natural starting point for something stronger, without changing the server's sequence-based pull.

@@ -89,7 +89,7 @@ issues:
       Async interface per aggregate (songs, venues, gigs, setlists, performances) with transactions. No platform imports.
       Include an in-memory implementation for tests.
 
-  - title: "Storage: SQLite implementation + migrations (Drizzle)"
+  - title: "Storage: SQLite implementation + migrations"
     milestone: "Phase 0 — Foundations"
     labels: ["type:feature", "area:storage", "area:desktop", "priority:high"]
     body: |
