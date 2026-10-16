@@ -1,0 +1,17 @@
+{
+  "name": "@setlist/storage",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository interface, SQLite implementation and sync",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@setlist/core": "workspace:*"
+  }
+}
