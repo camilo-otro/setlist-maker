@@ -9,8 +9,8 @@ A desktop-first tool for a band to keep a song library with performance history,
 ## Guiding principles
 
 1. **Core is platform-agnostic.** All domain logic (types, validation, cloning, ordering, stats) lives in a pure TypeScript package with no UI or storage imports. Desktop, web and mobile are thin shells.
-2. **Storage behind an interface.** A `Repository` interface hides the database. Desktop and mobile use SQLite; web uses the sync engine's browser storage.
-3. **Local-first, synced.** Every device has a full local SQLite copy and works offline. A sync engine replicates changes to a shared backend once the band starts collaborating. UUIDs, `updatedAt`, `updatedBy`, soft deletes and a `version` counter on every record make this possible from day one.
+2. **Storage behind an interface.** A `Repository` interface hides the database. Desktop and mobile use SQLite; web uses SQLite compiled to WebAssembly.
+3. **Local-first, synced.** Every device has a full local SQLite copy and works offline. Our own sync protocol replicates changes through Supabase once the band starts collaborating ([ADR 0002](docs/adr/0002-sync-stack.md)). UUIDs, `updatedAt`, `updatedBy`, soft deletes and a `version` counter on every record make this possible from day one.
 4. **No account until you collaborate.** Solo use needs no sign-up. Sharing creates an anonymous identity silently, and linking an email or Google/Apple account is optional (see [Sharing model](#sharing-model)).
 5. **History is immutable.** When a gig is marked as played, its setlist is snapshotted into performance records. Editing or deleting a song later never rewrites the past.
 
@@ -23,7 +23,7 @@ A desktop-first tool for a band to keep a song library with performance history,
 | Drag and drop | dnd-kit | Accessible (keyboard DnD), works with touch for mobile/web |
 | Validation / schemas | Zod | Single source for types, runtime validation and JSON import/export |
 | Local DB | SQLite + Drizzle ORM | Relational data, migrations, portable to mobile |
-| Sync engine | **PowerSync** (or ElectricSQL; decided in Phase 0) | Keeps local SQLite in sync with Postgres, offline-first |
+| Sync | **Our own protocol on Supabase**: local outbox → push RPC → pull by server sequence, Realtime as a change signal | Offline-first, no extra service or alpha SDK, plain TypeScript reused on every platform ([ADR 0002](docs/adr/0002-sync-stack.md)) |
 | Backend | **Supabase** (Postgres, Auth, row-level security, Edge Functions), a dedicated project | Anonymous sign-in, upgrading to email/social login, per-band access rules, the shared song catalog |
 | Song metadata | **Spotify Web API**, called only from a Supabase Edge Function | Consistent titles, artists, durations and artwork; the client secret never ships in the app |
 | Monorepo | pnpm workspaces | `packages/core`, `packages/storage`, `packages/ui`, `apps/*` |
@@ -43,7 +43,7 @@ setlist-maker/
 │  ├─ desktop/     # Tauri shell
 │  ├─ web/         # read-only share viewer (Phase 4), full web app (Phase 8)
 │  └─ mobile/      # (Phase 8)
-├─ supabase/       # Postgres schema, row-level security, sync rules, Edge Functions, catalog seed script
+├─ supabase/       # Postgres schema, row-level security, sync functions, Edge Functions, catalog seed script
 └─ .github/workflows/
 ```
 
@@ -60,7 +60,7 @@ Each level is added only when someone needs it. Nobody sees a sign-up screen.
 
 - View links and invites use unguessable tokens (only a hash is stored) and can be revoked. Invites carry a role, an expiry date and a maximum number of uses.
 - An anonymous identity lives on one device. If that device is lost before the account is secured, the person loses access but the band keeps its data, and an owner can re-invite them. The app suggests securing the account once a second member joins.
-- Sync is "last write wins" per row. Fractional ordering means a drag-and-drop move changes one row, so simultaneous edits rarely collide and never corrupt a setlist.
+- Sync is "last write wins" per field, in the order the server receives changes, so two people editing different fields of the same song both keep their edits. Fractional ordering means a drag-and-drop move changes one row, so simultaneous edits rarely collide and never corrupt a setlist.
 
 ## Song catalog and Spotify search
 
@@ -118,7 +118,9 @@ Performance { bandId, gigId, songId, playedAt, setName, positionInSet,
               // written when a gig is marked "played"; never edited by song changes
 ```
 
-**Ordering:** `position` uses fractional indexing (string keys like `"a0"`, `"a0V"`). A drag-and-drop move updates exactly one row, which keeps sync conflicts small.
+**Ordering:** `position` uses fractional indexing (string keys like `"a0"`, `"a0V"`). A drag-and-drop move updates exactly one row, which keeps sync conflicts small. Equal keys from two devices are ordered by row ID.
+
+**Sync bookkeeping:** devices keep a local-only `outbox` of pending changes (changed fields only) and the last `server_seq` they pulled per band. On the server, every row gets a `server_seq` from one global sequence. See [ADR 0002](docs/adr/0002-sync-stack.md).
 
 **Attribution:** `updatedBy` (a `BandMember` id) powers the activity feed ("Ana moved *Song X* to the encore"). It's empty while the band is solo.
 
@@ -131,7 +133,7 @@ Performance { bandId, gigId, songId, playedAt, setName, positionInSet,
 ## Phases
 
 ### Phase 0 — Foundations
-Monorepo, tooling, CI, core schemas (including sharing entities), repository interface, sync-compatible SQLite schema and migrations, the sync stack decision, the dedicated Supabase project with local development, and an empty Tauri app that builds on Windows/macOS.
+Monorepo, tooling, CI, core schemas (including sharing entities), repository interface, sync-ready SQLite schema and migrations, the sync stack decision (done: our own protocol), the dedicated Supabase project with local development, and an empty Tauri app that builds on Windows/macOS.
 **Exit:** `pnpm test` and a desktop build both pass in CI, the sync stack is chosen, and Supabase migrations deploy from the repo.
 
 ### Phase 1 — Song library (MVP part 1)
@@ -147,7 +149,7 @@ Clone any setlist (from a past gig, another upcoming gig, or a template) into a 
 **Exit:** a new gig's setlist starts from a previous one in a couple of clicks.
 
 ### Phase 4 — Sharing and collaboration
-Band data schema in Supabase with row-level security, sync wired into local SQLite, silent anonymous identity, read-only share links with a web viewer, band invites with roles, live updates and an activity feed, and optional account securing (email or Google/Apple).
+Band data schema in Supabase with row-level security, our sync protocol (outbox, push, pull, Realtime signal, first-share upload), silent anonymous identity, read-only share links with a web viewer, band invites with roles, live updates and an activity feed, and optional account securing (email or Google/Apple).
 **Exit:** a bandmate opens an invite link, edits the next gig's setlist, and you see the change within seconds, with nobody signing up.
 
 ### Phase 5 — History and insights
@@ -163,7 +165,7 @@ Signed installers for Windows and macOS, auto-update, release workflow, crash/er
 **Exit:** a tagged release produces downloadable installers.
 
 ### Phase 8 — Web and mobile apps
-Full web app reusing `core` and `ui` on the sync engine's browser storage, and a mobile app (Tauri mobile or React Native) for viewing setlists and stage mode.
+Full web app reusing `core` and `ui` on SQLite in WebAssembly with the same sync protocol, and a mobile app (Tauri mobile or React Native) for viewing setlists and stage mode.
 **Exit:** a band member edits the setlist on their phone.
 
 ---

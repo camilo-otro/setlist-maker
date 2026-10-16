@@ -93,7 +93,7 @@ issues:
     milestone: "Phase 0 — Foundations"
     labels: ["type:feature", "area:storage", "area:desktop", "priority:high"]
     body: |
-      Tables, indexes, soft-delete filtering, migration runner on app start. The schema must follow the chosen sync engine's constraints (for example UUID text primary keys, no cross-band foreign keys), so sync can be added in Phase 4 without a migration of identity.
+      Tables, indexes, soft-delete filtering, migration runner on app start. The schema must be sync-ready (see `docs/adr/0002-sync-stack.md`): UUID text primary keys, `band_id` on every synced table, `version`/`updated_at`/`updated_by`/`deleted_at` columns, and no foreign keys across bands, so sync can be added in Phase 4 without a migration of identity.
       **Done when:** the shared repository contract tests pass against SQLite.
 
   - title: "Decide sync stack: Supabase + PowerSync vs ElectricSQL"
@@ -292,12 +292,37 @@ issues:
       Band data tables mirroring `@setlist/core` in Setlist Maker's Supabase project (created in Phase 0), added as migrations in `supabase/`. Row-level security so only members of a band can read it, and only owners/editors can write. Viewers are read-only.
       **Done when:** policy tests prove a user can't read or write another band's rows.
 
-  - title: "Sync: connect local SQLite to the backend"
+  - title: "Sync: server sequence and push/pull functions"
     milestone: "Phase 4 — Sharing & collaboration"
-    labels: ["type:feature", "area:storage", "area:backend", "priority:high"]
+    labels: ["type:feature", "area:backend", "priority:high"]
     body: |
-      Wire the chosen sync engine into `packages/storage`. Sync is off while the band is solo. The first share uploads the band's existing data. Changes from other members appear live without a reload.
-      **Done when:** two desktop instances editing the same band converge, including after one goes offline and reconnects.
+      Per `docs/adr/0002-sync-stack.md`: a trigger stamps every write with `server_seq` from one global sequence. `sync_push(ops)` applies a batch of field-level operations in one transaction, checks the caller's band role and ignores already-applied operation IDs. `sync_pull(band_id, since_seq, limit)` returns changed rows and tombstones in order, one page at a time, and rejects non-members. Clients below the minimum schema version are refused.
+      **Done when:** database tests cover idempotent retries, viewer writes being rejected and paging through large pulls.
+
+  - title: "Sync: client outbox and push"
+    milestone: "Phase 4 — Sharing & collaboration"
+    labels: ["type:feature", "area:storage", "area:core", "priority:high"]
+    body: |
+      Every local write to a shared band records an operation (ID, table, row ID, changed fields only) in a local `outbox` table, in the same transaction. Pushes send the outbox in order and in batches, retry with backoff, and remove operations once the server confirms them. Solo bands record nothing.
+
+  - title: "Sync: pull and apply remote changes"
+    milestone: "Phase 4 — Sharing & collaboration"
+    labels: ["type:feature", "area:storage", "area:core", "priority:high"]
+    body: |
+      After each push, pull from the band's last `server_seq` and apply the rows in one transaction. Fields with unsent local changes keep the local value. Tombstones mark rows deleted. The UI refreshes affected views without a reload. If the band's data was removed for this member, delete it locally. If the cursor is older than the tombstone cleanup window, do a full resync.
+
+  - title: "Sync: scheduling and the Realtime change signal"
+    milestone: "Phase 4 — Sharing & collaboration"
+    labels: ["type:feature", "area:storage", "area:backend"]
+    body: |
+      Run the sync loop on app start, after local edits (debounced), when the connection returns, every 60 seconds while the window is focused, and when a Supabase Realtime broadcast for the band says new changes exist. Show the sync state in the UI (synced, syncing, offline with N pending changes).
+      **Done when:** a bandmate's edit shows up within a few seconds while both apps are open.
+
+  - title: "Sync: first-share upload and tombstone cleanup"
+    milestone: "Phase 4 — Sharing & collaboration"
+    labels: ["type:feature", "area:storage", "area:backend"]
+    body: |
+      When a solo band is shared for the first time, upload a full snapshot of its data in batches, resumable if interrupted, then switch on the outbox. A scheduled job on the server purges tombstones older than 90 days.
 
   - title: "Silent anonymous identity on first share"
     milestone: "Phase 4 — Sharing & collaboration"
@@ -434,10 +459,10 @@ issues:
     milestone: "Phase 8 — Web & mobile apps"
     labels: ["type:feature", "area:web"]
     body: |
-      Grow the Phase 4 share viewer into the full editor: Vite app on the sync engine's browser storage, signed in with the same anonymous or linked account.
+      Grow the Phase 4 share viewer into the full editor: Vite app on SQLite compiled to WebAssembly (persisted in the browser) with the same sync protocol, signed in with the same anonymous or linked account.
 
   - title: "Mobile app (view setlists, stage mode)"
     milestone: "Phase 8 — Web & mobile apps"
     labels: ["type:feature", "area:mobile"]
     body: |
-      Tauri mobile or React Native using `@setlist/core` and the same sync. Read-only and stage mode first, with touch drag and drop later.
+      Tauri mobile or React Native using `@setlist/core` and the same sync protocol on native SQLite. Read-only and stage mode first, with touch drag and drop later.
