@@ -1,4 +1,11 @@
-import { CalendarDays, ChartColumn, LayoutTemplate, Library, ListMusic } from 'lucide-react';
+import {
+  CalendarDays,
+  ChartColumn,
+  LayoutTemplate,
+  Library,
+  ListMusic,
+  MapPin,
+} from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -6,6 +13,7 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 export const NAV_ITEMS = [
   { to: '/library', label: 'Library', icon: Library },
   { to: '/gigs', label: 'Gigs', icon: CalendarDays },
+  { to: '/venues', label: 'Venues', icon: MapPin },
   { to: '/templates', label: 'Templates', icon: LayoutTemplate },
   { to: '/stats', label: 'Stats', icon: ChartColumn },
 ] as const;

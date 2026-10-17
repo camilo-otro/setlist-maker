@@ -711,3 +711,143 @@ body {
 .import__row--invalid td:last-child {
   color: var(--sm-danger);
 }
+
+/* Two-column forms (gigs, venues) */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.form-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.form-grid__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--sm-border);
+}
+
+.tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--sm-text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabs__tab:hover {
+  color: var(--sm-text);
+}
+
+.tabs__tab[aria-selected='true'] {
+  border-bottom-color: var(--sm-accent);
+  color: var(--sm-accent-text);
+}
+
+/* Gig list */
+.gig-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.gig-year {
+  margin: 8px 0 10px;
+  color: var(--sm-text-muted);
+  font-size: 0.9375rem;
+}
+
+.gig-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--sm-border);
+  border-radius: 10px;
+  background: var(--sm-surface);
+  color: var(--sm-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gig-row:hover {
+  border-color: var(--sm-accent);
+}
+
+.gig-row--cancelled .gig-row__title {
+  color: var(--sm-text-muted);
+  text-decoration: line-through;
+}
+
+.gig-row__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  padding: 4px 0;
+  border-radius: var(--sm-radius);
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+  line-height: 1.1;
+}
+
+.gig-row__weekday,
+.gig-row__month {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.gig-row__day {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.gig-row__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gig-row__title {
+  font-weight: 650;
+}
+
+.gig-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: var(--sm-text-muted);
+  font-size: 0.875rem;
+}
+
+.gig-row__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

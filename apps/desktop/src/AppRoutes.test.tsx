@@ -26,7 +26,8 @@ const render = (path: string, overrides: Partial<Workspace> = {}) =>
 describe('AppRoutes', () => {
   it.each([
     ['/library', 'Library', 'Loading songs'],
-    ['/gigs', 'Gigs', 'No gigs planned'],
+    ['/gigs', 'Gigs', 'Loading gigs'],
+    ['/venues', 'Venues', 'Loading venues'],
     ['/templates', 'Templates', 'No templates yet'],
     ['/stats', 'Stats', 'Nothing to show yet'],
   ])('%s shows its page with an empty state', (path, title, empty) => {
