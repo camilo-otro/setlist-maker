@@ -867,11 +867,18 @@ body {
   color: var(--sm-accent-text);
 }
 
+/* The actions wrap below the title when the window is narrow, rather than squeezing it. */
 .gig-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px 16px;
+}
+
+.gig-header > :first-child {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .gig-header .sm-page-header__title {
@@ -892,6 +899,7 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .icon-button:disabled {
@@ -1275,4 +1283,28 @@ body {
 
 .catalog-link span {
   flex: 1;
+}
+
+/* Share dialog */
+.share-dialog p {
+  margin: 0 0 12px;
+}
+
+.share-dialog__link {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.share-dialog__link .sm-input {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.share-dialog__confirm {
+  padding: 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
 }

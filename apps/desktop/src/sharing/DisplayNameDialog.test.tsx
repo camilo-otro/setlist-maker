@@ -12,6 +12,7 @@ function setup(ensure: Identity['ensure']) {
     current: async () => null,
     ensure: vi.fn(ensure),
     accessToken: async () => 'token',
+    linkSecret: async () => 'secret',
   };
   const onReady = vi.fn();
   const onClose = vi.fn();

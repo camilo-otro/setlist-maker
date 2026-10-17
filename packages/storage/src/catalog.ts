@@ -3,7 +3,7 @@ import { CatalogTrackSchema, type CatalogTrack } from '@setlist/core';
 /** The parts of `fetch` the client uses, so this package needs no DOM or Node types. */
 export type FetchLike = (
   url: string,
-  init: { method: string; headers: Record<string, string>; body: string; signal?: unknown },
+  init: { method: string; headers: Record<string, string>; body?: string; signal?: unknown },
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
 /** Searches the shared song catalog (public.catalog_tracks in Supabase). */

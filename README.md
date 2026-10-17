@@ -23,6 +23,7 @@ winget install --id Rustlang.Rustup -e
 pnpm install
 pnpm app:desktop   # the desktop app in a native window (first run compiles Rust, ~2 min)
 pnpm dev:desktop   # just the desktop UI, in a browser at http://localhost:1420
+pnpm dev:viewer    # the share-link viewer, at http://localhost:1440/#<token>
 pnpm check        # everything CI checks: format, lint, typecheck, tests, build
 pnpm check:rust   # Rust tests for the desktop shell
 pnpm test          # or run one step: typecheck, lint, format, build
@@ -90,6 +91,26 @@ pnpm exec supabase stop
 ## Identity
 
 The first time someone shares, the app signs them in anonymously (no email or password, just a display name) and keeps the sign-in in the OS keychain: Windows Credential Manager or the macOS Keychain, under `io.github.camilootro.setlistmaker`. That sign-in is what proves the device owns its shared bands, so it's kept out of the database file. Linking an email or Google/Apple account to keep it safe across devices comes with [#51](https://github.com/camilo-otro/setlist-maker/issues/51).
+
+## Share links
+
+A gig's **Share** button gives a read-only link to its setlist, like `https://setlist.rockthehouse.app/#<token>`. Anyone with it sees the setlist on any device, without an account, and it refreshes every 30 seconds. The first share asks for a display name, signs the device in anonymously (see Identity) and uploads the band; after that, the app uploads changes every few seconds while the band is shared.
+
+- **Server:** `public.share_links` stores each link's target and the SHA-256 hash of its token, never the token. `shared_setlist(token)` returns only that gig's public details (no notes, tags or load-in time); revoked links and deleted gigs return nothing.
+- **Tokens** are an HMAC of the link's ID with a secret kept in the device's keychain, so the app can show a link again while nobody else can rebuild one.
+- **Viewer:** [`apps/viewer`](apps/viewer), a small React page sharing `@setlist/ui` styles. The token is in the URL fragment, which browsers never send to the server, so it stays out of hosting logs.
+
+**Deploying:** the **Viewer** workflow builds the viewer on pull requests and publishes it to Netlify after merges to `main`. Until the Netlify settings below exist, it builds but skips publishing, with a warning.
+
+**One-time setup** (values go in GitHub and Netlify, never in the repo or chat):
+
+1. In Netlify, create a new site by deploying manually: drop in any folder with an `index.html`; the workflow replaces it on the next merge.
+2. Copy the site's ID from its site configuration page into a GitHub **variable** `NETLIFY_SITE_ID`.
+3. Create a Netlify personal access token (user settings → Applications) and save it as a GitHub **secret** `NETLIFY_AUTH_TOKEN`.
+4. In the site's domain settings, add `setlist.rockthehouse.app`. At the DNS provider for `rockthehouse.app`, add a `CNAME` record from `setlist` to the site's `<name>.netlify.app` address. Netlify then issues the HTTPS certificate on its own.
+5. Make sure anonymous sign-ins are on in Supabase (Supabase setup, step 4).
+
+The desktop app opens links at `https://setlist.rockthehouse.app/`; set `VITE_VIEWER_URL` in `apps/desktop/.env.local` to point it elsewhere, e.g. `http://localhost:1440/` with a local viewer.
 
 ## Song catalog
 

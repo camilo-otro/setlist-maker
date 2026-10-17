@@ -1,0 +1,162 @@
+/* The shared setlist page: phone first, readable on a dim stage or a bright screen. */
+body {
+  margin: 0;
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  font-family: var(--sm-font);
+  line-height: 1.4;
+}
+
+.viewer {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.viewer--message {
+  padding-top: 64px;
+  text-align: center;
+}
+
+.viewer--message p,
+.viewer__empty {
+  color: var(--sm-text-muted);
+}
+
+.viewer h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.viewer__header {
+  margin-bottom: 24px;
+}
+
+.viewer__band {
+  margin: 0 0 4px;
+  color: var(--sm-accent-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.viewer__when {
+  margin: 8px 0 0;
+  color: var(--sm-text-muted);
+}
+
+.viewer__notice {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+}
+
+.set {
+  margin-top: 20px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  background: var(--sm-surface);
+  overflow: hidden;
+}
+
+.set__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--sm-border);
+  font-size: 1.05rem;
+}
+
+.set__time {
+  color: var(--sm-text-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.set .viewer__empty {
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.set__entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--sm-border);
+}
+
+.entry:first-child {
+  border-top: 0;
+}
+
+.entry__number {
+  min-width: 1.5em;
+  color: var(--sm-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.entry__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.entry__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.entry__segue {
+  color: var(--sm-accent-text);
+}
+
+.entry__artist {
+  color: var(--sm-text-muted);
+  font-size: 0.9rem;
+}
+
+.entry__meta {
+  display: flex;
+  gap: 10px;
+  color: var(--sm-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.entry__key {
+  color: var(--sm-text);
+  font-weight: 600;
+}
+
+.entry--break,
+.entry--note {
+  justify-content: center;
+  color: var(--sm-text-muted);
+  font-size: 0.9rem;
+}
+
+.entry--break {
+  background: var(--sm-hover);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entry--note {
+  font-style: italic;
+}

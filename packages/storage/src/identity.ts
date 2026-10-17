@@ -11,6 +11,8 @@ export interface StoredIdentity {
   displayName: string;
   /** Long-lived; exchanged for short-lived access tokens. Rotates on every refresh. */
   refreshToken: string;
+  /** Random secret that share-link tokens are derived from (see shareLinks.ts). Hex. */
+  linkSecret?: string;
 }
 
 export interface IdentityStore {
@@ -39,7 +41,17 @@ export interface Identity {
   ensure(displayName: string): Promise<{ userId: string; displayName: string }>;
   /** A valid access token for API calls, refreshed when it's about to expire. */
   accessToken(): Promise<string>;
+  /** This device's secret for share-link tokens, created on first use. Requires a sign-in. */
+  linkSecret(): Promise<string>;
 }
+
+const randomHex = (bytes: number) =>
+  Array.from(
+    (
+      globalThis as unknown as { crypto: { getRandomValues(a: Uint8Array): Uint8Array } }
+    ).crypto.getRandomValues(new Uint8Array(bytes)),
+    (b) => b.toString(16).padStart(2, '0'),
+  ).join('');
 
 /** The identity can't be used any more (e.g. its refresh token was revoked). */
 export class IdentityLostError extends Error {
@@ -131,6 +143,17 @@ export function createIdentity({
         });
         remember(tokens);
         return { userId: tokens.user.id, displayName: name };
+      });
+    },
+
+    linkSecret() {
+      return serially(async () => {
+        const stored = await store.load();
+        if (!stored) throw new Error('Not signed in yet');
+        if (stored.linkSecret) return stored.linkSecret;
+        const linkSecret = randomHex(32);
+        await store.save({ ...stored, linkSecret });
+        return linkSecret;
       });
     },
 

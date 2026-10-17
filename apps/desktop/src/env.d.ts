@@ -5,4 +5,6 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   /** Supabase publishable (anon) key: public by design, read-only access to the catalog. */
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+  /** Web viewer that share links open. Defaults to https://setlist.rockthehouse.app/. */
+  readonly VITE_VIEWER_URL?: string;
 }
