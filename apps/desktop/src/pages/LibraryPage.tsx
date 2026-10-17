@@ -1,8 +1,19 @@
-import { searchSongs, sortSongs, type Song, type SongSortKey } from '@setlist/core';
+import {
+  countActiveFilters,
+  DEFAULT_SONG_FILTERS,
+  filterSongs,
+  searchSongs,
+  sortSongs,
+  type Song,
+  type SongFilters,
+  type SongSortKey,
+} from '@setlist/core';
 import { EmptyState, PageHeader } from '@setlist/ui';
-import { Library, Plus, Search } from 'lucide-react';
+import { Library, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { SongDetail } from '../library/SongDetail';
 import { SongDialog } from '../library/SongDialog';
+import { SongFiltersPanel } from '../library/SongFiltersPanel';
 import { SongTable, type SongSort } from '../library/SongTable';
 import { useSongs } from '../library/useSongs';
 
@@ -12,15 +23,20 @@ type Editing = Song | null | undefined;
 export function LibraryPage() {
   const { songs, error, reload } = useSongs();
   const [query, setQuery] = useState('');
-  const [showArchived, setShowArchived] = useState(false);
+  const [filters, setFilters] = useState<SongFilters>(DEFAULT_SONG_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
   const [sort, setSort] = useState<SongSort>({ key: 'title', direction: 'asc' });
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<Editing>(undefined);
 
-  const archivedCount = songs?.filter((song) => song.status === 'retired').length ?? 0;
-  const visible = useMemo(() => {
-    const shown = (songs ?? []).filter((song) => showArchived || song.status !== 'retired');
-    return sortSongs(searchSongs(shown, query), sort.key, sort.direction);
-  }, [songs, showArchived, query, sort]);
+  const visible = useMemo(
+    () =>
+      sortSongs(searchSongs(filterSongs(songs ?? [], filters), query), sort.key, sort.direction),
+    [songs, filters, query, sort],
+  );
+  // Looked up in every song, so the panel stays open if a filter hides the selected one.
+  const selected = songs?.find((song) => song.id === selectedId);
+  const activeFilters = countActiveFilters(filters);
 
   const toggleSort = (key: SongSortKey) =>
     setSort((current) => ({
@@ -52,39 +68,74 @@ export function LibraryPage() {
     );
   } else {
     content = (
-      <>
-        <div className="library-toolbar">
-          <label className="search-box">
-            <Search size={16} aria-hidden="true" />
-            <input
-              type="search"
-              className="sm-input"
-              placeholder="Search title, artist or tag"
-              aria-label="Search songs"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
-          {archivedCount > 0 && (
-            <label className="library-toolbar__toggle">
+      <div className={selected ? 'library-layout library-layout--detail' : 'library-layout'}>
+        <div className="library-layout__main">
+          <div className="library-toolbar">
+            <label className="search-box">
+              <Search size={16} aria-hidden="true" />
               <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={(e) => setShowArchived(e.target.checked)}
+                type="search"
+                className="sm-input"
+                placeholder="Search title, artist or tag"
+                aria-label="Search songs"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
-              Show archived ({archivedCount})
             </label>
+            <button
+              type="button"
+              className="sm-button"
+              aria-expanded={showFilters}
+              aria-controls="song-filters"
+              onClick={() => setShowFilters((shown) => !shown)}
+            >
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              Filters
+              {activeFilters > 0 && <span className="badge">{activeFilters}</span>}
+            </button>
+            <span className="muted library-toolbar__count" aria-live="polite">
+              {visible.length} {visible.length === 1 ? 'song' : 'songs'}
+            </span>
+          </div>
+
+          {showFilters && (
+            <SongFiltersPanel songs={songs} filters={filters} onChange={setFilters} />
           )}
-          <span className="muted library-toolbar__count" aria-live="polite">
-            {visible.length} {visible.length === 1 ? 'song' : 'songs'}
-          </span>
+
+          {visible.length > 0 ? (
+            <SongTable
+              songs={visible}
+              sort={sort}
+              selectedId={selectedId}
+              onSort={toggleSort}
+              onOpen={(song) => setSelectedId(song.id)}
+            />
+          ) : (
+            <div className="library-no-match">
+              <p className="muted">No songs match your search and filters.</p>
+              <button
+                type="button"
+                className="sm-button"
+                onClick={() => {
+                  setQuery('');
+                  setFilters(DEFAULT_SONG_FILTERS);
+                }}
+              >
+                Clear search and filters
+              </button>
+            </div>
+          )}
         </div>
-        {visible.length > 0 ? (
-          <SongTable songs={visible} sort={sort} onSort={toggleSort} onOpen={setEditing} />
-        ) : (
-          <p className="muted">No songs match “{query}”.</p>
+
+        {selected && (
+          <SongDetail
+            key={selected.id}
+            song={selected}
+            onEdit={() => setEditing(selected)}
+            onClose={() => setSelectedId(undefined)}
+          />
         )}
-      </>
+      </div>
     );
   }
 

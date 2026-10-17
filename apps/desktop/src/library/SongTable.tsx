@@ -24,11 +24,13 @@ const COLUMNS: { key: SongSortKey; label: string; numeric?: boolean }[] = [
 export function SongTable({
   songs,
   sort,
+  selectedId,
   onSort,
   onOpen,
 }: {
   songs: readonly Song[];
   sort: SongSort;
+  selectedId?: string;
   onSort: (key: SongSortKey) => void;
   onOpen: (song: Song) => void;
 }) {
@@ -62,10 +64,22 @@ export function SongTable({
         {songs.map((song) => (
           <tr
             key={song.id}
-            className={song.status === 'retired' ? 'song-table__retired' : undefined}
+            className={
+              [
+                song.status === 'retired' && 'song-table__retired',
+                song.id === selectedId && 'song-table__selected',
+              ]
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
           >
             <td>
-              <button type="button" className="song-table__title" onClick={() => onOpen(song)}>
+              <button
+                type="button"
+                className="song-table__title"
+                aria-current={song.id === selectedId ? 'true' : undefined}
+                onClick={() => onOpen(song)}
+              >
                 {song.title}
               </button>
               {song.isOriginal && <span className="badge">Original</span>}
