@@ -202,8 +202,11 @@ begin
   if new.id <> old.id then
     raise exception 'A row''s id can''t change' using errcode = 'check_violation';
   end if;
-  if tg_table_name <> 'bands' and new.band_id <> old.band_id then
-    raise exception 'A row can''t move to another band' using errcode = 'check_violation';
+  -- Nested, not "and": PL/pgSQL would still look up band_id, which bands doesn't have.
+  if tg_table_name <> 'bands' then
+    if new.band_id <> old.band_id then
+      raise exception 'A row can''t move to another band' using errcode = 'check_violation';
+    end if;
   end if;
   return new;
 end

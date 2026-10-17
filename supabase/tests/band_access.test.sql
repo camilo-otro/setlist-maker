@@ -2,7 +2,7 @@
 -- viewers only read, and nobody outside a band (or signed out) gets anything.
 -- Run with: pnpm exec supabase test db
 begin;
-select plan(24);
+select plan(25);
 
 -- Alice owns The Alphas, Bob owns The Betas. Carol is a viewer and Dave an editor of The Alphas.
 \set alice '\'a0000000-0000-4000-8000-000000000001\''
@@ -96,6 +96,11 @@ select results_eq(
   $$values ('editor', 'The Alphas')$$,
   'An editor can''t promote themselves or rename the band');
 select throws_ok('delete from public.songs', '42501', null, 'Nobody deletes rows; they are soft-deleted');
+
+-- Owners rename the band.
+select pg_temp.act_as(:alice);
+update public.bands set name = 'The Alphas!';
+select is((select name from public.bands), 'The Alphas!', 'The owner renames the band');
 
 -- Removed members lose access.
 reset role;
