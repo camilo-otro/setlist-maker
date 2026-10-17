@@ -11,3 +11,5 @@ export * from './operations/gigs';
 export * from './operations/setlists';
 export * from './catalog';
 export * from './identity';
+export * from './outbox';
+export * from './push';

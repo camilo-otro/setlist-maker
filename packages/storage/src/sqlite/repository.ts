@@ -1,4 +1,5 @@
 import { assembleRepository } from '../assemble';
+import { bandOf, outboxOp, snakeCase, type OutboxOp } from '../outbox';
 import type { ReadOptions, Repository, RepositoryOptions, TableName } from '../repository';
 import {
   buildDeletedRow,
@@ -20,8 +21,7 @@ const BOOLEAN_FIELDS = new Set(['isOriginal', 'isTemplate', 'segueToNext']);
 const JSON_FIELDS = new Set(['tags']);
 
 /** camelCase field → snake_case column, e.g. `setBlockId` → `set_block_id`. */
-export const columnName = (field: string) =>
-  field.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+export const columnName = snakeCase;
 
 const quote = (identifier: string) => `"${identifier}"`;
 
@@ -55,6 +55,26 @@ export async function openSqliteRepository(
   await migrate(driver);
   const ctx = writeContext(options);
 
+  const sharedBands = async () =>
+    new Set(
+      (await driver.select('SELECT "band_id" FROM "shared_bands"')).map((r) => r.band_id as string),
+    );
+
+  /** Queues changes to shared bands for pushing. Runs in the write's transaction. */
+  async function record(name: TableName, changes: readonly [StoredRow | null, StoredRow][]) {
+    const shared = await sharedBands();
+    if (shared.size === 0) return;
+    for (const [before, after] of changes) {
+      if (!shared.has(bandOf(name, after))) continue;
+      const op = outboxOp(name, before, after);
+      if (!op) continue;
+      await driver.execute(
+        'INSERT INTO "outbox" ("id", "table_name", "row_id", "band_id", "fields") VALUES (?, ?, ?, ?, ?)',
+        [op.id, op.table, op.rowId, op.bandId, JSON.stringify(op.fields)],
+      );
+    }
+  }
+
   return assembleRepository(
     (name: TableName, run, atomic) => {
       const table = quote(columnName(name));
@@ -85,14 +105,19 @@ export async function openSqliteRepository(
             chunk.flatMap(values),
           );
         }
+        await record(
+          name,
+          rows.map((row) => [null, row] as const),
+        );
         return [...rows];
       };
-      const replace = async (row: StoredRow) => {
+      const replace = async (before: StoredRow, row: StoredRow) => {
         const assignments = columns.map((column) => `${column} = ?`).join(', ');
         await driver.execute(`UPDATE ${table} SET ${assignments} WHERE "id" = ?`, [
           ...values(row),
           row.id,
         ]);
+        await record(name, [[before, row]]);
         return row;
       };
 
@@ -126,22 +151,70 @@ export async function openSqliteRepository(
             return rows.map((row) => decode(fields, row));
           }),
 
+        // Writes are atomic: the row and its outbox operation are stored together or not at all.
         create: (values: object) =>
-          run(async () => (await insert([buildNewRow(name, values, ctx)]))[0]!),
+          atomic(async () => (await insert([buildNewRow(name, values, ctx)]))[0]!),
         // Every row is built (and so validated) before anything is written.
         createMany: (values: readonly object[]) =>
           atomic(() => insert(values.map((v) => buildNewRow(name, v, ctx)))),
         update: (id: string, patch: object) =>
-          run(async () => replace(buildUpdatedRow(name, await find(id), patch, ctx))),
-        remove: (id: string) => run(async () => replace(buildDeletedRow(await find(id), ctx))),
+          atomic(async () => {
+            const row = await find(id);
+            return replace(row, buildUpdatedRow(name, row, patch, ctx));
+          }),
+        remove: (id: string) =>
+          atomic(async () => {
+            const row = await find(id);
+            return replace(row, buildDeletedRow(row, ctx));
+          }),
         restore: (id: string) =>
-          run(async () => {
+          atomic(async () => {
             const row = await select(id);
             if (!row) throw new NotFoundError(name, id);
-            return row.deletedAt ? replace(buildRestoredRow(row, ctx)) : row;
+            return row.deletedAt ? replace(row, buildRestoredRow(row, ctx)) : row;
           }),
       };
     },
+    (run) => ({
+      shareBand: (bandId) =>
+        run(() =>
+          driver.execute(
+            'INSERT OR IGNORE INTO "shared_bands" ("band_id", "shared_at") VALUES (?, ?)',
+            [bandId, ctx.now()],
+          ),
+        ),
+      sharedBands: () =>
+        run(async () =>
+          (await driver.select('SELECT "band_id" FROM "shared_bands" ORDER BY "shared_at"')).map(
+            (row) => row.band_id as string,
+          ),
+        ),
+      pending: (limit) =>
+        run(async () =>
+          (
+            await driver.select(
+              'SELECT "id", "table_name", "row_id", "band_id", "fields" FROM "outbox" ORDER BY "seq" LIMIT ?',
+              [limit],
+            )
+          ).map((row): OutboxOp => ({
+            id: row.id as string,
+            table: row.table_name as string,
+            rowId: row.row_id as string,
+            bandId: row.band_id as string,
+            fields: JSON.parse(row.fields as string) as Record<string, unknown>,
+          })),
+        ),
+      acknowledge: (ids) =>
+        run(async () => {
+          for (let start = 0; start < ids.length; start += 500) {
+            const chunk = ids.slice(start, start + 500);
+            await driver.execute(
+              `DELETE FROM "outbox" WHERE "id" IN (${chunk.map(() => '?').join(', ')})`,
+              chunk,
+            );
+          }
+        }),
+    }),
     {
       begin: () => driver.execute('BEGIN IMMEDIATE'),
       commit: () => driver.execute('COMMIT'),

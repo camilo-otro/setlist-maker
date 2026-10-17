@@ -1,4 +1,5 @@
 import { assembleRepository } from './assemble';
+import { bandOf, outboxOp, type OutboxOp } from './outbox';
 import {
   TABLE_NAMES,
   type ReadOptions,
@@ -20,7 +21,11 @@ import {
   type StoredRow,
 } from './rows';
 
-type State = Map<TableName, Map<string, StoredRow>>;
+interface State {
+  tables: Map<TableName, Map<string, StoredRow>>;
+  outbox: OutboxOp[];
+  shared: Set<string>;
+}
 
 /**
  * Repository kept in memory, for tests and prototypes. Behaves like the SQLite version: same
@@ -28,18 +33,27 @@ type State = Map<TableName, Map<string, StoredRow>>;
  */
 export function createMemoryRepository(options: RepositoryOptions = {}): Repository {
   const ctx = writeContext(options);
-  const state: State = new Map(TABLE_NAMES.map((name) => [name, new Map()]));
+  let state: State = {
+    tables: new Map(TABLE_NAMES.map((name) => [name, new Map()])),
+    outbox: [],
+    shared: new Set(),
+  };
 
   return assembleRepository(
     (name, run) => {
-      const rows = () => state.get(name)!;
+      const rows = () => state.tables.get(name)!;
       const find = (id: string) => {
         const row = rows().get(id);
         if (!row || row.deletedAt) throw new NotFoundError(name, id);
         return row;
       };
       const save = (row: StoredRow) => {
+        const before = rows().get(row.id) ?? null;
         rows().set(row.id, row);
+        if (state.shared.has(bandOf(name, row))) {
+          const op = outboxOp(name, before, row);
+          if (op) state.outbox.push(op);
+        }
         return copyRow(row);
       };
 
@@ -71,12 +85,31 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
           }),
       };
     },
+    (run) => ({
+      shareBand: (bandId) =>
+        run(() => {
+          state.shared.add(bandId);
+        }),
+      sharedBands: () => run(() => [...state.shared]),
+      pending: (limit) =>
+        run(() => state.outbox.slice(0, limit).map((op) => ({ ...op, fields: { ...op.fields } }))),
+      acknowledge: (ids) =>
+        run(() => {
+          const done = new Set(ids);
+          state.outbox = state.outbox.filter((op) => !done.has(op.id));
+        }),
+    }),
     {
-      // Rows are replaced, never mutated, so copying each table's map is a full snapshot.
-      begin: (): State => new Map([...state].map(([name, rows]) => [name, new Map(rows)])),
+      // Rows and operations are replaced, never mutated, so copying the containers is a full
+      // snapshot.
+      begin: (): State => ({
+        tables: new Map([...state.tables].map(([name, rows]) => [name, new Map(rows)])),
+        outbox: [...state.outbox],
+        shared: new Set(state.shared),
+      }),
       commit: () => {},
       rollback: (snapshot) => {
-        for (const [name, rows] of snapshot) state.set(name, rows);
+        state = snapshot;
       },
     },
   );

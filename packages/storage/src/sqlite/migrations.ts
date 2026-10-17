@@ -117,6 +117,26 @@ export const MIGRATIONS: readonly Migration[] = [
       `CREATE INDEX "performances_gig" ON "performances" ("gig_id")`,
     ],
   },
+  {
+    version: 2,
+    name: 'Create the sync outbox',
+    statements: [
+      // Bands whose changes are recorded for pushing. Solo bands aren't listed.
+      `CREATE TABLE "shared_bands" (
+        "band_id" TEXT PRIMARY KEY NOT NULL,
+        "shared_at" TEXT NOT NULL
+      ) STRICT`,
+      // Changes waiting for the server, oldest first (see OutboxOp). Local only, never synced.
+      `CREATE TABLE "outbox" (
+        "seq" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "id" TEXT NOT NULL UNIQUE,
+        "table_name" TEXT NOT NULL,
+        "row_id" TEXT NOT NULL,
+        "band_id" TEXT NOT NULL,
+        "fields" TEXT NOT NULL
+      ) STRICT`,
+    ],
+  },
 ];
 
 /**
