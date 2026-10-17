@@ -1205,3 +1205,69 @@ body {
 .library-panel__target > span {
   white-space: nowrap;
 }
+
+/* Catalog search in the Add song dialog */
+.catalog-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--sm-border);
+}
+
+.catalog-picker .search-box {
+  flex: none;
+}
+
+.catalog-picker__results p {
+  margin: 0;
+}
+
+.catalog-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.catalog-picker__track {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--sm-radius);
+  background: none;
+  color: var(--sm-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalog-picker__track:hover,
+.catalog-picker__track:focus-visible {
+  background: var(--sm-hover);
+}
+
+.catalog-picker__title {
+  font-weight: 600;
+}
+
+.catalog-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+}
+
+.catalog-link span {
+  flex: 1;
+}

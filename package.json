@@ -11,21 +11,26 @@
     "dev:desktop": "pnpm --filter @setlist/desktop dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p supabase/seed/tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "check:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml"
+    "check:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "seed:catalog": "tsx supabase/seed/seed-catalog.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@setlist/core": "workspace:*",
+    "@types/node": "^24.19.2",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
+    "postgres": "^3.4.9",
     "prettier": "^3.9.10",
     "supabase": "^2.121.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.2",
     "vitest": "^5.0.5"

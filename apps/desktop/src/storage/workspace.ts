@@ -1,5 +1,11 @@
 import type { Band } from '@setlist/core';
-import { createMemoryRepository, openSqliteRepository, type Repository } from '@setlist/storage';
+import {
+  createCatalogClient,
+  createMemoryRepository,
+  openSqliteRepository,
+  type CatalogSearch,
+  type Repository,
+} from '@setlist/storage';
 import { isTauri } from '@tauri-apps/api/core';
 import { createTauriDriver } from './tauriDriver';
 
@@ -10,6 +16,18 @@ export interface Workspace {
   band: Band;
   /** False in the browser preview, where data lives in memory and is lost on reload. */
   persistent: boolean;
+  /** The shared song catalog, or null when the app isn't configured with a Supabase project. */
+  catalog?: CatalogSearch | null;
+}
+
+/**
+ * The catalog, if VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are set (apps/desktop/.env.local
+ * for development). The publishable key is meant to ship in apps; it can only read the catalog.
+ */
+export function catalogFromEnv(env: Record<string, string | undefined>): CatalogSearch | null {
+  const url = env.VITE_SUPABASE_URL;
+  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  return url && key ? createCatalogClient({ url, key }) : null;
 }
 
 export const DEFAULT_BAND_NAME = 'My band';
@@ -27,7 +45,12 @@ async function open(): Promise<Workspace> {
   const repository = persistent
     ? await openSqliteRepository(createTauriDriver())
     : createMemoryRepository();
-  return { repository, band: await ensureBand(repository), persistent };
+  return {
+    repository,
+    band: await ensureBand(repository),
+    persistent,
+    catalog: catalogFromEnv(import.meta.env),
+  };
 }
 
 let opening: Promise<Workspace> | undefined;

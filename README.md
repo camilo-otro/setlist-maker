@@ -83,3 +83,18 @@ pnpm exec supabase stop
    - Secret `SUPABASE_ACCESS_TOKEN`: create one under _Account → Access Tokens_ in the Supabase dashboard.
    - Secret `SUPABASE_DB_PASSWORD`: the database password set when the project was created.
    - Variable `SUPABASE_PROJECT_ID`: the project ID from step 1 (not secret).
+
+## Song catalog
+
+Every band can search one shared catalog of recordings (`public.catalog_tracks` in Supabase) when adding songs. The app reads it with the project's publishable key; only the seed script and server functions can write to it.
+
+**Seeding** from a CSV with title, artist, duration and Spotify link columns (like the old catalog export). The file stays out of the repo, so the script takes its path:
+
+```sh
+pnpm seed:catalog misc/songs.csv --dry-run   # check the file, write nothing
+pnpm seed:catalog misc/songs.csv             # write to the database in SUPABASE_DB_URL
+```
+
+`SUPABASE_DB_URL` is the database connection string with its password (Supabase dashboard: **Connect → Session pooler**); for the local stack it's `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Set it in your own terminal, never in a file. Rows are matched by Spotify track, so rerunning only adds new rows and updates changed ones.
+
+**Searching from the app** needs the project's URL and publishable key at build time. Copy `apps/desktop/.env.example` to `apps/desktop/.env.local` (git-ignored) and fill them in. Without them, Add song simply skips the catalog search.

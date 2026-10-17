@@ -7,3 +7,4 @@ target/
 
 # Seed data exports (kept out of the public repo)
 misc/songs.csv
+.env.local

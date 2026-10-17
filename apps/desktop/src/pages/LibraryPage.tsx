@@ -168,6 +168,7 @@ export function LibraryPage() {
         <SongDialog
           key={editing?.id ?? 'new'}
           song={editing}
+          librarySongs={songs ?? []}
           onClose={() => setEditing(undefined)}
           onChanged={reload}
         />
