@@ -1,6 +1,7 @@
 name: Supabase
 
-# Pull requests: apply every migration to a throwaway local database, so broken SQL never merges.
+# Pull requests: apply every migration to a throwaway local database and run the database tests,
+# so broken SQL or access rules never merge.
 # Pushes to main: apply new migrations to the hosted project.
 on:
   pull_request:
@@ -39,6 +40,10 @@ jobs:
 
       - name: Lint the database schema
         run: pnpm exec supabase db lint --local --level warning --fail-on error
+
+      # pgTAP tests in supabase/tests, e.g. proving bands can't see each other's data.
+      - name: Run the database tests
+        run: pnpm exec supabase test db
 
   deploy:
     name: Deploy migrations

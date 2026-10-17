@@ -64,10 +64,11 @@ The backend lives in [`supabase/`](supabase): `config.toml` for the local stack 
 pnpm exec supabase start                 # local Supabase with all migrations applied; prints URLs and keys
 pnpm exec supabase migration new <name>  # new empty migration in supabase/migrations
 pnpm exec supabase db reset              # rebuild the local database from the migrations
+pnpm exec supabase test db               # run the database tests in supabase/tests (access rules)
 pnpm exec supabase stop
 ```
 
-**Deploying:** the **Supabase** workflow applies every migration to a throwaway database on pull requests that touch `supabase/`. After merging to `main`, it pushes new migrations to the hosted project. Released migrations are never edited; change the schema by adding a new one.
+**Deploying:** the **Supabase** workflow applies every migration to a throwaway database on pull requests that touch `supabase/`, then runs the database tests. After merging to `main`, it pushes new migrations to the hosted project. Released migrations are never edited; change the schema by adding a new one.
 
 **One-time setup** for the hosted project. Keep these values out of the repo and out of chat.
 
