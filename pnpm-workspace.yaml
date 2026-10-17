@@ -1,3 +1,6 @@
 packages:
   - packages/*
   - apps/*
+allowBuilds:
+  # esbuild's install script only re-checks its native binary, which pnpm installs anyway.
+  esbuild: false

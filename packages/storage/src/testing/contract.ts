@@ -76,6 +76,54 @@ export function describeRepositoryContract(
       });
     });
 
+    describe('createMany', () => {
+      it('creates every row in order, with its own ID and system fields', async () => {
+        const created = await repo.songs.createMany([
+          { bandId, title: 'One' },
+          { bandId, title: 'Two', tags: ['x'] },
+        ]);
+        expect(created.map((song) => song.title)).toEqual(['One', 'Two']);
+        expect(new Set(created.map((song) => song.id)).size).toBe(2);
+        expect(created[1]).toMatchObject({ version: 1, deletedAt: null, tags: ['x'] });
+        expect(await repo.songs.list({ bandId })).toEqual(created);
+      });
+
+      it('stores nothing if any row is invalid', async () => {
+        await expect(
+          repo.songs.createMany([
+            { bandId, title: 'Fine' },
+            { bandId, title: '' },
+          ]),
+        ).rejects.toMatchObject({ name: 'ZodError' });
+        expect(await repo.songs.list({ bandId })).toEqual([]);
+      });
+
+      it('handles more rows than fit in one SQL statement', async () => {
+        const values = Array.from({ length: 1200 }, (_, i) => ({ bandId, title: `Song ${i}` }));
+        const created = await repo.songs.createMany(values);
+        expect(created).toHaveLength(1200);
+        const listed = await repo.songs.list({ bandId });
+        expect(listed.map((song) => song.title)).toEqual(values.map((value) => value.title));
+      });
+
+      it('accepts an empty list', async () => {
+        expect(await repo.songs.createMany([])).toEqual([]);
+      });
+
+      it('is undone with the transaction it runs in', async () => {
+        await expect(
+          repo.transaction(async (tx) => {
+            await tx.songs.createMany([
+              { bandId, title: 'One' },
+              { bandId, title: 'Two' },
+            ]);
+            throw new Error('boom');
+          }),
+        ).rejects.toThrow('boom');
+        expect(await repo.songs.list({ bandId })).toEqual([]);
+      });
+    });
+
     describe('update', () => {
       it('applies the patch, bumps the version and updates the timestamp', async () => {
         const song = await repo.songs.create({ bandId, title: 'Wasteland', tags: ['slow'] });
@@ -150,6 +198,33 @@ export function describeRepositoryContract(
         const song = await repo.songs.create({ bandId, title: 'Wasteland' });
         await repo.songs.remove(song.id);
         await expect(repo.songs.remove(song.id)).rejects.toBeInstanceOf(NotFoundError);
+      });
+    });
+
+    describe('restore', () => {
+      it('brings a deleted row back, bumping its version', async () => {
+        const song = await repo.songs.create({ bandId, title: 'Wasteland' });
+        await repo.songs.remove(song.id);
+        const restored = await repo.songs.restore(song.id);
+
+        expect(restored).toMatchObject({
+          id: song.id,
+          title: 'Wasteland',
+          deletedAt: null,
+          version: 3,
+        });
+        expect(await repo.songs.get(song.id)).toEqual(restored);
+        expect(await repo.songs.list({ bandId })).toEqual([restored]);
+      });
+
+      it('returns rows that are not deleted unchanged', async () => {
+        const song = await repo.songs.create({ bandId, title: 'Wasteland' });
+        expect(await repo.songs.restore(song.id)).toEqual(song);
+      });
+
+      it('fails for rows that never existed', async () => {
+        const missing = '0199f0c4-6b1e-7a2b-8c3d-4e5f6a7b8c9d';
+        await expect(repo.songs.restore(missing)).rejects.toBeInstanceOf(NotFoundError);
       });
     });
 

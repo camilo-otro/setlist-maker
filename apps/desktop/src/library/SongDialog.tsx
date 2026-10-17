@@ -1,6 +1,15 @@
-import { MUSICAL_KEYS, SONG_STATUS_LABELS, type Song, type SongStatus } from '@setlist/core';
+import {
+  formatDuration,
+  MUSICAL_KEYS,
+  SONG_STATUS_LABELS,
+  type CatalogTrack,
+  type Song,
+  type SongStatus,
+} from '@setlist/core';
+import { Link2, X } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useWorkspace } from '../storage/WorkspaceProvider';
+import { CatalogPicker } from './CatalogPicker';
 import {
   EMPTY_SONG_FORM,
   errorsFromValidation,
@@ -19,14 +28,20 @@ type DeleteState = { step: 'idle' } | { step: 'confirm' } | { step: 'blocked'; g
  */
 export function SongDialog({
   song,
+  librarySongs = [],
   onClose,
   onChanged,
 }: {
   song: Song | null;
+  /** The band's songs, to mark catalog matches already in the library. */
+  librarySongs?: readonly Song[];
   onClose: () => void;
   onChanged: () => void;
 }) {
-  const { repository, band } = useWorkspace();
+  const { repository, band, catalog } = useWorkspace();
+  /** The catalog recording a new song was picked from; its IDs and artwork are saved with it. */
+  const [linked, setLinked] = useState<CatalogTrack | null>(null);
+  const showPicker = !song && !!catalog && !linked;
   const [form, setForm] = useState<SongFormValues>(song ? songToForm(song) : EMPTY_SONG_FORM);
   const [errors, setErrors] = useState<SongFormErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
@@ -60,11 +75,29 @@ export function SongDialog({
       return;
     }
     setErrors({});
+    const link = linked
+      ? {
+          catalogTrackId: linked.id,
+          spotifyId: linked.spotifyId,
+          isrc: linked.isrc,
+          artworkUrl: linked.artworkUrl,
+        }
+      : {};
     void run(() =>
       song
         ? repository.songs.update(song.id, read.result)
-        : repository.songs.create({ bandId: band.id, ...read.result }),
+        : repository.songs.create({ bandId: band.id, ...read.result, ...link }),
     );
+  }
+
+  function pick(track: CatalogTrack) {
+    setLinked(track);
+    setForm((current) => ({
+      ...current,
+      title: track.title,
+      artist: track.artists.join(', '),
+      duration: track.durationSec === null ? current.duration : formatDuration(track.durationSec),
+    }));
   }
 
   async function startDelete() {
@@ -118,12 +151,31 @@ export function SongDialog({
         </h2>
 
         <form className="song-form" onSubmit={save} noValidate>
+          {showPicker && (
+            <CatalogPicker catalog={catalog} librarySongs={librarySongs} onPick={pick} />
+          )}
+          {linked && (
+            <div className="catalog-link form-grid__wide" role="status">
+              <Link2 size={16} aria-hidden="true" />
+              <span>
+                From the catalog: <strong>{linked.title}</strong> · {linked.artists.join(', ')}
+              </span>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Don't link to the catalog"
+                onClick={() => setLinked(null)}
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </div>
+          )}
           {field(
             'title',
             'Title',
             <input
               {...inputProps('title')}
-              autoFocus
+              autoFocus={!showPicker}
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
             />,

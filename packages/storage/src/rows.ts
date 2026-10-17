@@ -129,6 +129,16 @@ export function copyRow(row: StoredRow): StoredRow {
   ) as StoredRow;
 }
 
+export function buildRestoredRow(existing: StoredRow, ctx: WriteContext): StoredRow {
+  return {
+    ...existing,
+    deletedAt: null,
+    updatedAt: ctx.now(),
+    updatedBy: ctx.actorId(),
+    version: existing.version + 1,
+  };
+}
+
 export function matches(row: StoredRow, where: object): boolean {
   return Object.entries(where).every(([key, value]) => value === undefined || row[key] === value);
 }

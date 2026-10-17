@@ -9,6 +9,7 @@ import {
 import {
   buildDeletedRow,
   buildNewRow,
+  buildRestoredRow,
   buildUpdatedRow,
   checkWhere,
   compareRows,
@@ -57,9 +58,17 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
               .map((row) => copyRow(row));
           }),
         create: (values: object) => run(() => save(buildNewRow(name, values, ctx))),
+        createMany: (values: readonly object[]) =>
+          run(() => values.map((v) => buildNewRow(name, v, ctx)).map(save)),
         update: (id: string, patch: object) =>
           run(() => save(buildUpdatedRow(name, find(id), patch, ctx))),
         remove: (id: string) => run(() => save(buildDeletedRow(find(id), ctx))),
+        restore: (id: string) =>
+          run(() => {
+            const row = rows().get(id);
+            if (!row) throw new NotFoundError(name, id);
+            return row.deletedAt ? save(buildRestoredRow(row, ctx)) : copyRow(row);
+          }),
       };
     },
     {

@@ -16,7 +16,7 @@ export interface TransactionHooks<Token> {
  * and a nested transaction joins the one already running.
  */
 export function assembleRepository<Token>(
-  makeTable: (name: TableName, run: Run) => object,
+  makeTable: (name: TableName, run: Run, atomic: Run) => object,
   hooks: TransactionHooks<Token>,
 ): Repository {
   let queue: Promise<unknown> = Promise.resolve();
@@ -27,28 +27,33 @@ export function assembleRepository<Token>(
   };
   const immediate: Run = async (work) => work();
 
-  const tables = (run: Run) =>
-    Object.fromEntries(TABLE_NAMES.map((name) => [name, makeTable(name, run)]));
+  /** Runs `work` inside its own transaction. */
+  async function inTransaction<R>(work: () => R | Promise<R>): Promise<R> {
+    const token = await hooks.begin();
+    let result: R;
+    try {
+      result = await work();
+    } catch (error) {
+      await hooks.rollback(token);
+      throw error;
+    }
+    await hooks.commit(token);
+    return result;
+  }
+
+  // `atomic` is for single operations that take several statements: outside a transaction it
+  // opens one; inside, the surrounding transaction already makes it all-or-nothing.
+  const tables = (run: Run, atomic: Run) =>
+    Object.fromEntries(TABLE_NAMES.map((name) => [name, makeTable(name, run, atomic)]));
 
   const tx = {
-    ...tables(immediate),
+    ...tables(immediate, immediate),
     transaction: <R>(work: (inner: Repository) => Promise<R>) => work(tx as unknown as Repository),
   } as unknown as Repository;
 
   return {
-    ...tables(exclusive),
+    ...tables(exclusive, (work) => exclusive(() => inTransaction(work))),
     transaction: <R>(work: (inner: Repository) => Promise<R>) =>
-      exclusive(async () => {
-        const token = await hooks.begin();
-        let result: R;
-        try {
-          result = await work(tx);
-        } catch (error) {
-          await hooks.rollback(token);
-          throw error;
-        }
-        await hooks.commit(token);
-        return result;
-      }),
+      exclusive(() => inTransaction(() => work(tx))),
   } as unknown as Repository;
 }

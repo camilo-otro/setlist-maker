@@ -6,7 +6,11 @@ See [ROADMAP.md](ROADMAP.md) for the plan. The issue breakdown lives in [roadmap
 
 ## Development
 
-Requires Node.js 22.12+ and pnpm (the version is pinned in `package.json`; `corepack enable` picks it up).
+Requires Node.js 22.12+ and pnpm, at the version pinned in `package.json` (Node 25 and later no longer include corepack, so install pnpm directly):
+
+```sh
+npm install -g pnpm@11.21.0
+```
 
 The desktop app also needs [Tauri's prerequisites](https://v2.tauri.app/start/prerequisites/): Rust (via rustup) and, on Windows, the Microsoft C++ Build Tools with "Desktop development with C++". On Windows:
 
@@ -19,12 +23,16 @@ winget install --id Rustlang.Rustup -e
 pnpm install
 pnpm app:desktop   # the desktop app in a native window (first run compiles Rust, ~2 min)
 pnpm dev:desktop   # just the desktop UI, in a browser at http://localhost:1420
-pnpm test          # all packages
-pnpm typecheck
-pnpm lint
-pnpm format        # or format:check
-pnpm build
+pnpm check        # everything CI checks: format, lint, typecheck, tests, build
+pnpm check:rust   # Rust tests for the desktop shell
+pnpm test          # or run one step: typecheck, lint, format, build
 ```
+
+### Branches
+
+Day-to-day work happens on **`dev`**: commit there, run `pnpm check` (and `pnpm check:rust` after Rust changes) and try the app with `pnpm app:desktop`. Pushing `dev` runs no workflows.
+
+`main` only changes through a pull request from `dev`, opened when a batch of work is ready. That PR runs CI and the desktop builds once for the whole batch, and must pass CI before merging (see the "Protect main" ruleset). Issues referenced with `Closes #N` close when the PR merges.
 
 | Path               | Package            | What it holds                                       |
 | ------------------ | ------------------ | --------------------------------------------------- |
@@ -39,7 +47,7 @@ The desktop app keeps its data in a SQLite file, `setlist-maker.db`, in its data
 
 ## Test builds
 
-Every pull request that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
+Every pull request into `main` that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow; pushes to `dev` don't. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
 
 These builds aren't signed with a developer certificate yet, so the OS warns before opening them:
 
@@ -75,3 +83,18 @@ pnpm exec supabase stop
    - Secret `SUPABASE_ACCESS_TOKEN`: create one under _Account → Access Tokens_ in the Supabase dashboard.
    - Secret `SUPABASE_DB_PASSWORD`: the database password set when the project was created.
    - Variable `SUPABASE_PROJECT_ID`: the project ID from step 1 (not secret).
+
+## Song catalog
+
+Every band can search one shared catalog of recordings (`public.catalog_tracks` in Supabase) when adding songs. The app reads it with the project's publishable key; only the seed script and server functions can write to it.
+
+**Seeding** from a CSV with title, artist, duration and Spotify link columns (like the old catalog export). The file stays out of the repo, so the script takes its path:
+
+```sh
+pnpm seed:catalog misc/songs.csv --dry-run   # check the file, write nothing
+pnpm seed:catalog misc/songs.csv             # write to the database in SUPABASE_DB_URL
+```
+
+`SUPABASE_DB_URL` is the database connection string with its password (Supabase dashboard: **Connect → Session pooler**); for the local stack it's `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Set it in your own terminal, never in a file. Rows are matched by Spotify track, so rerunning only adds new rows and updates changed ones.
+
+**Searching from the app** needs the project's URL and publishable key at build time. Copy `apps/desktop/.env.example` to `apps/desktop/.env.local` (git-ignored) and fill them in. Without them, Add song simply skips the catalog search.
