@@ -91,9 +91,13 @@ Every band can search one shared catalog of recordings (`public.catalog_tracks` 
 **Seeding** from a CSV with title, artist, duration and Spotify link columns (like the old catalog export). The file stays out of the repo, so the script takes its path:
 
 ```sh
-pnpm seed:catalog misc/songs.csv --dry-run   # check the file, write nothing
-pnpm seed:catalog misc/songs.csv             # write to the database in SUPABASE_DB_URL
+pnpm seed:catalog misc/songs.csv --dry-run                    # check the file, write nothing
+pnpm seed:catalog misc/songs.csv --out misc/catalog-import.csv # file for the Table Editor's CSV import
+pnpm seed:catalog misc/songs.csv --out misc/catalog-import.sql # SQL to paste into the SQL Editor
+pnpm seed:catalog misc/songs.csv                              # write to the database in SUPABASE_DB_URL
 ```
+
+The `--out` files need no database password: upload the CSV with **Table Editor → catalog_tracks → Insert → Import data from CSV**, or paste the SQL into the **SQL Editor** and run it. Both match the table's columns exactly, and the SQL skips tracks the catalog already has.
 
 `SUPABASE_DB_URL` is the database connection string with its password (Supabase dashboard: **Connect → Session pooler**); for the local stack it's `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Set it in your own terminal, never in a file. Rows are matched by Spotify track, so rerunning only adds new rows and updates changed ones.
 

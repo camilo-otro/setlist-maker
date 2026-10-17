@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { catalogTracksFromCsv } from './catalogSeed';
+import { catalogImportCsv, catalogImportSql, catalogTracksFromCsv } from './catalogSeed';
+import { parseCsv } from './csv';
 
 const link = (id: string) => `https://open.spotify.com/track/${id}`;
 const A = '4r8lRYnoOGdEi6YyI5OC1o';
@@ -57,5 +58,55 @@ describe('catalogTracksFromCsv', () => {
 
   it('refuses files without title or Spotify columns', () => {
     expect(() => catalogTracksFromCsv('name,artist\nX,Y')).toThrow('Spotify link column');
+  });
+});
+
+describe('import files', () => {
+  // Awkward but real: an apostrophe, a comma and quotes in a title; an ampersand, a backslash
+  // and quotes in artist names.
+  const tricky = {
+    spotifyId: B,
+    title: `Don't Stop, "Live"`,
+    artists: ['Simon & Garfunkel', String.raw`Back\slash "Q"`],
+    durationSec: null,
+    source: 'seed' as const,
+  };
+  const plain = {
+    spotifyId: A,
+    title: 'Bye Bye Bye',
+    artists: ['*nsync'],
+    durationSec: 200,
+    source: 'seed' as const,
+  };
+  const ids = () => {
+    let n = 0;
+    return () => `id-${++n}`;
+  };
+
+  it('writes a CSV matching the table columns, with Postgres array literals for artists', () => {
+    const rows = parseCsv(catalogImportCsv([plain, tricky], ids()));
+    expect(rows).toEqual([
+      ['id', 'spotify_id', 'title', 'artists', 'duration_sec', 'source'],
+      ['id-1', A, 'Bye Bye Bye', '{"*nsync"}', '200', 'seed'],
+      [
+        'id-2',
+        B,
+        `Don't Stop, "Live"`,
+        String.raw`{"Simon & Garfunkel","Back\\slash \"Q\""}`,
+        '',
+        'seed',
+      ],
+    ]);
+  });
+
+  it('writes SQL that skips existing tracks, escapes quotes and runs in one transaction', () => {
+    const sql = catalogImportSql([plain, tricky], ids(), 1);
+    expect(sql.startsWith('-- 2 catalog tracks.')).toBe(true);
+    expect(sql).toContain('begin;');
+    expect(sql.trimEnd().endsWith('commit;')).toBe(true);
+    expect(sql.match(/on conflict \(spotify_id\) do nothing;/g)).toHaveLength(2);
+    expect(sql).toContain(`('id-1', '${A}', 'Bye Bye Bye', array['*nsync']::text[], 200, 'seed')`);
+    expect(sql).toContain(`'Don''t Stop, "Live"'`);
+    expect(sql).toContain(String.raw`array['Simon & Garfunkel', 'Back\slash "Q"']::text[], null`);
   });
 });
