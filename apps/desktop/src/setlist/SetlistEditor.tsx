@@ -65,6 +65,19 @@ const collisionDetection: CollisionDetection = (args) => {
   return entryHit ? [entryHit] : hits;
 };
 
+/**
+ * The set changed most recently: the last one added, renamed or moved, or the one whose songs,
+ * breaks or notes were last added, edited or moved in. Ties go to the later set.
+ */
+function lastChangedBlock(blocks: readonly BlockWithEntries[]): { id: string; at: string } | null {
+  let latest: { id: string; at: string } | null = null;
+  for (const { block, entries } of blocks) {
+    const at = entries.reduce((max, e) => (e.updatedAt > max ? e.updatedAt : max), block.updatedAt);
+    if (!latest || at >= latest.at) latest = { id: block.id, at };
+  }
+  return latest;
+}
+
 export function SetlistEditor({
   setlistId,
   blocks,
@@ -84,6 +97,8 @@ export function SetlistEditor({
 }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  // A set picked in the library's "Add to" stays the target until something else changes.
+  const [chosen, setChosen] = useState<{ id: string; at: string } | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -98,6 +113,13 @@ export function SetlistEditor({
       new Set([...entriesById.values()].flatMap((entry) => (entry.songId ? [entry.songId] : []))),
     [entriesById],
   );
+  const lastChanged = lastChangedBlock(blocks);
+  const chosenBlock = blocks.some(({ block }) => block.id === chosen?.id) ? chosen : null;
+  const targetBlockId =
+    chosenBlock && (!lastChanged || chosenBlock.at >= lastChanged.at)
+      ? chosenBlock.id
+      : lastChanged?.id;
+
   const positioned = blocks.map(({ block, entries }) => ({ id: block.id, entries }));
   const endOf = (blockId: string) =>
     planDrop(positioned, null, { kind: 'block', id: blockId })!.position;
@@ -236,6 +258,8 @@ export function SetlistEditor({
           songs={songs}
           blocks={blocks.map(({ block }) => block)}
           usedSongIds={usedSongIds}
+          targetId={targetBlockId}
+          onTargetChange={(id) => setChosen({ id, at: new Date().toISOString() })}
           onAdd={addSong}
         />
       </div>

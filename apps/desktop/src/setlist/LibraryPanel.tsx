@@ -61,22 +61,25 @@ function LibrarySong({
 
 /**
  * The band's active and learning songs, searchable. Songs can be dragged into a set, or added to
- * the chosen set with their Add button (the keyboard-friendly way).
+ * the target set with their Add button (the keyboard-friendly way).
  */
 export function LibraryPanel({
   songs,
   blocks,
   usedSongIds,
+  targetId,
+  onTargetChange,
   onAdd,
 }: {
   songs: readonly Song[];
   blocks: readonly SetBlock[];
   usedSongIds: ReadonlySet<string>;
+  /** The set Add buttons add to. */
+  targetId: string | undefined;
+  onTargetChange: (blockId: string) => void;
   onAdd: (songId: string, blockId: string) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [chosenBlockId, setChosenBlockId] = useState<string | null>(null);
-  const targetId = blocks.find((block) => block.id === chosenBlockId)?.id ?? blocks[0]?.id;
 
   const matches = useMemo(() => {
     const playable = songs.filter((song) => song.status !== 'retired');
@@ -103,7 +106,7 @@ export function LibraryPanel({
           <select
             className="sm-input"
             value={targetId}
-            onChange={(e) => setChosenBlockId(e.target.value)}
+            onChange={(e) => onTargetChange(e.target.value)}
           >
             {blocks.map((block) => (
               <option key={block.id} value={block.id}>

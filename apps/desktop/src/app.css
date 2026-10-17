@@ -1254,6 +1254,11 @@ body {
   background: var(--sm-hover);
 }
 
+/* The list scrolls, which clips anything drawn outside it, so the ring goes inside the button. */
+.catalog-picker__track:focus-visible {
+  outline-offset: -2px;
+}
+
 .catalog-picker__title {
   font-weight: 600;
 }
