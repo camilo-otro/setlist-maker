@@ -1056,16 +1056,48 @@ body {
   white-space: nowrap;
 }
 
+/* Icons and the fixed columns never shrink; the text in the middle does. */
+.entry > *,
+.entry__main > svg {
+  flex: none;
+}
+
+.entry > .entry__main {
+  flex: 1 1 0;
+}
+
+/* The title keeps priority: it never shrinks, so the artist and notes give up
+   their space first. Past the full width it wraps onto a second line, then is
+   cut off. */
 .entry__title {
+  display: -webkit-box;
+  flex: none;
+  max-width: 100%;
   overflow: hidden;
   font-weight: 600;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Leave room for the break or note icon. */
+.entry--break .entry__title,
+.entry--note .entry__title {
+  max-width: calc(100% - 20px);
+}
+
+.entry__artist,
+.entry__notes {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .entry__notes {
-  overflow: hidden;
   font-size: 0.8125rem;
-  text-overflow: ellipsis;
 }
 
 .entry__key,
