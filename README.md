@@ -6,7 +6,11 @@ See [ROADMAP.md](ROADMAP.md) for the plan. The issue breakdown lives in [roadmap
 
 ## Development
 
-Requires Node.js 22.12+ and pnpm (the version is pinned in `package.json`; `corepack enable` picks it up).
+Requires Node.js 22.12+ and pnpm, at the version pinned in `package.json` (Node 25 and later no longer include corepack, so install pnpm directly):
+
+```sh
+npm install -g pnpm@11.21.0
+```
 
 The desktop app also needs [Tauri's prerequisites](https://v2.tauri.app/start/prerequisites/): Rust (via rustup) and, on Windows, the Microsoft C++ Build Tools with "Desktop development with C++". On Windows:
 
