@@ -3,6 +3,7 @@ import type { ReadOptions, Repository, RepositoryOptions, TableName } from '../r
 import {
   buildDeletedRow,
   buildNewRow,
+  buildRestoredRow,
   buildUpdatedRow,
   checkWhere,
   fieldsOf,
@@ -133,6 +134,12 @@ export async function openSqliteRepository(
         update: (id: string, patch: object) =>
           run(async () => replace(buildUpdatedRow(name, await find(id), patch, ctx))),
         remove: (id: string) => run(async () => replace(buildDeletedRow(await find(id), ctx))),
+        restore: (id: string) =>
+          run(async () => {
+            const row = await select(id);
+            if (!row) throw new NotFoundError(name, id);
+            return row.deletedAt ? replace(buildRestoredRow(row, ctx)) : row;
+          }),
       };
     },
     {

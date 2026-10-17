@@ -8,6 +8,7 @@ export * from './songFilters';
 export * from './csv';
 export * from './songImport';
 export * from './gigs';
+export * from './setlists';
 export * from './schemas/common';
 export * from './schemas/band';
 export * from './schemas/sharing';

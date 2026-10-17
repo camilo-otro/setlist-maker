@@ -201,6 +201,33 @@ export function describeRepositoryContract(
       });
     });
 
+    describe('restore', () => {
+      it('brings a deleted row back, bumping its version', async () => {
+        const song = await repo.songs.create({ bandId, title: 'Wasteland' });
+        await repo.songs.remove(song.id);
+        const restored = await repo.songs.restore(song.id);
+
+        expect(restored).toMatchObject({
+          id: song.id,
+          title: 'Wasteland',
+          deletedAt: null,
+          version: 3,
+        });
+        expect(await repo.songs.get(song.id)).toEqual(restored);
+        expect(await repo.songs.list({ bandId })).toEqual([restored]);
+      });
+
+      it('returns rows that are not deleted unchanged', async () => {
+        const song = await repo.songs.create({ bandId, title: 'Wasteland' });
+        expect(await repo.songs.restore(song.id)).toEqual(song);
+      });
+
+      it('fails for rows that never existed', async () => {
+        const missing = '0199f0c4-6b1e-7a2b-8c3d-4e5f6a7b8c9d';
+        await expect(repo.songs.restore(missing)).rejects.toBeInstanceOf(NotFoundError);
+      });
+    });
+
     describe('get and list', () => {
       it('returns null for unknown IDs', async () => {
         expect(await repo.songs.get('0199f0c4-6b1e-7a2b-8c3d-4e5f6a7b8c9d')).toBeNull();

@@ -10,6 +10,7 @@ import {
 import { EmptyState, PageHeader } from '@setlist/ui';
 import { CalendarDays, Clock, MapPin, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
 import { useBandRows } from '../storage/useBandRows';
 
@@ -86,8 +87,8 @@ export function GigsPage() {
   const gigs = useBandRows('gigs');
   const venues = useBandRows('venues');
   const [tab, setTab] = useState<Tab>('upcoming');
-  /** `undefined`: no dialog; `null`: creating; a gig: editing it. */
-  const [editing, setEditing] = useState<Gig | null | undefined>(undefined);
+  const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
   const today = localDateString();
 
   const { upcoming, past } = useMemo(() => splitGigs(gigs.rows ?? [], today), [gigs.rows, today]);
@@ -101,7 +102,11 @@ export function GigsPage() {
   };
 
   const newButton = (
-    <button type="button" className="sm-button sm-button--primary" onClick={() => setEditing(null)}>
+    <button
+      type="button"
+      className="sm-button sm-button--primary"
+      onClick={() => setCreating(true)}
+    >
       <Plus size={16} aria-hidden="true" />
       New gig
     </button>
@@ -112,7 +117,7 @@ export function GigsPage() {
       gig={gig}
       venue={gig.venueId ? venueById.get(gig.venueId) : undefined}
       today={today}
-      onOpen={() => setEditing(gig)}
+      onOpen={() => void navigate(`/gigs/${gig.id}`)}
     />
   );
 
@@ -189,12 +194,11 @@ export function GigsPage() {
         actions={gigs.rows && gigs.rows.length > 0 ? newButton : undefined}
       />
       {content}
-      {editing !== undefined && (
+      {creating && (
         <GigDialog
-          key={editing?.id ?? 'new'}
-          gig={editing}
+          gig={null}
           venues={venues.rows ?? []}
-          onClose={() => setEditing(undefined)}
+          onClose={() => setCreating(false)}
           onChanged={reloadAll}
         />
       )}

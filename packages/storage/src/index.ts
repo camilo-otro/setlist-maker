@@ -8,3 +8,4 @@ export { NotFoundError } from './rows';
 export { createMemoryRepository } from './memory';
 export * from './sqlite';
 export * from './operations/gigs';
+export * from './operations/setlists';

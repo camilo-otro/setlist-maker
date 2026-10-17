@@ -3,9 +3,11 @@ import { localDateString } from '@setlist/core';
 import { createGig, createMemoryRepository } from '@setlist/storage';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import { WorkspaceContextProvider } from '../storage/WorkspaceProvider';
 import { ensureBand, type Workspace } from '../storage/workspace';
+import { GigSetlistPage } from './GigSetlistPage';
 import { GigsPage } from './GigsPage';
 
 afterEach(cleanup);
@@ -23,7 +25,12 @@ async function setup(seed?: (workspace: Workspace) => Promise<unknown>) {
   const user = userEvent.setup();
   render(
     <WorkspaceContextProvider workspace={workspace}>
-      <GigsPage />
+      <MemoryRouter initialEntries={['/gigs']}>
+        <Routes>
+          <Route path="/gigs" element={<GigsPage />} />
+          <Route path="/gigs/:gigId" element={<GigSetlistPage />} />
+        </Routes>
+      </MemoryRouter>
     </WorkspaceContextProvider>,
   );
   return { user, workspace };
@@ -96,39 +103,5 @@ describe('GigsPage', () => {
     expect(gigTitles()).toEqual(['Last week', 'Long ago']);
     const years = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(years).toContain('2024');
-  });
-
-  it('edits, cancels and reinstates a gig, keeping its venue', async () => {
-    const { user, workspace } = await setup(async ({ repository, band }) => {
-      const venue = await repository.venues.create({ bandId: band.id, name: 'The Cavern' });
-      await createGig(repository, {
-        bandId: band.id,
-        venueId: venue.id,
-        title: 'Friday',
-        date: inDays(3),
-      });
-    });
-    await user.click(await screen.findByRole('button', { name: /Friday/ }));
-    expect(
-      (dialog().getByLabelText('Venue') as HTMLSelectElement).selectedOptions[0]!.textContent,
-    ).toBe('The Cavern');
-    await user.clear(dialog().getByLabelText('Title'));
-    await user.type(dialog().getByLabelText('Title'), 'Friday late show');
-    await user.click(dialog().getByRole('button', { name: 'Save changes' }));
-    const row = await screen.findByRole('button', { name: /Friday late show/ });
-
-    await user.click(row);
-    await user.click(dialog().getByRole('button', { name: 'Cancel gig' }));
-    await waitFor(() =>
-      expect(
-        within(screen.getByRole('button', { name: /Friday late show/ })).getByText('Cancelled'),
-      ).toBeTruthy(),
-    );
-
-    await user.click(screen.getByRole('button', { name: /Friday late show/ }));
-    await user.click(dialog().getByRole('button', { name: 'Reinstate gig' }));
-    await waitFor(() => expect(screen.getByText('In 3 days')).toBeTruthy());
-    const [gig] = await workspace.repository.gigs.list();
-    expect(gig).toMatchObject({ title: 'Friday late show', status: 'upcoming' });
   });
 });

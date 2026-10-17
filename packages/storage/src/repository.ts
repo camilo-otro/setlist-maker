@@ -63,6 +63,9 @@ export interface Table<T, TInput> {
 
   /** Soft-deletes the row and returns it with `deletedAt` set. */
   remove(id: string): Promise<T>;
+
+  /** Brings back a soft-deleted row (for undo). A row that isn't deleted is returned unchanged. */
+  restore(id: string): Promise<T>;
 }
 
 /**
