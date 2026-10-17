@@ -84,6 +84,19 @@ describe('GigSetlistPage', () => {
     expect(songsIn('Set 1')).toEqual([]);
   });
 
+  it('clears the library search after adding a song from it', async () => {
+    const { user } = await setup();
+    const search = library().getByRole('searchbox', { name: 'Search the library' });
+    await user.type(search, 'basu');
+    expect(library().getByText('1 song')).toBeTruthy();
+
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita']));
+    expect(search).toHaveProperty('value', '');
+    expect(library().getByText('3 songs')).toBeTruthy();
+    expect(document.activeElement).toBe(search);
+  });
+
   it('adds songs to the set changed last', async () => {
     const { user } = await setup();
     await user.click(screen.getByRole('button', { name: 'Add set' }));
