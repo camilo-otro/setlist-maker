@@ -19,12 +19,16 @@ winget install --id Rustlang.Rustup -e
 pnpm install
 pnpm app:desktop   # the desktop app in a native window (first run compiles Rust, ~2 min)
 pnpm dev:desktop   # just the desktop UI, in a browser at http://localhost:1420
-pnpm test          # all packages
-pnpm typecheck
-pnpm lint
-pnpm format        # or format:check
-pnpm build
+pnpm check        # everything CI checks: format, lint, typecheck, tests, build
+pnpm check:rust   # Rust tests for the desktop shell
+pnpm test          # or run one step: typecheck, lint, format, build
 ```
+
+### Branches
+
+Day-to-day work happens on **`dev`**: commit there, run `pnpm check` (and `pnpm check:rust` after Rust changes) and try the app with `pnpm app:desktop`. Pushing `dev` runs no workflows.
+
+`main` only changes through a pull request from `dev`, opened when a batch of work is ready. That PR runs CI and the desktop builds once for the whole batch, and must pass CI before merging (see the "Protect main" ruleset). Issues referenced with `Closes #N` close when the PR merges.
 
 | Path               | Package            | What it holds                                       |
 | ------------------ | ------------------ | --------------------------------------------------- |
@@ -39,7 +43,7 @@ The desktop app keeps its data in a SQLite file, `setlist-maker.db`, in its data
 
 ## Test builds
 
-Every pull request that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
+Every pull request into `main` that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow; pushes to `dev` don't. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
 
 These builds aren't signed with a developer certificate yet, so the OS warns before opening them:
 

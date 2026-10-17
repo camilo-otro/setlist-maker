@@ -14,7 +14,9 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
