@@ -24,6 +24,8 @@ export const columnName = (field: string) =>
 
 const quote = (identifier: string) => `"${identifier}"`;
 
+const MAX_VALUES_PER_STATEMENT = 10_000;
+
 function encode(field: string, value: unknown): SqlValue {
   if (BOOLEAN_FIELDS.has(field)) return value ? 1 : 0;
   if (JSON_FIELDS.has(field)) return JSON.stringify(value);
@@ -53,7 +55,7 @@ export async function openSqliteRepository(
   const ctx = writeContext(options);
 
   return assembleRepository(
-    (name: TableName, run) => {
+    (name: TableName, run, atomic) => {
       const table = quote(columnName(name));
       const fields = fieldsOf(name);
       const columns = fields.map((field) => quote(columnName(field)));
@@ -70,13 +72,19 @@ export async function openSqliteRepository(
       };
       const values = (row: StoredRow) => fields.map((field) => encode(field, row[field]));
 
-      const insert = async (row: StoredRow) => {
-        const placeholders = columns.map(() => '?').join(', ');
-        await driver.execute(
-          `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`,
-          values(row),
-        );
-        return row;
+      const rowPlaceholders = `(${columns.map(() => '?').join(', ')})`;
+      // Rows per INSERT, keeping well under SQLite's limit of 32,766 bound values per statement.
+      const rowsPerInsert = Math.max(1, Math.floor(MAX_VALUES_PER_STATEMENT / columns.length));
+
+      const insert = async (rows: readonly StoredRow[]) => {
+        for (let start = 0; start < rows.length; start += rowsPerInsert) {
+          const chunk = rows.slice(start, start + rowsPerInsert);
+          await driver.execute(
+            `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${chunk.map(() => rowPlaceholders).join(', ')}`,
+            chunk.flatMap(values),
+          );
+        }
+        return [...rows];
       };
       const replace = async (row: StoredRow) => {
         const assignments = columns.map((column) => `${column} = ?`).join(', ');
@@ -117,7 +125,11 @@ export async function openSqliteRepository(
             return rows.map((row) => decode(fields, row));
           }),
 
-        create: (values: object) => run(() => insert(buildNewRow(name, values, ctx))),
+        create: (values: object) =>
+          run(async () => (await insert([buildNewRow(name, values, ctx)]))[0]!),
+        // Every row is built (and so validated) before anything is written.
+        createMany: (values: readonly object[]) =>
+          atomic(() => insert(values.map((v) => buildNewRow(name, v, ctx)))),
         update: (id: string, patch: object) =>
           run(async () => replace(buildUpdatedRow(name, await find(id), patch, ctx))),
         remove: (id: string) => run(async () => replace(buildDeletedRow(await find(id), ctx))),

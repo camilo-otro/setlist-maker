@@ -248,4 +248,74 @@ describe('LibraryPage', () => {
     expect(titlesInTable()).toEqual(['Opener']);
     expect(keyA.getAttribute('aria-pressed')).toBe('true');
   });
+
+  it('imports songs from a CSV file, skipping duplicates and rows with problems', async () => {
+    const { user, workspace } = await setup(addSongs(['Wasteland']));
+    await user.click(await screen.findByRole('button', { name: 'Import CSV' }));
+    const csv = [
+      'Song,Artist,BPM,Key,Tags',
+      'Here Without You,3 Doors Down,72,Bb,"ballad, slow"',
+      'Basurita,1280 Almas,168,a minor,opener',
+      'wasteland,,74,Em,',
+      ',Nobody,90,C,',
+      'Badtempo,Someone,fast,C,',
+    ].join('\n');
+    const input = within(dialog()).getByLabelText('CSV file');
+    await user.upload(input, new File([csv], 'songs.csv', { type: 'text/csv' }));
+
+    const form = within(dialog());
+    expect(await form.findByText('songs.csv')).toBeTruthy();
+    expect((form.getByLabelText('Title') as HTMLSelectElement).value).toBe('0');
+    expect((form.getByLabelText('Tempo (BPM)') as HTMLSelectElement).value).toBe('2');
+    expect(form.getByText('2 songs ready')).toBeTruthy();
+    expect(form.getByText('1 duplicate skipped')).toBeTruthy();
+    expect(form.getByText('2 rows with problems skipped')).toBeTruthy();
+    expect(form.getByText('Duplicate: Already in your library')).toBeTruthy();
+    expect(form.getByText('Problem: No title')).toBeTruthy();
+    expect(form.getByText('Problem: Tempo "fast" isn\'t a number')).toBeTruthy();
+
+    await user.click(form.getByRole('button', { name: 'Import 2 songs' }));
+    expect(await form.findByText('Imported 2 songs into your library.')).toBeTruthy();
+    await user.click(form.getByRole('button', { name: 'Done' }));
+
+    await waitFor(() =>
+      expect(titlesInTable()).toEqual(['Basurita', 'Here Without You', 'Wasteland']),
+    );
+    const songs = await workspace.repository.songs.list({ bandId: workspace.band.id });
+    expect(songs.find((song) => song.title === 'Basurita')).toMatchObject({
+      key: 'Am',
+      tempoBpm: 168,
+      tags: ['opener'],
+    });
+  });
+
+  it('lets you change which column fills a field', async () => {
+    const { user } = await setup();
+    await user.click(await screen.findByRole('button', { name: 'Import CSV' }));
+    await user.upload(
+      within(dialog()).getByLabelText('CSV file'),
+      new File(['Name,Notes\nWasteland,Capo 2'], 'list.csv', { type: 'text/csv' }),
+    );
+    const form = within(dialog());
+    await form.findByText('list.csv');
+
+    await user.selectOptions(form.getByLabelText('Title'), '');
+    expect(form.getByText('Choose which column holds the song titles.')).toBeTruthy();
+    expect(form.getByRole('button', { name: 'Import 0 songs' })).toHaveProperty('disabled', true);
+
+    await user.selectOptions(form.getByLabelText('Title'), 'Notes');
+    expect(form.getByRole('button', { name: 'Import 1 song' })).toHaveProperty('disabled', false);
+  });
+
+  it('explains files without songs', async () => {
+    const { user } = await setup();
+    await user.click(await screen.findByRole('button', { name: 'Import CSV' }));
+    await user.upload(
+      within(dialog()).getByLabelText('CSV file'),
+      new File(['Title,Artist\n'], 'empty.csv', { type: 'text/csv' }),
+    );
+    expect(
+      await within(dialog()).findByText('empty.csv has a header row but no songs.'),
+    ).toBeTruthy();
+  });
 });

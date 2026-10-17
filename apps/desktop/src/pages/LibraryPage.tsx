@@ -9,8 +9,9 @@ import {
   type SongSortKey,
 } from '@setlist/core';
 import { EmptyState, PageHeader } from '@setlist/ui';
-import { Library, Plus, Search, SlidersHorizontal } from 'lucide-react';
+import { FileUp, Library, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { ImportDialog } from '../library/ImportDialog';
 import { SongDetail } from '../library/SongDetail';
 import { SongDialog } from '../library/SongDialog';
 import { SongFiltersPanel } from '../library/SongFiltersPanel';
@@ -28,6 +29,7 @@ export function LibraryPage() {
   const [sort, setSort] = useState<SongSort>({ key: 'title', direction: 'asc' });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<Editing>(undefined);
+  const [importing, setImporting] = useState(false);
 
   const visible = useMemo(
     () =>
@@ -44,11 +46,21 @@ export function LibraryPage() {
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
     }));
 
-  const addButton = (
-    <button type="button" className="sm-button sm-button--primary" onClick={() => setEditing(null)}>
-      <Plus size={16} aria-hidden="true" />
-      Add song
-    </button>
+  const addButtons = (
+    <>
+      <button type="button" className="sm-button" onClick={() => setImporting(true)}>
+        <FileUp size={16} aria-hidden="true" />
+        Import CSV
+      </button>
+      <button
+        type="button"
+        className="sm-button sm-button--primary"
+        onClick={() => setEditing(null)}
+      >
+        <Plus size={16} aria-hidden="true" />
+        Add song
+      </button>
+    </>
   );
 
   let content;
@@ -63,7 +75,8 @@ export function LibraryPage() {
   } else if (songs.length === 0) {
     content = (
       <EmptyState icon={<Library size={24} />} title="No songs yet">
-        Add the songs your band plays. Searching Spotify is coming soon; for now, add them by hand.
+        Add the songs your band plays one by one, or import them from a spreadsheet. Searching
+        Spotify is coming soon.
       </EmptyState>
     );
   } else {
@@ -141,9 +154,16 @@ export function LibraryPage() {
 
   return (
     <>
-      <PageHeader title="Library" actions={songs && songs.length > 0 ? addButton : undefined} />
+      <PageHeader title="Library" actions={songs && songs.length > 0 ? addButtons : undefined} />
       {content}
-      {songs?.length === 0 && <div className="library-empty-action">{addButton}</div>}
+      {songs?.length === 0 && <div className="library-empty-action">{addButtons}</div>}
+      {importing && (
+        <ImportDialog
+          existing={songs ?? []}
+          onClose={() => setImporting(false)}
+          onImported={reload}
+        />
+      )}
       {editing !== undefined && (
         <SongDialog
           key={editing?.id ?? 'new'}

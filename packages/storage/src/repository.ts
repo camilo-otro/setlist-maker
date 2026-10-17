@@ -52,6 +52,12 @@ export interface Table<T, TInput> {
 
   create(values: NewRow<TInput>): Promise<T>;
 
+  /**
+   * Creates many rows at once, much faster than calling `create` in a loop (SQLite writes them in a
+   * few statements). Every row is validated first; if any is invalid, none are stored.
+   */
+  createMany(values: readonly NewRow<TInput>[]): Promise<T[]>;
+
   /** Applies the fields present in `patch`. Keys set to `undefined` are ignored, not cleared. */
   update(id: string, patch: RowPatch<TInput>): Promise<T>;
 
