@@ -60,6 +60,12 @@ export async function openSqliteRepository(
       (await driver.select('SELECT "band_id" FROM "shared_bands"')).map((r) => r.band_id as string),
     );
 
+  const appendOp = (op: OutboxOp) =>
+    driver.execute(
+      'INSERT INTO "outbox" ("id", "table_name", "row_id", "band_id", "fields") VALUES (?, ?, ?, ?, ?)',
+      [op.id, op.table, op.rowId, op.bandId, JSON.stringify(op.fields)],
+    );
+
   /** Queues changes to shared bands for pushing. Runs in the write's transaction. */
   async function record(name: TableName, changes: readonly [StoredRow | null, StoredRow][]) {
     const shared = await sharedBands();
@@ -67,11 +73,7 @@ export async function openSqliteRepository(
     for (const [before, after] of changes) {
       if (!shared.has(bandOf(name, after))) continue;
       const op = outboxOp(name, before, after);
-      if (!op) continue;
-      await driver.execute(
-        'INSERT INTO "outbox" ("id", "table_name", "row_id", "band_id", "fields") VALUES (?, ?, ?, ?, ?)',
-        [op.id, op.table, op.rowId, op.bandId, JSON.stringify(op.fields)],
-      );
+      if (op) await appendOp(op);
     }
   }
 
@@ -183,6 +185,10 @@ export async function openSqliteRepository(
             [bandId, ctx.now()],
           ),
         ),
+      append: (ops) =>
+        run(async () => {
+          for (const op of ops) await appendOp(op);
+        }),
       sharedBands: () =>
         run(async () =>
           (await driver.select('SELECT "band_id" FROM "shared_bands" ORDER BY "shared_at"')).map(

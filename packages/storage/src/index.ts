@@ -13,3 +13,4 @@ export * from './catalog';
 export * from './identity';
 export * from './outbox';
 export * from './push';
+export * from './share';

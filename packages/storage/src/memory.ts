@@ -91,6 +91,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
           state.shared.add(bandId);
         }),
       sharedBands: () => run(() => [...state.shared]),
+      append: (ops) =>
+        run(() => {
+          state.outbox.push(...ops);
+        }),
       pending: (limit) =>
         run(() => state.outbox.slice(0, limit).map((op) => ({ ...op, fields: { ...op.fields } }))),
       acknowledge: (ids) =>

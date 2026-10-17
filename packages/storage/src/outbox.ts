@@ -20,11 +20,13 @@ export interface OutboxOp {
 /** Local changes to shared bands, kept until the server confirms them. */
 export interface Outbox {
   /**
-   * Starts recording changes to this band. Called once its data has been uploaded for the first
-   * time (#64); until then the band is solo and records nothing.
+   * Starts recording changes to this band; until then it's solo and records nothing. Use
+   * `startSharing` (share.ts), which also queues the band's existing data for its first upload.
    */
   shareBand(bandId: string): Promise<void>;
   sharedBands(): Promise<string[]>;
+  /** Queues operations that aren't the result of a write, such as a band's first upload. */
+  append(ops: readonly OutboxOp[]): Promise<void>;
   /** The oldest unconfirmed operations, in the order they were made. */
   pending(limit: number): Promise<OutboxOp[]>;
   /** Removes operations the server has dealt with. */
