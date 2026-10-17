@@ -61,7 +61,8 @@ revoke insert, update, delete, truncate on public.catalog_tracks from anon, auth
  * Catalog search for the app. Every word of the query must appear in the title or artists
  * (ignoring case and accents); when nothing matches that way, close spellings are allowed, so a
  * typo still finds the song. Best matches first: titles starting with the query, then the
- * closest overall.
+ * closest overall. The 0.45 similarity threshold (default 0.6) catches typos like "bye bey" or
+ * "linolium" in short titles while still rejecting unrelated text.
  */
 create function public.search_catalog(query text, max_results integer default 20)
 returns setof public.catalog_tracks
@@ -69,6 +70,7 @@ language sql
 stable
 security invoker
 set search_path = ''
+set pg_trgm.word_similarity_threshold = 0.45
 as $$
   with q as (
     select public.catalog_search_query(query) as text,
