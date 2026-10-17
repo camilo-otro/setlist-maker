@@ -101,4 +101,9 @@ The `--out` files need no database password: upload the CSV with **Table Editor 
 
 `SUPABASE_DB_URL` is the database connection string with its password (Supabase dashboard: **Connect → Session pooler**); for the local stack it's `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Set it in your own terminal, never in a file. Rows are matched by Spotify track, so rerunning only adds new rows and updates changed ones.
 
-**Searching from the app** needs the project's URL and publishable key at build time. Copy `apps/desktop/.env.example` to `apps/desktop/.env.local` (git-ignored) and fill them in. Without them, Add song simply skips the catalog search.
+**Searching from the app** needs the project's URL and publishable key at build time:
+
+- **Installers built on GitHub** take them from repository variables: `SUPABASE_PROJECT_ID` (also used for deploys) and `SUPABASE_PUBLISHABLE_KEY` (**Settings → Secrets and variables → Actions → Variables**). The publishable key is public by design and can only read the catalog, so it's a variable, not a secret.
+- **Local development:** copy `apps/desktop/.env.example` to `apps/desktop/.env.local` (git-ignored) and fill them in, then restart `pnpm app:desktop`.
+
+Without them, Add song simply skips the catalog search.
