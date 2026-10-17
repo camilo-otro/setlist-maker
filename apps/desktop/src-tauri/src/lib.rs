@@ -1,4 +1,5 @@
 mod db;
+mod identity;
 
 use std::sync::Mutex;
 
@@ -22,7 +23,12 @@ pub fn run() {
       app.manage(db::Database(Mutex::new(connection)));
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![db::db_execute, db::db_select])
+    .invoke_handler(tauri::generate_handler![
+      db::db_execute,
+      db::db_select,
+      identity::identity_load,
+      identity::identity_save
+    ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");
 }

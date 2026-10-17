@@ -10,3 +10,4 @@ export * from './sqlite';
 export * from './operations/gigs';
 export * from './operations/setlists';
 export * from './catalog';
+export * from './identity';

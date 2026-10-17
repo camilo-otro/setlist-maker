@@ -85,6 +85,12 @@ pnpm exec supabase stop
    - Secret `SUPABASE_DB_PASSWORD`: the database password set when the project was created.
    - Variable `SUPABASE_PROJECT_ID`: the project ID from step 1 (not secret).
 
+4. In the Supabase dashboard, go to **Authentication → Sign In / Providers** and turn on **Allow anonymous sign-ins**. Sharing signs people in this way, with only a display name ([#47](https://github.com/camilo-otro/setlist-maker/issues/47)). The local stack has it on in `config.toml`.
+
+## Identity
+
+The first time someone shares, the app signs them in anonymously (no email or password, just a display name) and keeps the sign-in in the OS keychain: Windows Credential Manager or the macOS Keychain, under `io.github.camilootro.setlistmaker`. That sign-in is what proves the device owns its shared bands, so it's kept out of the database file. Linking an email or Google/Apple account to keep it safe across devices comes with [#51](https://github.com/camilo-otro/setlist-maker/issues/51).
+
 ## Song catalog
 
 Every band can search one shared catalog of recordings (`public.catalog_tracks` in Supabase) when adding songs. The app reads it with the project's publishable key; only the seed script and server functions can write to it.

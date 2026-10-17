@@ -1,13 +1,18 @@
 import type { Band } from '@setlist/core';
 import {
   createCatalogClient,
+  createIdentity,
+  createMemoryIdentityStore,
   createMemoryRepository,
   openSqliteRepository,
   type CatalogSearch,
+  type Identity,
+  type IdentityStore,
   type Repository,
 } from '@setlist/storage';
 import { isTauri } from '@tauri-apps/api/core';
 import { createTauriDriver } from './tauriDriver';
+import { createTauriIdentityStore } from './tauriIdentityStore';
 
 /** Everything the app needs to read and write data. */
 export interface Workspace {
@@ -18,6 +23,8 @@ export interface Workspace {
   persistent: boolean;
   /** The shared song catalog, or null when the app isn't configured with a Supabase project. */
   catalog?: CatalogSearch | null;
+  /** Who this device is on the server, for sharing; null without a Supabase project. */
+  identity?: Identity | null;
 }
 
 /**
@@ -28,6 +35,16 @@ export function catalogFromEnv(env: Record<string, string | undefined>): Catalog
   const url = env.VITE_SUPABASE_URL;
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
   return url && key ? createCatalogClient({ url, key }) : null;
+}
+
+/** The device's sign-in, if the app is configured with a Supabase project (see catalogFromEnv). */
+export function identityFromEnv(
+  env: Record<string, string | undefined>,
+  store: IdentityStore,
+): Identity | null {
+  const url = env.VITE_SUPABASE_URL;
+  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  return url && key ? createIdentity({ url, key, store }) : null;
 }
 
 export const DEFAULT_BAND_NAME = 'My band';
@@ -50,6 +67,11 @@ async function open(): Promise<Workspace> {
     band: await ensureBand(repository),
     persistent,
     catalog: catalogFromEnv(import.meta.env),
+    // The browser preview keeps its sign-in in memory, like its data.
+    identity: identityFromEnv(
+      import.meta.env,
+      persistent ? createTauriIdentityStore() : createMemoryIdentityStore(),
+    ),
   };
 }
 
