@@ -84,6 +84,43 @@ describe('GigSetlistPage', () => {
     expect(songsIn('Set 1')).toEqual([]);
   });
 
+  it('clears the library search after adding a song from it', async () => {
+    const { user } = await setup();
+    const search = library().getByRole('searchbox', { name: 'Search the library' });
+    await user.type(search, 'basu');
+    expect(library().getByText('1 song')).toBeTruthy();
+
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita']));
+    expect(search).toHaveProperty('value', '');
+    expect(library().getByText('3 songs')).toBeTruthy();
+    expect(document.activeElement).toBe(search);
+  });
+
+  it('adds songs to the set changed last', async () => {
+    const { user } = await setup();
+    await user.click(screen.getByRole('button', { name: 'Add set' }));
+    await screen.findByRole('heading', { name: 'Set 2' });
+    expect(library().getByRole<HTMLSelectElement>('combobox').selectedOptions[0]!.text).toBe(
+      'Set 2',
+    );
+
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await waitFor(() => expect(songsIn('Set 2')).toEqual(['Basurita']));
+
+    // Picking a set wins until something else changes.
+    await user.selectOptions(library().getByRole('combobox'), 'Set 1');
+    await user.click(library().getByRole('button', { name: 'Add Untimed' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Untimed']));
+
+    await user.click(set('Set 2').getByRole('button', { name: 'Add break' }));
+    await waitFor(() => expect(songsIn('Set 2')).toEqual(['Basurita', 'Break']));
+    await user.click(library().getByRole('button', { name: 'Add Here Without You' }));
+    await waitFor(() =>
+      expect(songsIn('Set 2')).toEqual(['Basurita', 'Break', 'Here Without You']),
+    );
+  });
+
   it('adds breaks and notes, and requires text for a note', async () => {
     const { user } = await setup();
     await user.click(set('Set 1').getByRole('button', { name: 'Add break' }));

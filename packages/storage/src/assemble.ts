@@ -1,3 +1,4 @@
+import type { Outbox } from './outbox';
 import { TABLE_NAMES, type Repository, type TableName } from './repository';
 
 /** Runs a piece of storage work, either queued behind other work or immediately. */
@@ -17,6 +18,7 @@ export interface TransactionHooks<Token> {
  */
 export function assembleRepository<Token>(
   makeTable: (name: TableName, run: Run, atomic: Run) => object,
+  makeOutbox: (run: Run) => Outbox,
   hooks: TransactionHooks<Token>,
 ): Repository {
   let queue: Promise<unknown> = Promise.resolve();
@@ -48,11 +50,13 @@ export function assembleRepository<Token>(
 
   const tx = {
     ...tables(immediate, immediate),
+    outbox: makeOutbox(immediate),
     transaction: <R>(work: (inner: Repository) => Promise<R>) => work(tx as unknown as Repository),
   } as unknown as Repository;
 
   return {
     ...tables(exclusive, (work) => exclusive(() => inTransaction(work))),
+    outbox: makeOutbox(exclusive),
     transaction: <R>(work: (inner: Repository) => Promise<R>) =>
       exclusive(() => inTransaction(() => work(tx))),
   } as unknown as Repository;

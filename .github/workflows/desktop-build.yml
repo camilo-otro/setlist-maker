@@ -78,7 +78,19 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The catalog search needs the Supabase project URL and publishable key built in. Both are
+      # public by design (the key can only read the catalog), so they're repository variables.
+      - name: Check catalog settings
+        shell: bash
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_ID }}" ] || [ -z "${{ vars.SUPABASE_PUBLISHABLE_KEY }}" ]; then
+            echo "::warning::SUPABASE_PROJECT_ID or SUPABASE_PUBLISHABLE_KEY variable missing; these installers won't have catalog search. See README, 'Song catalog'."
+          fi
+
       - name: Build installers
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_PROJECT_ID && format('https://{0}.supabase.co', vars.SUPABASE_PROJECT_ID) || '' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: pnpm --filter @setlist/desktop tauri build --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       # After the build, so the web assets the Rust crate embeds exist.

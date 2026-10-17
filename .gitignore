@@ -6,5 +6,5 @@ target/
 .DS_Store
 
 # Seed data exports (kept out of the public repo)
-misc/songs.csv
+misc/
 .env.local

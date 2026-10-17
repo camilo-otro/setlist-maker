@@ -1,0 +1,80 @@
+name: Viewer
+
+# The web page share links open (apps/viewer), hosted on Netlify at setlist.rockthehouse.app.
+# Pull requests: build it, so a broken viewer never merges.
+# Pushes to main: build it and publish it to the Netlify site.
+on:
+  pull_request:
+    paths:
+      - apps/viewer/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/viewer.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/viewer/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/viewer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Never run two deploys at once.
+    concurrency:
+      group: viewer-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+
+      # Public by design: the publishable key can only read the catalog and shared setlists.
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_PROJECT_ID && format('https://{0}.supabase.co', vars.SUPABASE_PROJECT_ID) || '' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: pnpm --filter @setlist/viewer build
+
+      - name: Check the Netlify settings
+        id: settings
+        if: github.event_name != 'pull_request'
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::warning::NETLIFY_AUTH_TOKEN secret or NETLIFY_SITE_ID variable missing, so the viewer wasn't deployed. See README, 'Share links'."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Netlify's deploy API takes the built site as a zip and publishes it to production.
+      - name: Deploy to Netlify
+        if: github.event_name != 'pull_request' && steps.settings.outputs.ready == 'true'
+        run: |
+          (cd apps/viewer/dist && zip -qr "$RUNNER_TEMP/viewer.zip" .)
+          status=$(curl -sS -o "$RUNNER_TEMP/deploy.json" -w '%{http_code}' \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            -H "Content-Type: application/zip" \
+            --data-binary "@$RUNNER_TEMP/viewer.zip" \
+            "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys")
+          if [ "$status" -ge 300 ]; then
+            echo "::error::Netlify deploy failed (HTTP $status)"
+            cat "$RUNNER_TEMP/deploy.json"
+            exit 1
+          fi
+          echo "Deployed: $(jq -r '.ssl_url // .url' "$RUNNER_TEMP/deploy.json")"

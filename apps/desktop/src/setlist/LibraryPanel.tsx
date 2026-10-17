@@ -1,7 +1,7 @@
-import { useDraggable } from '@dnd-kit/core';
+import { useDndMonitor, useDraggable } from '@dnd-kit/core';
 import { formatDuration, searchSongs, sortSongs, type SetBlock, type Song } from '@setlist/core';
 import { Check, GripVertical, Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 const SHOWN = 100;
 
@@ -61,22 +61,41 @@ function LibrarySong({
 
 /**
  * The band's active and learning songs, searchable. Songs can be dragged into a set, or added to
- * the chosen set with their Add button (the keyboard-friendly way).
+ * the target set with their Add button (the keyboard-friendly way). Adding a song clears the
+ * search, ready for the next one.
  */
 export function LibraryPanel({
   songs,
   blocks,
   usedSongIds,
+  targetId,
+  onTargetChange,
   onAdd,
 }: {
   songs: readonly Song[];
   blocks: readonly SetBlock[];
   usedSongIds: ReadonlySet<string>;
+  /** The set Add buttons add to. */
+  targetId: string | undefined;
+  onTargetChange: (blockId: string) => void;
   onAdd: (songId: string, blockId: string) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [chosenBlockId, setChosenBlockId] = useState<string | null>(null);
-  const targetId = blocks.find((block) => block.id === chosenBlockId)?.id ?? blocks[0]?.id;
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  function added() {
+    if (!query) return;
+    setQuery('');
+    searchRef.current?.focus();
+  }
+
+  useDndMonitor({
+    onDragEnd: ({ active, over }) => {
+      if (over && (active.data.current as { type?: string } | undefined)?.type === 'library') {
+        added();
+      }
+    },
+  });
 
   const matches = useMemo(() => {
     const playable = songs.filter((song) => song.status !== 'retired');
@@ -89,6 +108,7 @@ export function LibraryPanel({
       <label className="search-box">
         <Search size={16} aria-hidden="true" />
         <input
+          ref={searchRef}
           type="search"
           className="sm-input"
           placeholder="Search songs"
@@ -103,7 +123,7 @@ export function LibraryPanel({
           <select
             className="sm-input"
             value={targetId}
-            onChange={(e) => setChosenBlockId(e.target.value)}
+            onChange={(e) => onTargetChange(e.target.value)}
           >
             {blocks.map((block) => (
               <option key={block.id} value={block.id}>
@@ -124,7 +144,11 @@ export function LibraryPanel({
             key={song.id}
             song={song}
             inSetlist={usedSongIds.has(song.id)}
-            onAdd={() => targetId && onAdd(song.id, targetId)}
+            onAdd={() => {
+              if (!targetId) return;
+              onAdd(song.id, targetId);
+              added();
+            }}
           />
         ))}
       </ul>

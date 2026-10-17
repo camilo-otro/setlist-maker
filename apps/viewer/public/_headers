@@ -1,0 +1,8 @@
+# Netlify response headers. Links are private to whoever has them: keep them out of search
+# engines and other sites' frames, and only talk to Supabase.
+/*
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'

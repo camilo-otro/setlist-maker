@@ -7,6 +7,68 @@ import {
   type SongImportField,
 } from './songImport';
 
+const IMPORT_COLUMNS = ['id', 'spotify_id', 'title', 'artists', 'duration_sec', 'source'] as const;
+
+/** A Postgres array literal, e.g. {"Simon","Garfunkel"}, with quotes and backslashes escaped. */
+function pgTextArray(values: readonly string[]): string {
+  return `{${values.map((v) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`).join(',')}}`;
+}
+
+function csvField(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+const sqlText = (value: string) => `'${value.replace(/'/g, "''")}'`;
+
+/**
+ * The tracks as a CSV whose columns match public.catalog_tracks, for the Supabase Table Editor's
+ * CSV import. `newId` gives each row its UUID v7.
+ */
+export function catalogImportCsv(tracks: readonly CatalogSeedTrack[], newId: () => string): string {
+  const lines = tracks.map((track) =>
+    [
+      newId(),
+      track.spotifyId,
+      track.title,
+      pgTextArray(track.artists),
+      track.durationSec === null ? '' : String(track.durationSec),
+      track.source,
+    ]
+      .map(csvField)
+      .join(','),
+  );
+  return [IMPORT_COLUMNS.join(','), ...lines].join('\n') + '\n';
+}
+
+/**
+ * The tracks as SQL for the Supabase SQL Editor: inserts in batches, in one transaction, skipping
+ * Spotify tracks the catalog already has (so running it twice is harmless).
+ */
+export function catalogImportSql(
+  tracks: readonly CatalogSeedTrack[],
+  newId: () => string,
+  batchSize = 500,
+): string {
+  const statements: string[] = [];
+  for (let start = 0; start < tracks.length; start += batchSize) {
+    const values = tracks.slice(start, start + batchSize).map((track) => {
+      const artists = `array[${track.artists.map(sqlText).join(', ')}]::text[]`;
+      const duration = track.durationSec === null ? 'null' : String(track.durationSec);
+      return `  (${sqlText(newId())}, ${sqlText(track.spotifyId)}, ${sqlText(track.title)}, ${artists}, ${duration}, ${sqlText(track.source)})`;
+    });
+    statements.push(
+      `insert into public.catalog_tracks (${IMPORT_COLUMNS.join(', ')}) values\n${values.join(',\n')}\non conflict (spotify_id) do nothing;`,
+    );
+  }
+  return [
+    `-- ${tracks.length} catalog tracks. Safe to run again: tracks already in the catalog are skipped.`,
+    'begin;',
+    ...statements,
+    'commit;',
+    '',
+  ].join('\n\n');
+}
+
 /** A catalog row from a seed file, before it gets an ID and timestamps. */
 export interface CatalogSeedTrack {
   spotifyId: string;

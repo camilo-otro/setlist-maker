@@ -1,26 +1,31 @@
 /**
  * Loads a catalog seed file into the shared song catalog (public.catalog_tracks).
  *
- *   pnpm seed:catalog <file.csv> --dry-run    check the file, change nothing
- *   pnpm seed:catalog <file.csv>              write to the database in SUPABASE_DB_URL
+ *   pnpm seed:catalog <file.csv> --dry-run             check the file, change nothing
+ *   pnpm seed:catalog <file.csv> --out <import.csv>    write a file for the Table Editor's CSV import
+ *   pnpm seed:catalog <file.csv> --out <import.sql>    write SQL to paste into the SQL Editor
+ *   pnpm seed:catalog <file.csv>                       write to the database in SUPABASE_DB_URL
  *
+ * The --out files need no database password: upload them in the Supabase dashboard instead.
  * SUPABASE_DB_URL is a Postgres connection string with the database password (Supabase dashboard:
  * Connect → Session pooler). Set it in your own terminal; never commit it. Rows are matched by
  * Spotify track, so running the script again only adds new rows and updates changed seed rows.
  * Rows that came from Spotify (source 'spotify') are never overwritten.
  */
-import { readFileSync } from 'node:fs';
-import { catalogTracksFromCsv, newId } from '@setlist/core';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { catalogImportCsv, catalogImportSql, catalogTracksFromCsv, newId } from '@setlist/core';
 import postgres from 'postgres';
 
 const BATCH = 500;
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const file = args.find((arg) => !arg.startsWith('--'));
+const outIndex = args.indexOf('--out');
+const out = outIndex === -1 ? undefined : args[outIndex + 1];
+const file = args.find((arg, i) => !arg.startsWith('--') && i !== outIndex + 1);
 const count = new Intl.NumberFormat('en');
 
-if (!file) {
-  console.error('Usage: pnpm seed:catalog <file.csv> [--dry-run]');
+if (!file || (outIndex !== -1 && !/\.(csv|sql)$/i.test(out ?? ''))) {
+  console.error('Usage: pnpm seed:catalog <file.csv> [--dry-run | --out <import.csv|import.sql>]');
   process.exit(1);
 }
 
@@ -33,6 +38,15 @@ if (skipped.length > 20) console.log(`  …and ${skipped.length - 20} more`);
 
 if (dryRun) {
   console.log('Dry run: nothing written.');
+  process.exit(0);
+}
+
+if (out) {
+  const content = out.toLowerCase().endsWith('.sql')
+    ? catalogImportSql(tracks, newId)
+    : catalogImportCsv(tracks, newId);
+  writeFileSync(out, content);
+  console.log(`Wrote ${out} (${count.format(Math.round(content.length / 1024))} KB).`);
   process.exit(0);
 }
 
