@@ -72,8 +72,12 @@ export function EntryRow({
       <span className="entry__main">
         {entry.kind === 'break' && <Coffee size={14} aria-hidden="true" />}
         {entry.kind === 'note' && <StickyNote size={14} aria-hidden="true" />}
-        <span className="entry__title">{title}</span>
-        {entry.kind === 'song' && song?.artist && <span className="muted"> · {song.artist}</span>}
+        <span className="entry__title" title={title}>
+          {title}
+        </span>
+        {entry.kind === 'song' && song?.artist && (
+          <span className="entry__artist muted">· {song.artist}</span>
+        )}
         {entry.notes && <span className="entry__notes muted">{entry.notes}</span>}
       </span>
       {entry.segueToNext && (

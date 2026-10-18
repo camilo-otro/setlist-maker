@@ -16,6 +16,7 @@ import type {
   Venue,
   VenueInput,
 } from '@setlist/core';
+import type { Outbox } from './outbox';
 
 /** Fields the repository sets on every write; callers never pass them. */
 export type SystemField = 'id' | 'createdAt' | 'updatedAt' | 'updatedBy' | 'deletedAt' | 'version';
@@ -83,6 +84,9 @@ export interface Repository {
   setEntries: Table<SetEntry, SetEntryInput>;
   performances: Table<Performance, PerformanceInput>;
 
+  /** Changes to shared bands waiting to be pushed. Recorded in the same transaction as the write. */
+  outbox: Outbox;
+
   /**
    * Runs `work` atomically: if it throws, none of its writes are kept. Transactions run one at a
    * time. Inside `work`, use the `tx` argument; calling the outer repository would wait for the
@@ -91,7 +95,7 @@ export interface Repository {
   transaction<R>(work: (tx: Repository) => Promise<R>): Promise<R>;
 }
 
-export type TableName = Exclude<keyof Repository, 'transaction'>;
+export type TableName = Exclude<keyof Repository, 'transaction' | 'outbox'>;
 
 export const TABLE_NAMES: readonly TableName[] = [
   'bands',

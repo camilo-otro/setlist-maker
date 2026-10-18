@@ -9,6 +9,7 @@
   "scripts": {
     "app:desktop": "pnpm --filter @setlist/desktop tauri dev",
     "dev:desktop": "pnpm --filter @setlist/desktop dev",
+    "dev:viewer": "pnpm --filter @setlist/viewer dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck && tsc -p supabase/seed/tsconfig.json",

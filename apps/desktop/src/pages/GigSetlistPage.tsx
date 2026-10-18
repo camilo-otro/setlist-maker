@@ -6,13 +6,14 @@ import {
   setlistWarnings,
   type EntryWarning,
 } from '@setlist/core';
-import { ArrowLeft, Pencil, Redo2, Undo2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
 import { setlistChanges } from '../setlist/changes';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { useGigSetlist } from '../setlist/useGigSetlist';
+import { ShareDialog } from '../sharing/ShareDialog';
 import { useHistory } from '../setlist/useHistory';
 import { useBandRows } from '../storage/useBandRows';
 import { useWorkspace } from '../storage/WorkspaceProvider';
@@ -32,13 +33,14 @@ const WARNING_SUMMARY: Record<EntryWarning, (n: number) => string> = {
 
 export function GigSetlistPage() {
   const { gigId = '' } = useParams();
-  const { repository, band } = useWorkspace();
+  const { repository, band, sharing } = useWorkspace();
   const { state, reload } = useGigSetlist(gigId);
   const songs = useBandRows('songs');
   const venues = useBandRows('venues');
   const history = useHistory(reload);
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
+  const [sharingOpen, setSharingOpen] = useState(false);
 
   const songsById = useMemo(
     () => new Map((songs.rows ?? []).map((song) => [song.id, song])),
@@ -122,6 +124,12 @@ export function GigSetlistPage() {
             <Pencil size={14} aria-hidden="true" />
             Edit details
           </button>
+          {sharing && (
+            <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
+              <Share2 size={14} aria-hidden="true" />
+              Share
+            </button>
+          )}
         </div>
       </header>
 
@@ -156,6 +164,15 @@ export function GigSetlistPage() {
         run={history.run}
       />
 
+      {sharingOpen && sharing && (
+        <ShareDialog
+          sharing={sharing}
+          bandId={band.id}
+          gigId={gig.id}
+          gigTitle={gig.title}
+          onClose={() => setSharingOpen(false)}
+        />
+      )}
       {editingGig && (
         <GigDialog
           gig={gig}

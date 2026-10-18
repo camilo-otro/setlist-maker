@@ -390,5 +390,87 @@ export function describeRepositoryContract(
         expect(await repo.songs.list({ bandId })).toEqual([]);
       });
     });
+
+    describe('outbox', () => {
+      it('records nothing for a solo band', async () => {
+        await repo.songs.create({ bandId, title: 'Solo' });
+        expect(await repo.outbox.sharedBands()).toEqual([]);
+        expect(await repo.outbox.pending(10)).toEqual([]);
+      });
+
+      it('records every field of a new row, as server columns', async () => {
+        await repo.outbox.shareBand(bandId);
+        const song = await repo.songs.create({ bandId, title: 'Basurita', tags: ['rock'] });
+        const [op, ...rest] = await repo.outbox.pending(10);
+
+        expect(rest).toEqual([]);
+        expect(IdSchema.safeParse(op!.id).success).toBe(true);
+        expect(op).toMatchObject({ table: 'songs', rowId: song.id, bandId });
+        expect(op!.fields).toMatchObject({
+          title: 'Basurita',
+          tags: ['rock'],
+          is_original: false,
+          version: 1,
+          created_at: song.createdAt,
+          deleted_at: null,
+        });
+        expect(Object.keys(op!.fields)).not.toContain('id');
+        expect(Object.keys(op!.fields)).not.toContain('band_id');
+        expect(Object.keys(op!.fields)).not.toContain('updated_by');
+      });
+
+      it('records only the changed fields of updates, removes and restores, in order', async () => {
+        const song = await repo.songs.create({ bandId, title: 'Basurita', key: 'A' });
+        await repo.outbox.shareBand(bandId);
+        await repo.songs.update(song.id, { key: 'B', title: 'Basurita' });
+        const removed = await repo.songs.remove(song.id);
+        await repo.songs.restore(song.id);
+
+        const ops = await repo.outbox.pending(10);
+        expect(ops.map((op) => op.fields)).toEqual([
+          { key: 'B', updated_at: expect.any(String) },
+          { deleted_at: removed.deletedAt, updated_at: removed.updatedAt },
+          { deleted_at: null, updated_at: expect.any(String) },
+        ]);
+      });
+
+      it("records a band's own changes against itself, and pages and acknowledges", async () => {
+        await repo.outbox.shareBand(bandId);
+        await repo.bands.update(bandId, { name: 'The Roadies!' });
+        await repo.songs.createMany([
+          { bandId, title: 'One' },
+          { bandId, title: 'Two' },
+        ]);
+        const [rename, first] = await repo.outbox.pending(2);
+        expect(rename).toMatchObject({ table: 'bands', rowId: bandId, bandId });
+        expect(first!.fields.title).toBe('One');
+
+        await repo.outbox.acknowledge([rename!.id, first!.id]);
+        expect((await repo.outbox.pending(10)).map((op) => op.fields.title)).toEqual(['Two']);
+      });
+
+      it('only records changes to shared bands', async () => {
+        const other = await repo.bands.create({ name: 'Side project' });
+        await repo.outbox.shareBand(bandId);
+        await repo.outbox.shareBand(bandId);
+        await repo.songs.create({ bandId: other.id, title: 'Not shared' });
+        await repo.setBlocks.create({ bandId, setlistId: other.id, name: 'Set 1', position: 'a0' });
+
+        expect(await repo.outbox.sharedBands()).toEqual([bandId]);
+        expect((await repo.outbox.pending(10)).map((op) => op.table)).toEqual(['set_blocks']);
+      });
+
+      it('loses the operation when the write is rolled back', async () => {
+        await repo.outbox.shareBand(bandId);
+        await expect(
+          repo.transaction(async (tx) => {
+            await tx.songs.create({ bandId, title: 'Undone' });
+            expect(await tx.outbox.pending(10)).toHaveLength(1);
+            throw new Error('nope');
+          }),
+        ).rejects.toThrow('nope');
+        expect(await repo.outbox.pending(10)).toEqual([]);
+      });
+    });
   });
 }
