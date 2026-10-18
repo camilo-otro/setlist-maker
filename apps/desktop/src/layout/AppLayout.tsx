@@ -5,9 +5,12 @@ import {
   Library,
   ListMusic,
   MapPin,
+  Pencil,
 } from 'lucide-react';
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { useWorkspace } from '../storage/WorkspaceProvider';
+import { BandNameDialog } from './BandNameDialog';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 export const NAV_ITEMS = [
@@ -19,7 +22,8 @@ export const NAV_ITEMS = [
 ] as const;
 
 export function AppLayout() {
-  const { band, persistent } = useWorkspace();
+  const { band, persistent, renameBand } = useWorkspace();
+  const [renaming, setRenaming] = useState(false);
 
   return (
     <div className="app-layout">
@@ -28,7 +32,16 @@ export function AppLayout() {
           <ListMusic size={20} aria-hidden="true" />
           <div>
             <span className="sidebar__app-name">Setlist Maker</span>
-            <span className="sidebar__band-name">{band.name}</span>
+            <button
+              type="button"
+              className="sidebar__band-name"
+              title="Rename the band"
+              aria-label={`Band: ${band.name}. Rename`}
+              onClick={() => setRenaming(true)}
+            >
+              <span>{band.name}</span>
+              <Pencil size={12} aria-hidden="true" />
+            </button>
           </div>
         </div>
         {!persistent && (
@@ -51,6 +64,9 @@ export function AppLayout() {
       <main className="app-main">
         <Outlet />
       </main>
+      {renaming && (
+        <BandNameDialog name={band.name} onClose={() => setRenaming(false)} onSave={renameBand} />
+      )}
     </div>
   );
 }

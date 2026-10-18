@@ -55,6 +55,12 @@ body {
   font-weight: 700;
 }
 
+/* The app and band names take the rest of the row; long band names end with an ellipsis. */
+.sidebar__brand > div {
+  flex: 1;
+  min-width: 0;
+}
+
 .sidebar__app-name,
 .sidebar__band-name {
   display: block;
@@ -65,9 +71,44 @@ body {
 }
 
 .sidebar__band-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
   color: var(--sm-text-muted);
+  font: inherit;
   font-size: 0.8125rem;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__band-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The pencil only shows on hover or focus, so the name reads as a name. */
+.sidebar__band-name svg {
+  flex: none;
+  opacity: 0;
+}
+
+.sidebar__band-name:hover,
+.sidebar__band-name:focus-visible {
+  background: var(--sm-hover);
+  color: var(--sm-text);
+}
+
+.sidebar__band-name:hover svg,
+.sidebar__band-name:focus-visible svg {
+  opacity: 1;
 }
 
 .sidebar__notice {

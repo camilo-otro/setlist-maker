@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { openWorkspace, type Workspace } from './workspace';
 
 type State =
@@ -6,7 +6,28 @@ type State =
   | { status: 'ready'; workspace: Workspace }
   | { status: 'error'; error: unknown };
 
-const WorkspaceContext = createContext<Workspace | null>(null);
+/** The open workspace, plus the few changes that affect the whole app. */
+export interface WorkspaceValue extends Workspace {
+  /** Renames the band everywhere in the app; shared bands upload the new name with other changes. */
+  renameBand(name: string): Promise<void>;
+}
+
+const WorkspaceContext = createContext<WorkspaceValue | null>(null);
+
+/** Keeps the band in state, so a rename shows up on every screen at once. */
+function ProvideWorkspace({ workspace, children }: { workspace: Workspace; children: ReactNode }) {
+  const [band, setBand] = useState(workspace.band);
+  const value = useMemo<WorkspaceValue>(
+    () => ({
+      ...workspace,
+      band,
+      renameBand: async (name) =>
+        setBand(await workspace.repository.bands.update(band.id, { name })),
+    }),
+    [workspace, band],
+  );
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
+}
 
 /** Opens storage before showing the app, with a loading screen and a readable error screen. */
 export function WorkspaceProvider({
@@ -41,10 +62,10 @@ export function WorkspaceProvider({
       </div>
     );
   }
-  return <WorkspaceContext.Provider value={state.workspace}>{children}</WorkspaceContext.Provider>;
+  return <ProvideWorkspace workspace={state.workspace}>{children}</ProvideWorkspace>;
 }
 
-export function useWorkspace(): Workspace {
+export function useWorkspace(): WorkspaceValue {
   const workspace = useContext(WorkspaceContext);
   if (!workspace) throw new Error('useWorkspace must be used inside WorkspaceProvider');
   return workspace;
@@ -58,5 +79,5 @@ export function WorkspaceContextProvider({
   workspace: Workspace;
   children: ReactNode;
 }) {
-  return <WorkspaceContext.Provider value={workspace}>{children}</WorkspaceContext.Provider>;
+  return <ProvideWorkspace workspace={workspace}>{children}</ProvideWorkspace>;
 }
