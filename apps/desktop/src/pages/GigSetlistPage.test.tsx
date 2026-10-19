@@ -74,6 +74,37 @@ describe('GigSetlistPage', () => {
     expect(text).toContain('*Set 1* (3:45)\n1. Basurita · A');
   });
 
+  it('marks the gig as played, recording the songs that were played', async () => {
+    const { user, workspace, gig } = await setup();
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await user.click(library().getByRole('button', { name: 'Add Here Without You' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You']));
+
+    await user.click(screen.getByRole('button', { name: 'Mark as played' }));
+    await user.click(dialog().getByRole('checkbox', { name: 'Here Without You' }));
+    await user.click(dialog().getByRole('button', { name: 'Played 1 song' }));
+
+    expect(await screen.findByText('Played')).toBeTruthy();
+    const played = await workspace.repository.performances.list({ gigId: gig.id });
+    expect(played.map((p) => [p.setName, p.songTitleSnapshot, p.keySnapshot])).toEqual([
+      ['Set 1', 'Basurita', 'A'],
+    ]);
+
+    // Opening it again shows what was recorded, and can take it back.
+    await user.click(screen.getByRole('button', { name: 'What we played' }));
+    await waitFor(() =>
+      expect(
+        (dialog().getByRole('checkbox', { name: 'Here Without You' }) as HTMLInputElement).checked,
+      ).toBe(false),
+    );
+    expect((dialog().getByRole('checkbox', { name: 'Basurita' }) as HTMLInputElement).checked).toBe(
+      true,
+    );
+    await user.click(dialog().getByRole('button', { name: 'Not played after all' }));
+    expect(await screen.findByRole('button', { name: 'Mark as played' })).toBeTruthy();
+    expect(await workspace.repository.performances.list({ gigId: gig.id })).toEqual([]);
+  });
+
   it('adds songs from the library and adds up the running time', async () => {
     const { user } = await setup();
     await user.click(library().getByRole('button', { name: 'Add Basurita' }));

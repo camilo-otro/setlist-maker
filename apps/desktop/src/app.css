@@ -1741,3 +1741,42 @@ body {
     white-space: nowrap;
   }
 }
+
+.played-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.played-list__set {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.played-list__set legend {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.played-list__set .muted {
+  margin: 0;
+}
+
+.played-list__song {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: var(--sm-radius);
+  cursor: pointer;
+}
+
+.played-list__song:hover {
+  background: var(--sm-hover);
+}

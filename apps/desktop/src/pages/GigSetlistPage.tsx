@@ -2,14 +2,16 @@ import {
   countWarnings,
   ENTRY_WARNING_LABELS,
   formatDuration,
+  localDateString,
   setDuration,
   setlistWarnings,
   type EntryWarning,
 } from '@setlist/core';
-import { ArrowLeft, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
+import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
 import { setlistChanges } from '../setlist/changes';
 import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { SetlistEditor } from '../setlist/SetlistEditor';
@@ -44,6 +46,7 @@ export function GigSetlistPage() {
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
+  const [markingPlayed, setMarkingPlayed] = useState(false);
   const { canEdit } = useMembership();
 
   const songsById = useMemo(
@@ -100,6 +103,9 @@ export function GigSetlistPage() {
             {gig.status === 'cancelled' && (
               <span className="status status--retired gig-header__status">Cancelled</span>
             )}
+            {gig.status === 'played' && (
+              <span className="status status--active gig-header__status">Played</span>
+            )}
           </h1>
           <p className="muted gig-header__details">{details.join(' · ')}</p>
         </div>
@@ -130,6 +136,21 @@ export function GigSetlistPage() {
                 <Pencil size={14} aria-hidden="true" />
                 Edit details
               </button>
+              {gig.status !== 'cancelled' && (
+                <button
+                  type="button"
+                  className={
+                    // Due once the day comes.
+                    gig.status === 'upcoming' && gig.date <= localDateString()
+                      ? 'sm-button sm-button--primary'
+                      : 'sm-button'
+                  }
+                  onClick={() => setMarkingPlayed(true)}
+                >
+                  <CircleCheck size={14} aria-hidden="true" />
+                  {gig.status === 'played' ? 'What we played' : 'Mark as played'}
+                </button>
+              )}
               {sharing && (
                 <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
                   <Share2 size={14} aria-hidden="true" />
@@ -188,6 +209,15 @@ export function GigSetlistPage() {
           gigId={gig.id}
           gigTitle={gig.title}
           onClose={() => setSharingOpen(false)}
+        />
+      )}
+      {markingPlayed && (
+        <MarkPlayedDialog
+          gig={gig}
+          blocks={blocks}
+          songsById={songsById}
+          onClose={() => setMarkingPlayed(false)}
+          onChanged={reload}
         />
       )}
       {editingGig && (
