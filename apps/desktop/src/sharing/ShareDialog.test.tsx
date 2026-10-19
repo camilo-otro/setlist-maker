@@ -18,6 +18,11 @@ function fakeSharing({ signedIn = false, failShare = 0 } = {}) {
     ensure: async (displayName) => (me = { userId: 'u1', displayName }),
     accessToken: async () => 't',
     linkSecret: async () => 's',
+    email: async () => null,
+    addEmail: async () => ({ confirmed: false }),
+    confirmEmail: async () => {},
+    requestSignIn: async () => {},
+    confirmSignIn: async () => ({ userId: 'u', displayName: 'x', previous: null }),
   };
   const sharing = {
     identity,
@@ -30,6 +35,7 @@ function fakeSharing({ signedIn = false, failShare = 0 } = {}) {
     invites: {} as Sharing['invites'],
     previewInvite: async () => null,
     joinBand: async () => ({ bandId: '', role: 'editor' as const }),
+    finishSignIn: async () => ({ bandIds: [], retired: 0 }),
     listen: () => () => {},
     links: {
       active: async () => links.at(-1) ?? null,

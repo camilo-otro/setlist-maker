@@ -13,6 +13,8 @@ export interface StoredIdentity {
   refreshToken: string;
   /** Random secret that share-link tokens are derived from (see shareLinks.ts). Hex. */
   linkSecret?: string;
+  /** The account's email, once added (#51): it signs in to this user on other devices. */
+  email?: string;
 }
 
 export interface IdentityStore {
@@ -43,7 +45,49 @@ export interface Identity {
   accessToken(): Promise<string>;
   /** This device's secret for share-link tokens, created on first use. Requires a sign-in. */
   linkSecret(): Promise<string>;
+
+  /** The account's email, or null while the sign-in is anonymous (this device only). */
+  email(): Promise<string | null>;
+  /**
+   * Sends a code to `email` to add it to this sign-in. The user stays the same, so bands and
+   * data are untouched; the email then signs in to it on any device. Resolves to `confirmed`
+   * when the project adds emails without confirming them (no code is sent then).
+   */
+  addEmail(email: string): Promise<{ confirmed: boolean }>;
+  /** Confirms the code `addEmail` sent. */
+  confirmEmail(email: string, code: string): Promise<void>;
+  /** Sends a sign-in code to an email already added on another device. */
+  requestSignIn(email: string): Promise<void>;
+  /**
+   * Confirms the sign-in code, making this device the account's from now on. Returns the account,
+   * and this device's previous sign-in (still usable for about an hour) so its leftovers, such as
+   * band memberships, can be cleaned up.
+   */
+  confirmSignIn(
+    email: string,
+    code: string,
+  ): Promise<{
+    userId: string;
+    displayName: string;
+    previous: { userId: string; accessToken: string } | null;
+  }>;
 }
+
+/** Why an email step failed, in words for the person using the app. */
+export class EmailCodeError extends Error {
+  override name = 'EmailCodeError';
+}
+
+const EMAIL_ERRORS: Record<string, string> = {
+  otp_expired: "That code isn't right, or it has expired. Check it, or ask for a new one.",
+  otp_disabled: 'No account uses this email yet. Add it on the device you set up first.',
+  signup_disabled: 'No account uses this email yet. Add it on the device you set up first.',
+  email_exists: 'Another account already uses this email. Sign in with it instead.',
+  email_address_invalid: "That doesn't look like an email address.",
+  validation_failed: "That doesn't look like an email address.",
+  over_email_send_rate_limit: 'Too many emails just now. Wait a minute and try again.',
+  over_request_rate_limit: 'Too many tries just now. Wait a minute and try again.',
+};
 
 const randomHex = (bytes: number) =>
   Array.from(
@@ -115,6 +159,32 @@ export function createIdentity({
     return (await response.json()) as TokenResponse;
   }
 
+  /** A call to Supabase Auth that may fail in ways the person should hear about. */
+  async function authCall(
+    method: string,
+    path: string,
+    body: unknown,
+    token?: string,
+  ): Promise<unknown> {
+    const response = await fetchImpl(`${auth}${path}`, {
+      method,
+      headers: token ? { ...headers, Authorization: `Bearer ${token}` } : headers,
+      body: JSON.stringify(body),
+    });
+    const data = (await response.json().catch(() => null)) as {
+      error_code?: string;
+      code?: string;
+    } | null;
+    if (!response.ok) {
+      const message = EMAIL_ERRORS[data?.error_code ?? data?.code ?? ''];
+      throw message ? new EmailCodeError(message) : new HttpError(response.status);
+    }
+    return data;
+  }
+
+  const clean = (email: string) => email.trim().toLowerCase();
+  const isCode = (code: string) => /^\d{6,10}$/.test(code.trim());
+
   function remember(tokens: TokenResponse) {
     access = { token: tokens.access_token, expiresAt: now() + tokens.expires_in * 1000 };
   }
@@ -155,6 +225,80 @@ export function createIdentity({
         await store.save({ ...stored, linkSecret });
         return linkSecret;
       });
+    },
+
+    async email() {
+      return (await store.load())?.email ?? null;
+    },
+
+    async addEmail(email) {
+      // The current sign-in's token, then a change of email on that same user.
+      const user = (await authCall(
+        'PUT',
+        '/user',
+        { email: clean(email) },
+        await this.accessToken(),
+      )) as { email?: string } | null;
+      // Projects that don't confirm emails apply the change at once.
+      const confirmed = user?.email === clean(email);
+      if (confirmed) {
+        await serially(async () => {
+          const stored = await store.load();
+          if (stored) await store.save({ ...stored, email: clean(email) });
+        });
+      }
+      return { confirmed };
+    },
+
+    async confirmEmail(email, code) {
+      if (!isCode(code)) throw new EmailCodeError(EMAIL_ERRORS.otp_expired!);
+      const tokens = (await authCall('POST', '/verify', {
+        type: 'email_change',
+        email: clean(email),
+        token: code.trim(),
+      })) as TokenResponse;
+      await serially(async () => {
+        const stored = await store.load();
+        if (!stored) throw new Error('Not signed in yet');
+        await store.save({ ...stored, refreshToken: tokens.refresh_token, email: clean(email) });
+        remember(tokens);
+      });
+    },
+
+    async requestSignIn(email) {
+      // create_user: false, so a mistyped email can't make a new, empty account.
+      await authCall('POST', '/otp', { email: clean(email), create_user: false });
+    },
+
+    async confirmSignIn(email, code) {
+      if (!isCode(code)) throw new EmailCodeError(EMAIL_ERRORS.otp_expired!);
+      const before = await store.load();
+      const previousToken = before ? await this.accessToken().catch(() => null) : null;
+      const tokens = (await authCall('POST', '/verify', {
+        type: 'email',
+        email: clean(email),
+        token: code.trim(),
+      })) as TokenResponse;
+      const displayName = before?.displayName || clean(email).split('@')[0]!;
+      await serially(async () => {
+        await store.save({
+          userId: tokens.user.id,
+          displayName,
+          refreshToken: tokens.refresh_token,
+          // Share-link tokens are this device's, whoever is signed in.
+          linkSecret: before?.linkSecret,
+          email: clean(email),
+        });
+        remember(tokens);
+      });
+      return {
+        userId: tokens.user.id,
+        displayName,
+        previous:
+          before && previousToken && before.userId !== tokens.user.id
+            ? { userId: before.userId, accessToken: previousToken }
+            : null,
+      };
     },
 
     accessToken() {

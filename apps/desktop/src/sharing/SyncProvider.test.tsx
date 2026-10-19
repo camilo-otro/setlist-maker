@@ -48,6 +48,7 @@ async function setup() {
     invites: {} as Sharing['invites'],
     previewInvite: async () => null,
     joinBand: async () => ({ bandId: '', role: 'editor' as const }),
+    finishSignIn: async () => ({ bandIds: [], retired: 0 }),
     listen: vi.fn((onChange: () => void) => {
       signal = onChange;
       return () => {};

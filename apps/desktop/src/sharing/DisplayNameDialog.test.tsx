@@ -13,6 +13,11 @@ function setup(ensure: Identity['ensure']) {
     ensure: vi.fn(ensure),
     accessToken: async () => 'token',
     linkSecret: async () => 'secret',
+    email: async () => null,
+    addEmail: async () => ({ confirmed: false }),
+    confirmEmail: async () => {},
+    requestSignIn: async () => {},
+    confirmSignIn: async () => ({ userId: 'u', displayName: 'x', previous: null }),
   };
   const onReady = vi.fn();
   const onClose = vi.fn();

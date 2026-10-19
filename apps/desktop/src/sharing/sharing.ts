@@ -3,6 +3,7 @@ import {
   createChangeSignal,
   createInvites,
   createPuller,
+  finishSignIn,
   createPusher,
   createShareLinks,
   IdentityLostError,
@@ -18,6 +19,7 @@ import {
   type PushResult,
   type Repository,
   type ShareLinks,
+  type SignInCleanup,
 } from '@setlist/storage';
 
 /** The web viewer share links open, unless VITE_VIEWER_URL says otherwise. */
@@ -43,6 +45,11 @@ export interface Sharing {
   previewInvite(token: string): Promise<InvitePreview | null>;
   /** Joins the band an invite is for, and downloads it. */
   joinBand(token: string, displayName: string): Promise<{ bandId: string; role: InviteRole }>;
+  /**
+   * After signing in to an account on this device: removes this device's old memberships in the
+   * account's bands, and downloads those bands (see finishSignIn in @setlist/storage).
+   */
+  finishSignIn(previous: { userId: string; accessToken: string } | null): Promise<SignInCleanup>;
 }
 
 export function createSharing({
@@ -82,5 +89,6 @@ export function createSharing({
     previewInvite: (token) => previewInvite({ url, key }, token),
     joinBand: (token, displayName) =>
       joinBand({ repository, identity, url, key, token, displayName }),
+    finishSignIn: (previous) => finishSignIn({ repository, identity, url, key, previous }),
   };
 }

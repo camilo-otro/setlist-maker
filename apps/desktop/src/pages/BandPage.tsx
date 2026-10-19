@@ -3,6 +3,7 @@ import type { InviteInfo } from '@setlist/storage';
 import { EmptyState, PageHeader } from '@setlist/ui';
 import { LogIn, Pencil, UserPlus, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { AccountSection } from '../band/AccountSection';
 import { InviteDialog } from '../band/InviteDialog';
 import { JoinDialog } from '../band/JoinDialog';
 import { MemberDialog } from '../band/MemberDialog';
@@ -88,6 +89,7 @@ export function BandPage({
           </>
         }
       />
+      {sharing && <AccountSection sharing={sharing} reopen={reopen} />}
       {!shared ? (
         <EmptyState icon={<Users size={24} />} title="Just you for now">
           Share a gig to put your band online. Then you can invite bandmates here. Got an invite

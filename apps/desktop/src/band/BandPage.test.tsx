@@ -3,6 +3,7 @@ import type { MemberRole } from '@setlist/core';
 import {
   createGig,
   createMemoryRepository,
+  EmailCodeError,
   InviteError,
   type Identity,
   type InviteInfo,
@@ -57,6 +58,11 @@ async function setup(
     ensure: async (displayName) => ({ userId: ME, displayName }),
     accessToken: async () => 't',
     linkSecret: async () => 's',
+    email: async () => null,
+    addEmail: async () => ({ confirmed: false }),
+    confirmEmail: async () => {},
+    requestSignIn: async () => {},
+    confirmSignIn: async () => ({ userId: 'u', displayName: 'x', previous: null }),
   };
   const sharing: Sharing = {
     identity,
@@ -72,6 +78,7 @@ async function setup(
     },
     previewInvite: async () => null,
     joinBand: async () => ({ bandId: '', role: 'editor' as const }),
+    finishSignIn: async () => ({ bandIds: [], retired: 0 }),
     listen: () => () => {},
     ...overrides,
   };
@@ -304,5 +311,86 @@ describe('Joining a band', () => {
     expect(
       await screen.findByText('This invite has been used up. Ask for a new one.'),
     ).toBeTruthy();
+  });
+});
+
+/** An identity whose email can be added, like the real one, and that records what it was asked. */
+function accountIdentity(start: { email: string | null }) {
+  let email = start.email;
+  const calls: string[] = [];
+  const identity: Identity = {
+    current: async () => ({ userId: ME, displayName: 'Camilo' }),
+    ensure: async (displayName) => ({ userId: ME, displayName }),
+    accessToken: async () => 't',
+    linkSecret: async () => 's',
+    email: async () => email,
+    addEmail: async (to) => {
+      calls.push(`add ${to}`);
+      return { confirmed: false };
+    },
+    confirmEmail: async (to, code) => {
+      if (code !== '123456') throw new EmailCodeError("That code isn't right, or it has expired.");
+      calls.push(`confirm ${to}`);
+      email = to;
+    },
+    requestSignIn: async (to) => void calls.push(`request ${to}`),
+    confirmSignIn: async (to) => {
+      calls.push(`sign in ${to}`);
+      return { userId: ME, displayName: 'Camilo', previous: { userId: VERA, accessToken: 'old' } };
+    },
+  };
+  return { identity, calls };
+}
+
+describe('Your account', () => {
+  it('adds an email to this sign-in with a code, and then says who is signed in', async () => {
+    const { identity, calls } = accountIdentity({ email: null });
+    const { user } = await setup({ overrides: { identity } });
+    const account = within(await screen.findByRole('region', { name: 'Your account' }));
+    expect(account.getByText(/only works on this device/)).toBeTruthy();
+
+    await user.click(account.getByRole('button', { name: 'Add your email' }));
+    await user.type(screen.getByLabelText('Email'), 'camilo@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send code' }));
+    expect(await screen.findByText(/We sent a 6-digit code to/)).toBeTruthy();
+
+    await user.type(screen.getByLabelText('Code'), '000000');
+    await user.click(screen.getByRole('button', { name: 'Add email' }));
+    expect(await screen.findByText(/isn't right/)).toBeTruthy();
+
+    await user.clear(screen.getByLabelText('Code'));
+    await user.type(screen.getByLabelText('Code'), '123 456');
+    await user.click(screen.getByRole('button', { name: 'Add email' }));
+    expect(await account.findByText('camilo@example.com')).toBeTruthy();
+    expect(calls).toEqual(['add camilo@example.com', 'confirm camilo@example.com']);
+    expect(account.queryByRole('button', { name: 'Add your email' })).toBeNull();
+  });
+
+  it('signs this device in with an email, then cleans up and fetches the bands', async () => {
+    const { identity, calls } = accountIdentity({ email: null });
+    const finishSignIn = vi.fn(async () => ({ bandIds: ['b1'], retired: 1 }));
+    const { user } = await setup({ overrides: { identity, finishSignIn } });
+    const account = within(await screen.findByRole('region', { name: 'Your account' }));
+
+    await user.click(account.getByRole('button', { name: 'Sign in with email' }));
+    await user.type(screen.getByLabelText('Email'), 'camilo@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send code' }));
+    await user.type(await screen.findByLabelText('Code'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    await waitFor(() =>
+      expect(finishSignIn).toHaveBeenCalledWith({ userId: VERA, accessToken: 'old' }),
+    );
+    expect(calls).toEqual(['request camilo@example.com', 'sign in camilo@example.com']);
+  });
+
+  it('checks the email before sending anything', async () => {
+    const { identity, calls } = accountIdentity({ email: null });
+    const { user } = await setup({ overrides: { identity } });
+    await user.click(await screen.findByRole('button', { name: 'Add your email' }));
+    await user.type(screen.getByLabelText('Email'), 'not an email');
+    await user.click(screen.getByRole('button', { name: 'Send code' }));
+    expect(screen.getByText("That doesn't look like an email address.")).toBeTruthy();
+    expect(calls).toEqual([]);
   });
 });
