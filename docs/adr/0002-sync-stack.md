@@ -36,7 +36,9 @@ Build our own sync on Supabase: **local outbox → push RPC → pull by server s
 - **`sync_push(ops)`** is a Postgres function called through Supabase RPC.
   - It applies a batch of operations in one transaction, checking the caller's role in each band.
   - It's idempotent: applied operation IDs are recorded, so a retried push is a no-op.
-- **`sync_pull(band_id, since_seq, limit)`** returns rows with `server_seq > since_seq` in order, including tombstones (soft-deleted rows), one page at a time.
+- **`sync_pull(band, client_schema, after_xid, after_seq, max_rows)`** returns the band's rows changed after the device's cursor, in order, including tombstones (soft-deleted rows), one page at a time.
+  - The cursor is the pair (writing transaction ID, `server_seq`) of the last row received, not `server_seq` alone. `server_seq` is taken when a row is written, not when its transaction commits, so a push holding seq 9 can commit after one holding seq 10; a device that had already pulled 10 would never see 9.
+  - So every write also records its transaction ID (`server_xid`), and a pull only returns rows from transactions older than every one still running. Nothing can then commit behind a device's cursor. (Added with #81, 2026-10-18.)
 - Row-level security still applies to all direct table access, as a second line of defence.
 
 ### Client
