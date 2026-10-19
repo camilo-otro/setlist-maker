@@ -1,6 +1,7 @@
 import { formatDuration, SONG_STATUS_LABELS, type Song } from '@setlist/core';
 import { History, Pencil, X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SpotifyLink } from '../components/SpotifyLink';
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
@@ -48,6 +49,7 @@ export function SongDetail({
 
       <div className="song-detail__actions">
         <span className={`status status--${song.status}`}>{SONG_STATUS_LABELS[song.status]}</span>
+        {song.spotifyId && <SpotifyLink spotifyId={song.spotifyId} title={song.title} />}
         {onEdit && (
           <button type="button" className="sm-button" onClick={onEdit}>
             <Pencil size={14} aria-hidden="true" />

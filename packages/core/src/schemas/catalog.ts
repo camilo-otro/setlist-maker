@@ -38,3 +38,6 @@ export const CatalogTrackSchema = z.object({
 
 export type CatalogTrack = z.infer<typeof CatalogTrackSchema>;
 export type CatalogTrackInput = z.input<typeof CatalogTrackSchema>;
+
+/** Where a Spotify track opens: the Spotify app when it's installed, the web player otherwise. */
+export const spotifyTrackUrl = (spotifyId: string) => `https://open.spotify.com/track/${spotifyId}`;

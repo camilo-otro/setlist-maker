@@ -75,12 +75,15 @@ export function SongDialog({
       return;
     }
     setErrors({});
+    // Spotify's results aren't in the catalog, and its artwork may only be shown, not kept
+    // (ADR 0003): a song from Spotify keeps just its IDs.
+    const fromCatalog = linked?.source === 'seed';
     const link = linked
       ? {
-          catalogTrackId: linked.id,
+          catalogTrackId: fromCatalog ? linked.id : null,
           spotifyId: linked.spotifyId,
           isrc: linked.isrc,
-          artworkUrl: linked.artworkUrl,
+          artworkUrl: fromCatalog ? linked.artworkUrl : null,
         }
       : {};
     void run(() =>
@@ -158,12 +161,13 @@ export function SongDialog({
             <div className="catalog-link form-grid__wide" role="status">
               <Link2 size={16} aria-hidden="true" />
               <span>
-                From the catalog: <strong>{linked.title}</strong> · {linked.artists.join(', ')}
+                {linked.source === 'spotify' ? 'From Spotify' : 'From the catalog'}:{' '}
+                <strong>{linked.title}</strong> · {linked.artists.join(', ')}
               </span>
               <button
                 type="button"
                 className="icon-button"
-                aria-label="Don't link to the catalog"
+                aria-label="Don't link this song"
                 onClick={() => setLinked(null)}
               >
                 <X size={14} aria-hidden="true" />

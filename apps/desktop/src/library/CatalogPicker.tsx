@@ -2,6 +2,7 @@ import { duplicateKey, formatDuration, type CatalogTrack, type Song } from '@set
 import type { CatalogSearch } from '@setlist/storage';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { SpotifyAttribution, SpotifyLink } from '../components/SpotifyLink';
 
 const DELAY_MS = 250;
 
@@ -16,7 +17,11 @@ function inLibrary(track: CatalogTrack, songs: readonly Song[]): boolean {
   );
 }
 
-/** Searches the shared catalog as you type; picking a result fills in the song. */
+/**
+ * Searches as you type: the shared catalog, and Spotify when the catalog has few matches (#58).
+ * Picking a result fills in the song. Spotify's results show as Spotify gives them, with its
+ * artwork, an Open Spotify link and a credit (ADR 0003).
+ */
 export function CatalogPicker({
   catalog,
   librarySongs,
@@ -59,8 +64,8 @@ export function CatalogPicker({
           type="search"
           className="sm-input"
           autoFocus
-          placeholder="Search the song catalog by title or artist"
-          aria-label="Search the song catalog"
+          placeholder="Search for a song by title or artist"
+          aria-label="Search for a song"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -69,37 +74,55 @@ export function CatalogPicker({
         <div className="catalog-picker__results" aria-live="polite">
           {failed ? (
             <p className="sm-field__error">
-              Couldn&apos;t search the catalog. Check your connection, or fill in the song below.
+              Couldn&apos;t search for songs. Check your connection, or fill in the song below.
             </p>
           ) : tracks === null ? (
             <p className="muted">Searching…</p>
           ) : tracks.length === 0 ? (
-            <p className="muted">No matches in the catalog. Fill in the song below instead.</p>
+            <p className="muted">No matches. Fill in the song below instead.</p>
           ) : (
-            <ul className="catalog-picker__list" aria-label="Catalog matches">
-              {tracks.map((track) => (
-                <li key={track.id}>
-                  <button
-                    type="button"
-                    className="catalog-picker__track"
-                    onClick={() => onPick(track)}
-                  >
-                    <span className="catalog-picker__title">{track.title}</span>
-                    <span className="muted">
-                      {[
-                        track.artists.join(', '),
-                        track.durationSec !== null && formatDuration(track.durationSec),
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                    {inLibrary(track, librarySongs) && (
-                      <span className="badge">In your library</span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="catalog-picker__list" aria-label="Search results">
+                {tracks.map((track) => {
+                  const artists = track.artists.join(', ');
+                  return (
+                    <li key={track.id} className="catalog-picker__item">
+                      <button
+                        type="button"
+                        className="catalog-picker__track"
+                        title={`${track.title} · ${artists}`}
+                        onClick={() => onPick(track)}
+                      >
+                        {track.artworkUrl ? (
+                          <img className="catalog-picker__art" src={track.artworkUrl} alt="" />
+                        ) : (
+                          <span className="catalog-picker__art" aria-hidden="true" />
+                        )}
+                        <span className="catalog-picker__text">
+                          <span className="catalog-picker__title">{track.title}</span>
+                          <span className="muted">
+                            {[
+                              artists,
+                              track.releaseYear,
+                              track.durationSec !== null && formatDuration(track.durationSec),
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </span>
+                        {inLibrary(track, librarySongs) && (
+                          <span className="badge">In your library</span>
+                        )}
+                      </button>
+                      {track.spotifyId && (
+                        <SpotifyLink spotifyId={track.spotifyId} title={track.title} />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {tracks.some((track) => track.source === 'spotify') && <SpotifyAttribution />}
+            </>
           )}
         </div>
       )}
