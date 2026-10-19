@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { openWorkspace, type Workspace } from './workspace';
 
 type State =
@@ -22,20 +30,24 @@ const WorkspaceContext = createContext<WorkspaceValue | null>(null);
 function ProvideWorkspace({ workspace, children }: { workspace: Workspace; children: ReactNode }) {
   const [band, setBand] = useState(workspace.band);
   const [dataVersion, setDataVersion] = useState(0);
+  const { repository } = workspace;
+  const bandId = workspace.band.id;
+
+  // Stable functions: effects that depend on them (like the sync scheduler's) must not re-run
+  // every time the data changes.
+  const renameBand = useCallback(
+    async (name: string) => setBand(await repository.bands.update(bandId, { name })),
+    [repository, bandId],
+  );
+  const notifyRemoteChanges = useCallback(() => {
+    setDataVersion((n) => n + 1);
+    // The band itself may have been renamed on another device.
+    void repository.bands.get(bandId).then((latest) => latest && setBand(latest));
+  }, [repository, bandId]);
+
   const value = useMemo<WorkspaceValue>(
-    () => ({
-      ...workspace,
-      band,
-      renameBand: async (name) =>
-        setBand(await workspace.repository.bands.update(band.id, { name })),
-      dataVersion,
-      notifyRemoteChanges: () => {
-        setDataVersion((n) => n + 1);
-        // The band itself may have been renamed on another device.
-        void workspace.repository.bands.get(band.id).then((latest) => latest && setBand(latest));
-      },
-    }),
-    [workspace, band, dataVersion],
+    () => ({ ...workspace, band, renameBand, dataVersion, notifyRemoteChanges }),
+    [workspace, band, renameBand, dataVersion, notifyRemoteChanges],
   );
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

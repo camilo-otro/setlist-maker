@@ -85,6 +85,18 @@ describe('SyncProvider', () => {
     expect(sharing.push).not.toHaveBeenCalled();
   });
 
+  it('keeps one connection while changes keep arriving', async () => {
+    const { anotherDevice, signal, sharing } = await setup();
+    await screen.findByText('Made on the phone');
+    await anotherDevice('Second change');
+    signal();
+    await screen.findByText('Second change');
+    await anotherDevice('Third change');
+    signal();
+    await screen.findByText('Third change');
+    expect(sharing.listen).toHaveBeenCalledTimes(1);
+  });
+
   it('pulls straight away when another device signals a change', async () => {
     const { anotherDevice, signal, sharing } = await setup();
     await screen.findByText('Made on the phone');
