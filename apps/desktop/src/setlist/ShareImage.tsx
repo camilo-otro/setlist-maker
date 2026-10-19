@@ -1,0 +1,134 @@
+import type { Gig, Song, Venue } from '@setlist/core';
+import { invoke } from '@tauri-apps/api/core';
+import { Check, Download, Image as ImageIcon } from 'lucide-react';
+import { useState } from 'react';
+import { currentPlatform } from '../storage/workspace';
+import { canShareSheet } from './shareSheet';
+import { canvasMeasure, drawSetlistImage, imageFileName, layoutSetlistImage } from './setlistImage';
+import type { BlockWithEntries } from './useGigSetlist';
+
+type Status = { kind: 'idle' } | { kind: 'done'; message: string } | { kind: 'failed' };
+
+/**
+ * The setlist as a picture for a chat (#84). Phones get the share sheet, straight to WhatsApp;
+ * elsewhere it copies to the clipboard (to paste into WhatsApp Desktop or Web) or saves a PNG.
+ * A snapshot: the share link stays the way to follow later changes.
+ */
+export function ShareImage({
+  gig,
+  venue,
+  blocks,
+  songsById,
+}: {
+  gig: Gig;
+  venue: Venue | null;
+  blocks: readonly BlockWithEntries[];
+  songsById: ReadonlyMap<string, Song>;
+}) {
+  const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  const name = imageFileName(gig);
+  const picture = () =>
+    drawSetlistImage(
+      layoutSetlistImage({ gig, venue, blocks, songsById, measure: canvasMeasure() }),
+    );
+
+  async function run(action: () => Promise<string | null>) {
+    setStatus({ kind: 'idle' });
+    try {
+      const message = await action();
+      if (!message) return;
+      setStatus({ kind: 'done', message });
+      setTimeout(() => setStatus({ kind: 'idle' }), 2500);
+    } catch (error) {
+      // Closing the share sheet isn't a failure.
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setStatus({ kind: 'failed' });
+      }
+    }
+  }
+
+  const share = () =>
+    run(async () => {
+      const file = new File([await picture()], name, { type: 'image/png' });
+      await navigator.share({ files: [file] });
+      return null;
+    });
+
+  // The picture goes in as a promise so the clipboard is opened while the click still counts
+  // (Safari's rule); it's drawn meanwhile.
+  const copy = () =>
+    run(async () => {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': picture() })]);
+      return 'Image copied';
+    });
+
+  const save = () =>
+    run(async () => {
+      const blob = await picture();
+      if (currentPlatform() === 'desktop') {
+        const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+        await invoke<string>('save_download', { name, bytes });
+        return 'Saved to Downloads';
+      }
+      const url = URL.createObjectURL(blob);
+      const link = Object.assign(document.createElement('a'), { href: url, download: name });
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return 'Saved';
+    });
+
+  const failed = status.kind === 'failed';
+  const label = (idle: string) =>
+    status.kind === 'done' ? status.message : failed ? 'Try again' : idle;
+  const icon =
+    status.kind === 'done' ? (
+      <Check size={14} aria-hidden="true" />
+    ) : (
+      <ImageIcon size={14} aria-hidden="true" />
+    );
+
+  if (canShareSheet()) {
+    return (
+      <button
+        type="button"
+        className="sm-button"
+        onClick={() => void share()}
+        title={failed ? "Couldn't share the image" : 'Share the setlist as a picture'}
+      >
+        {icon}
+        {label('Share image')}
+      </button>
+    );
+  }
+  const canCopy = typeof ClipboardItem === 'function' && Boolean(navigator.clipboard?.write);
+  return (
+    <>
+      {canCopy && (
+        <button
+          type="button"
+          className="sm-button"
+          onClick={() => void copy()}
+          title={
+            failed ? "Couldn't copy the image" : 'Copy the setlist as a picture, to paste in a chat'
+          }
+        >
+          {icon}
+          {label('Copy image')}
+        </button>
+      )}
+      <button
+        type="button"
+        className="icon-button"
+        aria-label={canCopy ? 'Save image' : label('Save image')}
+        title={`Save the setlist as a picture (${name})`}
+        onClick={() => void save()}
+      >
+        {!canCopy && status.kind === 'done' ? (
+          <Check size={18} aria-hidden="true" />
+        ) : (
+          <Download size={18} aria-hidden="true" />
+        )}
+      </button>
+    </>
+  );
+}

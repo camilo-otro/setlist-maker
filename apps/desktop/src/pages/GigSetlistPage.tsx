@@ -13,6 +13,7 @@ import { GigDialog } from '../gigs/GigDialog';
 import { setlistChanges } from '../setlist/changes';
 import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { SetlistEditor } from '../setlist/SetlistEditor';
+import { ShareImage } from '../setlist/ShareImage';
 import { useGigSetlist } from '../setlist/useGigSetlist';
 import { useMembership } from '../sharing/MembershipProvider';
 import { ShareDialog } from '../sharing/ShareDialog';
@@ -103,13 +104,6 @@ export function GigSetlistPage() {
           <p className="muted gig-header__details">{details.join(' · ')}</p>
         </div>
         <div className="gig-header__actions">
-          <CopyForWhatsApp
-            gig={gig}
-            venue={venue}
-            blocks={blocks}
-            songsById={songsById}
-            sharing={sharing}
-          />
           {canEdit && (
             <>
               <button
@@ -144,6 +138,14 @@ export function GigSetlistPage() {
               )}
             </>
           )}
+          <CopyForWhatsApp
+            gig={gig}
+            venue={venue}
+            blocks={blocks}
+            songsById={songsById}
+            sharing={sharing}
+          />
+          <ShareImage gig={gig} venue={venue} blocks={blocks} songsById={songsById} />
         </div>
       </header>
 

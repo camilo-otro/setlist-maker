@@ -2,12 +2,9 @@ import type { Gig, Song, Venue } from '@setlist/core';
 import { Check, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { Sharing } from '../sharing/sharing';
+import { canShareSheet } from './shareSheet';
 import type { BlockWithEntries } from './useGigSetlist';
 import { whatsappText } from './whatsappText';
-
-/** True on touch screens that have a system share sheet: phones, and tablets. */
-const canShareSheet = () =>
-  typeof navigator.share === 'function' && window.matchMedia?.('(pointer: coarse)').matches;
 
 /**
  * Puts the setlist, as WhatsApp-ready text, where it can be pasted (#83): the share sheet on a

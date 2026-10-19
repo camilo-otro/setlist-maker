@@ -1,4 +1,5 @@
 mod db;
+mod downloads;
 mod identity;
 
 use std::sync::Mutex;
@@ -26,6 +27,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       db::db_execute,
       db::db_select,
+      downloads::save_download,
       identity::identity_load,
       identity::identity_save
     ])
