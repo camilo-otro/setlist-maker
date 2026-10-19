@@ -52,11 +52,19 @@ export function identityFromEnv(
 
 export const DEFAULT_BAND_NAME = 'My band';
 
-/** The band to show, creating one on first launch. Runs in a transaction so it never creates two. */
+/**
+ * The band to show: the one most recently shared or joined on this device, else the first one,
+ * creating it on first launch. Runs in a transaction so it never creates two.
+ */
 export function ensureBand(repository: Repository): Promise<Band> {
   return repository.transaction(async (tx) => {
-    const [existing] = await tx.bands.list();
-    return existing ?? tx.bands.create({ name: DEFAULT_BAND_NAME });
+    const bands = await tx.bands.list();
+    const shared = await tx.outbox.sharedBands();
+    for (const id of [...shared].reverse()) {
+      const band = bands.find((b) => b.id === id);
+      if (band) return band;
+    }
+    return bands[0] ?? tx.bands.create({ name: DEFAULT_BAND_NAME });
   });
 }
 

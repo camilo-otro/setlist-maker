@@ -160,3 +160,18 @@ body {
 .entry--note {
   font-style: italic;
 }
+
+.invitation p {
+  color: var(--sm-text);
+}
+
+.invitation__steps {
+  display: inline-block;
+  margin: 8px 0 20px;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.invitation__steps li {
+  margin: 4px 0;
+}
