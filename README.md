@@ -119,6 +119,7 @@ The same app runs in a browser at `https://setlist.rockthehouse.app/app/`, for e
 
 - **Data:** SQLite compiled to WebAssembly (`@sqlite.org/sqlite-wasm`) in a Web Worker, kept in the browser's origin private file system (the "opfs-sahpool" mode, which needs no special server headers). It's the same repository, migrations and contract tests as desktop. That storage allows one tab at a time: a second tab works in memory and says so.
 - **Sign-in:** kept in the site's localStorage.
+- **Installing and offline:** a web app manifest and icons (`apps/desktop/public`), and a service worker that `build/serviceWorker.ts` writes into each web build listing that build's files. The app opens from the cache when offline and syncs when back online; a new version takes over once every window of the app is closed. The app asks the browser to keep its data, and suggests adding it to the home screen (Share, then Add to Home Screen on iPhone; an Install button where the browser offers one).
 
 The **Viewer** workflow builds the viewer and the web app together and publishes them as one Netlify site: the viewer at `/`, the app at `/app/`. The site's `_headers` allow WebAssembly (`'wasm-unsafe-eval'`, which doesn't allow JavaScript `eval`) and Realtime's `wss://` connections.
 

@@ -24,6 +24,10 @@ export interface Workspace {
   persistent: boolean;
   /** Why data isn't saved, when that's not just the preview (e.g. the app is open in another tab). */
   storageNote?: string;
+  /** Where the app runs. Optional so tests can leave it out. */
+  platform?: Platform;
+  /** Web app: whether the browser agreed to keep its data (see web/install.ts). */
+  storageProtected?: Promise<boolean>;
   /** The shared song catalog, or null when the app isn't configured with a Supabase project. */
   catalog?: CatalogSearch | null;
   /** Who this device is on the server, for sharing; null without a Supabase project. */
@@ -91,6 +95,7 @@ async function openStorage(platform: Platform): Promise<{
   identityStore: IdentityStore;
   persistent: boolean;
   storageNote?: string;
+  storageProtected?: Promise<boolean>;
 }> {
   if (platform === 'desktop') {
     return {
@@ -103,6 +108,7 @@ async function openStorage(platform: Platform): Promise<{
     // Loaded only in the web build: it brings the SQLite worker and WebAssembly with it.
     const { createWebSqlDriver } = await import('./web/webSqlDriver');
     const { createWebIdentityStore } = await import('./web/webIdentityStore');
+    const { requestPersistentStorage } = await import('./web/install');
     const driver = createWebSqlDriver();
     const storage = await driver.opened;
     return {
@@ -110,6 +116,8 @@ async function openStorage(platform: Platform): Promise<{
       identityStore: createWebIdentityStore(),
       persistent: storage.persistent,
       storageNote: storage.persistent ? undefined : STORAGE_NOTES[storage.reason],
+      // Not awaited: a browser may ask the user, and the app shouldn't wait for an answer.
+      storageProtected: requestPersistentStorage(),
     };
   }
   return {
@@ -120,8 +128,9 @@ async function openStorage(platform: Platform): Promise<{
 }
 
 async function open(): Promise<Workspace> {
-  const { repository, identityStore, persistent, storageNote } =
-    await openStorage(currentPlatform());
+  const platform = currentPlatform();
+  const { repository, identityStore, persistent, storageNote, storageProtected } =
+    await openStorage(platform);
   const band = await ensureBand(repository);
   const env = import.meta.env;
   const identity = identityFromEnv(env, identityStore);
@@ -130,6 +139,8 @@ async function open(): Promise<Workspace> {
     band,
     persistent,
     storageNote,
+    platform,
+    storageProtected,
     catalog: catalogFromEnv(env),
     identity,
     sharing:

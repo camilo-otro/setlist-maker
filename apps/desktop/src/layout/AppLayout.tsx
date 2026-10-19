@@ -13,6 +13,7 @@ import { NavLink, Outlet } from 'react-router';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 import { useMembership } from '../sharing/MembershipProvider';
 import { BandNameDialog } from './BandNameDialog';
+import { InstallHint } from './InstallHint';
 import { SyncStatusLine } from './SyncStatusLine';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
@@ -87,6 +88,7 @@ export function AppLayout() {
         </div>
       </aside>
       <main className="app-main">
+        <InstallHint />
         <Outlet />
       </main>
       {renaming && (

@@ -1463,6 +1463,29 @@ body {
   flex: 1;
 }
 
+/* Web app: a suggestion to install it to the home screen. */
+.install-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+}
+
+.install-hint p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.install-hint svg {
+  vertical-align: -2px;
+}
+
 /*
  * Phones (#42): the sidebar becomes a tab bar at the bottom, a slim header shows the band and
  * sync status, pages go single column, and the setlist editor's library becomes a sheet opened
