@@ -1,6 +1,6 @@
 {
   "name": "Setlist Maker",
-  "short_name": "Setlists",
+  "short_name": "Setlist Maker",
   "description": "Plan and organize setlists for your band, and share them with your bandmates.",
   "id": "./",
   "start_url": "./#/gigs",
