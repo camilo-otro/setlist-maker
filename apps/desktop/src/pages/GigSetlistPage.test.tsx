@@ -205,7 +205,9 @@ describe('GigSetlistPage', () => {
     await user.type(dialog().getByLabelText('Target length (m:ss)'), '3:00');
     await user.click(dialog().getByRole('button', { name: 'Save' }));
 
-    const time = await set('Opening set').findByLabelText('Running time 3:45 of 3:00');
+    // The rename shows once the change has saved and the page reloaded.
+    const renamed = within(await screen.findByRole('region', { name: 'Opening set' }));
+    const time = await renamed.findByLabelText('Running time 3:45 of 3:00');
     expect(time.className).toContain('set__time--over');
   });
 
