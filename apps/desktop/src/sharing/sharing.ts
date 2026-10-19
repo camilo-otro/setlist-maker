@@ -1,5 +1,6 @@
 import {
   AppOutdatedError,
+  createChangeSignal,
   createPuller,
   createPusher,
   createShareLinks,
@@ -28,6 +29,8 @@ export interface Sharing {
   push(): Promise<PushResult>;
   /** Downloads and applies changes made on other devices. */
   pull(): Promise<PullResult>;
+  /** Calls `onChange` when another device changes the band (Realtime). Returns a stop function. */
+  listen(onChange: () => void): () => void;
 }
 
 export function createSharing({
@@ -47,6 +50,7 @@ export function createSharing({
 }): Sharing {
   const pusher = createPusher({ repository, identity, url, key });
   const puller = createPuller({ repository, identity, url, key });
+  const signal = createChangeSignal({ url, key, identity });
   return {
     identity,
     links: createShareLinks({ identity, url, key, viewerUrl }),
@@ -61,5 +65,6 @@ export function createSharing({
     },
     push: () => pusher.push(),
     pull: () => puller.pull(bandId),
+    listen: (onChange) => signal.listen(bandId, onChange),
   };
 }

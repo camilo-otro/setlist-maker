@@ -13,7 +13,11 @@ export interface RemoteChange {
 }
 
 export interface PullResult {
-  /** Rows written locally. */
+  /**
+   * Rows whose content changed locally. A device's own edits coming back from the server are
+   * still stored (to take the server's version and author) but don't count, so screens don't
+   * re-load for them.
+   */
   applied: number;
   /** Rows that didn't pass this app's validation, left out rather than blocking sync. */
   skipped: number;
@@ -32,6 +36,17 @@ const TABLES_BY_SERVER_NAME = new Map(TABLE_NAMES.map((name) => [snakeCase(name)
 const TIMESTAMP_FIELDS = new Set(['createdAt', 'updatedAt', 'deletedAt']);
 const camelCase = (column: string) =>
   column.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+
+/** Fields the server keeps its own way; differences in them alone aren't a change to show. */
+const BOOKKEEPING_FIELDS = new Set(['version', 'updatedBy']);
+
+function changesContent(table: TableName, local: StoredRow, remote: StoredRow): boolean {
+  return fieldsOf(table).some(
+    (field) =>
+      !BOOKKEEPING_FIELDS.has(field) &&
+      JSON.stringify(local[field]) !== JSON.stringify(remote[field]),
+  );
+}
 
 /** A server row as the app stores it, or null if it doesn't pass the app's schema. */
 function fromServer(table: TableName, row: Record<string, unknown>): StoredRow | null {
@@ -84,18 +99,15 @@ export function applyPulledChanges(
         result.skipped += 1;
         continue;
       }
+      const local = (await tx[table].get(remote.id, { includeDeleted: true })) as StoredRow | null;
       const keep = unsent.get(remote.id);
-      if (keep) {
-        const local = (await tx[table].get(remote.id, {
-          includeDeleted: true,
-        })) as StoredRow | null;
-        if (local) {
-          for (const field of keep)
-            if (field !== 'deletedAt' || !remote.deletedAt) remote[field] = local[field];
+      if (local && keep) {
+        for (const field of keep) {
+          if (field !== 'deletedAt' || !remote.deletedAt) remote[field] = local[field];
         }
       }
       byTable.set(table, [...(byTable.get(table) ?? []), remote]);
-      result.applied += 1;
+      if (!local || changesContent(table, local, remote)) result.applied += 1;
     }
 
     for (const [table, rows] of byTable) await tx[table].applySynced(rows as never);

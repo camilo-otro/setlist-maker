@@ -60,6 +60,7 @@ export async function openSqliteRepository(
       (await driver.select('SELECT "band_id" FROM "shared_bands"')).map((r) => r.band_id as string),
     );
 
+  const listeners = new Set<() => void>();
   const appendOp = (op: OutboxOp) =>
     driver.execute(
       'INSERT INTO "outbox" ("id", "table_name", "row_id", "band_id", "fields") VALUES (?, ?, ?, ?, ?)',
@@ -73,7 +74,10 @@ export async function openSqliteRepository(
     for (const [before, after] of changes) {
       if (!shared.has(bandOf(name, after))) continue;
       const op = outboxOp(name, before, after);
-      if (op) await appendOp(op);
+      if (op) {
+        await appendOp(op);
+        for (const listener of listeners) listener();
+      }
     }
   }
 
@@ -195,6 +199,10 @@ export async function openSqliteRepository(
             [bandId, ctx.now()],
           ),
         ),
+      onRecorded: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
       append: (ops) =>
         run(async () => {
           for (const op of ops) await appendOp(op);

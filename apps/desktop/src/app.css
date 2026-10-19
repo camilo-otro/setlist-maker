@@ -176,6 +176,36 @@ body {
   padding: 0 10px;
 }
 
+/* Sync status, above the theme switcher */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--sm-text-muted);
+  font-size: 0.75rem;
+}
+
+.sync-status__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sync-status--ok .sync-status__dot {
+  background: #22a06b;
+}
+
+.sync-status--busy .sync-status__dot {
+  background: var(--sm-accent);
+}
+
+.sync-status--warn {
+  color: var(--sm-danger);
+}
+
 /* Theme switcher */
 .theme-switcher {
   display: inline-flex;

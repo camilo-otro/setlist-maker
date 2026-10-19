@@ -95,6 +95,26 @@ describe.each(implementations)('applyPulledChanges (%s)', (_, open) => {
     expect((await repository.outbox.pending(10)).map((op) => op.fields.key)).toEqual(['C']);
   });
 
+  it("stores this device's own edits coming back, but doesn't count them as changes", async () => {
+    const { repository, bandId } = await setup();
+    await applyPulledChanges(repository, bandId, [serverSong(bandId, ID)], { xid: '9', seq: 4 });
+    const local = (await repository.songs.get(ID))!;
+    const echo = serverSong(bandId, ID, {
+      version: 9,
+      updated_by: '01900000-0000-7000-8000-0000000000a9',
+    });
+
+    expect(await applyPulledChanges(repository, bandId, [echo], { xid: '10', seq: 5 })).toEqual({
+      applied: 0,
+      skipped: 0,
+    });
+    expect(await repository.songs.get(ID)).toEqual({
+      ...local,
+      version: 9,
+      updatedBy: '01900000-0000-7000-8000-0000000000a9',
+    });
+  });
+
   it('applies deletions from the server, even over unsent edits', async () => {
     const { repository, bandId } = await setup();
     await applyPulledChanges(repository, bandId, [serverSong(bandId, ID)], { xid: '9', seq: 4 });

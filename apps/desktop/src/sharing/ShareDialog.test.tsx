@@ -27,6 +27,7 @@ function fakeSharing({ signedIn = false, failShare = 0 } = {}) {
     }),
     push: async () => ({ sent: 0, rejected: [] }),
     pull: async () => ({ applied: 0, skipped: 0 }),
+    listen: () => () => {},
     links: {
       active: async () => links.at(-1) ?? null,
       create: vi.fn<ShareLinks['create']>(async () => {

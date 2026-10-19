@@ -34,6 +34,7 @@ interface State {
  */
 export function createMemoryRepository(options: RepositoryOptions = {}): Repository {
   const ctx = writeContext(options);
+  const listeners = new Set<() => void>();
   let state: State = {
     tables: new Map(TABLE_NAMES.map((name) => [name, new Map()])),
     outbox: [],
@@ -54,7 +55,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
         rows().set(row.id, row);
         if (state.shared.has(bandOf(name, row))) {
           const op = outboxOp(name, before, row);
-          if (op) state.outbox.push(op);
+          if (op) {
+            state.outbox.push(op);
+            for (const listener of listeners) listener();
+          }
         }
         return copyRow(row);
       };
@@ -97,6 +101,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
           state.shared.add(bandId);
         }),
       sharedBands: () => run(() => [...state.shared]),
+      onRecorded: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
       append: (ops) =>
         run(() => {
           state.outbox.push(...ops);

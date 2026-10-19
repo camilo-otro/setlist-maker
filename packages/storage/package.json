@@ -12,7 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@setlist/core": "workspace:*"
+    "@setlist/core": "workspace:*",
+    "@supabase/realtime-js": "^2.118.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2"

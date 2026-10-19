@@ -31,6 +31,12 @@ export interface Outbox {
   pending(limit: number): Promise<OutboxOp[]>;
   /** Removes operations the server has dealt with. */
   acknowledge(ids: readonly string[]): Promise<void>;
+  /**
+   * Calls `listener` whenever a write queues operations, so the app can schedule an upload. It may
+   * fire inside a transaction that's later rolled back; the next sync then finds nothing to send.
+   * Returns a function that stops listening.
+   */
+  onRecorded(listener: () => void): () => void;
   /** Where the band's last pull stopped; the start for a band never pulled. */
   pullCursor(bandId: string): Promise<PullCursor>;
   setPullCursor(bandId: string, cursor: PullCursor): Promise<void>;

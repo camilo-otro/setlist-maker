@@ -497,6 +497,19 @@ export function describeRepositoryContract(
         expect((await repo.outbox.pending(10)).map((op) => op.table)).toEqual(['set_blocks']);
       });
 
+      it('tells listeners when a write queues an upload', async () => {
+        let heard = 0;
+        const stop = repo.outbox.onRecorded(() => (heard += 1));
+        await repo.songs.create({ bandId, title: 'Solo band: nothing queued' });
+        expect(heard).toBe(0);
+        await repo.outbox.shareBand(bandId);
+        await repo.songs.create({ bandId, title: 'Queued' });
+        expect(heard).toBe(1);
+        stop();
+        await repo.songs.create({ bandId, title: 'Not heard' });
+        expect(heard).toBe(1);
+      });
+
       it('loses the operation when the write is rolled back', async () => {
         await repo.outbox.shareBand(bandId);
         await expect(

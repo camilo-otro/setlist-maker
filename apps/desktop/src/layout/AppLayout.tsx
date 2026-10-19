@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 import { BandNameDialog } from './BandNameDialog';
+import { SyncStatusLine } from './SyncStatusLine';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 export const NAV_ITEMS = [
@@ -58,6 +59,7 @@ export function AppLayout() {
           ))}
         </nav>
         <div className="sidebar__footer">
+          <SyncStatusLine />
           <ThemeSwitcher />
         </div>
       </aside>
