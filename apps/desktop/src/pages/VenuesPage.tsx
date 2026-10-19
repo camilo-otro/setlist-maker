@@ -4,6 +4,7 @@ import { MapPin, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useBandRows } from '../storage/useBandRows';
 import { VenueDialog } from '../venues/VenueDialog';
+import { useMembership } from '../sharing/MembershipProvider';
 
 const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
@@ -25,6 +26,7 @@ export function VenuesPage() {
     return counts;
   }, [gigs.rows]);
 
+  const { canEdit } = useMembership();
   const addButton = (
     <button type="button" className="sm-button sm-button--primary" onClick={() => setEditing(null)}>
       <Plus size={16} aria-hidden="true" />
@@ -48,7 +50,7 @@ export function VenuesPage() {
           Save the places you play, with notes like the load-in door or who to call. You can also
           add a venue while creating a gig.
         </EmptyState>
-        <div className="library-empty-action">{addButton}</div>
+        {canEdit && <div className="library-empty-action">{addButton}</div>}
       </>
     );
   } else {
@@ -68,13 +70,17 @@ export function VenuesPage() {
           {sorted.map((venue) => (
             <tr key={venue.id}>
               <td>
-                <button
-                  type="button"
-                  className="song-table__title"
-                  onClick={() => setEditing(venue)}
-                >
-                  {venue.name}
-                </button>
+                {canEdit ? (
+                  <button
+                    type="button"
+                    className="song-table__title"
+                    onClick={() => setEditing(venue)}
+                  >
+                    {venue.name}
+                  </button>
+                ) : (
+                  venue.name
+                )}
               </td>
               <td>{venue.city}</td>
               <td>{venue.address}</td>
@@ -90,7 +96,7 @@ export function VenuesPage() {
     <>
       <PageHeader
         title="Venues"
-        actions={venues.rows && venues.rows.length > 0 ? addButton : undefined}
+        actions={canEdit && venues.rows && venues.rows.length > 0 ? addButton : undefined}
       />
       {content}
       {editing !== undefined && (

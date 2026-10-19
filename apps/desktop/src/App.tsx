@@ -1,5 +1,6 @@
 import { HashRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
+import { MembershipProvider } from './sharing/MembershipProvider';
 import { SyncProvider } from './sharing/SyncProvider';
 import { WorkspaceProvider } from './storage/WorkspaceProvider';
 
@@ -8,9 +9,11 @@ export function App() {
   return (
     <WorkspaceProvider>
       <SyncProvider>
-        <HashRouter>
-          <AppRoutes />
-        </HashRouter>
+        <MembershipProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </MembershipProvider>
       </SyncProvider>
     </WorkspaceProvider>
   );

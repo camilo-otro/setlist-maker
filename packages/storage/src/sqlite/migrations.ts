@@ -149,6 +149,20 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT`,
     ],
   },
+  {
+    version: 4,
+    name: 'Create band members',
+    statements: [
+      `CREATE TABLE "band_members" (${bandScoped},
+        "user_id" TEXT NOT NULL,
+        "display_name" TEXT NOT NULL,
+        "role" TEXT NOT NULL
+      ) STRICT`,
+      `CREATE INDEX "band_members_band" ON "band_members" ("band_id")`,
+      // Earlier pulls skipped members; start over so they come down too.
+      `DELETE FROM "pull_cursors"`,
+    ],
+  },
 ];
 
 /**

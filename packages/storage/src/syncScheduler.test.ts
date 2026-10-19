@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IdentityLostError } from './identity';
+import { NotAMemberError } from './pull';
 import { AppOutdatedError } from './push';
 import { createSyncScheduler, type SyncStatus } from './syncScheduler';
 
@@ -140,6 +141,12 @@ describe('createSyncScheduler', () => {
     await vi.advanceTimersByTimeAsync(200);
     expect(signedOut.scheduler.status()).toMatchObject({ state: 'stopped', reason: 'signed-out' });
     signedOut.scheduler.stop();
+
+    const removed = setup({ fail: () => new NotAMemberError() });
+    removed.scheduler.request('start');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(removed.scheduler.status()).toMatchObject({ state: 'stopped', reason: 'removed' });
+    removed.scheduler.stop();
   });
 
   it('syncs every minute while the window is focused', async () => {

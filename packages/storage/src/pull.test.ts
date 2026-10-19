@@ -139,7 +139,7 @@ describe.each(implementations)('applyPulledChanges (%s)', (_, open) => {
       bandId,
       [
         serverSong(bandId, ID, { key: 'not a key' }),
-        { table: 'band_members', row: { id: MEMBER, band_id: bandId } },
+        { table: 'setlist_comments', row: { id: MEMBER, band_id: bandId } },
         serverSong(bandId, '01900000-0000-7000-8000-000000000502', { title: 'Good' }),
       ],
       { xid: '9', seq: 4 },
@@ -147,6 +147,35 @@ describe.each(implementations)('applyPulledChanges (%s)', (_, open) => {
     expect(result).toEqual({ applied: 1, skipped: 1 });
     expect((await repository.songs.list({ bandId })).map((s) => s.title)).toEqual(['Good']);
     expect(await repository.outbox.pullCursor(bandId)).toEqual({ xid: '9', seq: 4 });
+  });
+
+  it('stores band members and their roles', async () => {
+    const { repository, bandId } = await setup();
+    await applyPulledChanges(
+      repository,
+      bandId,
+      [
+        {
+          table: 'band_members',
+          row: {
+            id: MEMBER,
+            band_id: bandId,
+            created_at: '2026-10-18T10:00:00+00:00',
+            updated_at: '2026-10-18T10:00:00+00:00',
+            updated_by: MEMBER,
+            deleted_at: null,
+            version: 1,
+            user_id: '5f0c6d3a-8a52-4f37-9d55-3c0b7f2f6e11',
+            display_name: 'Camilo',
+            role: 'owner',
+          },
+        },
+      ],
+      { xid: '9', seq: 4 },
+    );
+    expect(await repository.bandMembers.list({ bandId })).toMatchObject([
+      { displayName: 'Camilo', role: 'owner', userId: '5f0c6d3a-8a52-4f37-9d55-3c0b7f2f6e11' },
+    ]);
   });
 
   it('takes band renames from the server', async () => {

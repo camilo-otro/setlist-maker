@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
 import { useBandRows } from '../storage/useBandRows';
+import { useMembership } from '../sharing/MembershipProvider';
 
 type Tab = 'upcoming' | 'past';
 
@@ -101,6 +102,7 @@ export function GigsPage() {
     venues.reload();
   };
 
+  const { canEdit } = useMembership();
   const newButton = (
     <button
       type="button"
@@ -136,7 +138,7 @@ export function GigsPage() {
         <EmptyState icon={<CalendarDays size={24} />} title="No gigs planned">
           Create a gig to start building its setlist. Each new gig starts with an empty first set.
         </EmptyState>
-        <div className="library-empty-action">{newButton}</div>
+        {canEdit && <div className="library-empty-action">{newButton}</div>}
       </>
     );
   } else {
@@ -191,7 +193,7 @@ export function GigsPage() {
     <>
       <PageHeader
         title="Gigs"
-        actions={gigs.rows && gigs.rows.length > 0 ? newButton : undefined}
+        actions={canEdit && gigs.rows && gigs.rows.length > 0 ? newButton : undefined}
       />
       {content}
       {creating && (

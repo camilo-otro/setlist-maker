@@ -13,6 +13,7 @@ import { GigDialog } from '../gigs/GigDialog';
 import { setlistChanges } from '../setlist/changes';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { useGigSetlist } from '../setlist/useGigSetlist';
+import { useMembership } from '../sharing/MembershipProvider';
 import { ShareDialog } from '../sharing/ShareDialog';
 import { useHistory } from '../setlist/useHistory';
 import { useBandRows } from '../storage/useBandRows';
@@ -41,6 +42,7 @@ export function GigSetlistPage() {
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
+  const { canEdit } = useMembership();
 
   const songsById = useMemo(
     () => new Map((songs.rows ?? []).map((song) => [song.id, song])),
@@ -100,35 +102,39 @@ export function GigSetlistPage() {
           <p className="muted gig-header__details">{details.join(' · ')}</p>
         </div>
         <div className="gig-header__actions">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={history.undoLabel ? `Undo ${history.undoLabel}` : 'Undo'}
-            title={history.undoLabel ? `Undo ${history.undoLabel} (Ctrl+Z)` : 'Nothing to undo'}
-            disabled={!history.canUndo}
-            onClick={() => void history.undo()}
-          >
-            <Undo2 size={18} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={history.redoLabel ? `Redo ${history.redoLabel}` : 'Redo'}
-            title={history.redoLabel ? `Redo ${history.redoLabel} (Ctrl+Y)` : 'Nothing to redo'}
-            disabled={!history.canRedo}
-            onClick={() => void history.redo()}
-          >
-            <Redo2 size={18} aria-hidden="true" />
-          </button>
-          <button type="button" className="sm-button" onClick={() => setEditingGig(true)}>
-            <Pencil size={14} aria-hidden="true" />
-            Edit details
-          </button>
-          {sharing && (
-            <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
-              <Share2 size={14} aria-hidden="true" />
-              Share
-            </button>
+          {canEdit && (
+            <>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={history.undoLabel ? `Undo ${history.undoLabel}` : 'Undo'}
+                title={history.undoLabel ? `Undo ${history.undoLabel} (Ctrl+Z)` : 'Nothing to undo'}
+                disabled={!history.canUndo}
+                onClick={() => void history.undo()}
+              >
+                <Undo2 size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={history.redoLabel ? `Redo ${history.redoLabel}` : 'Redo'}
+                title={history.redoLabel ? `Redo ${history.redoLabel} (Ctrl+Y)` : 'Nothing to redo'}
+                disabled={!history.canRedo}
+                onClick={() => void history.redo()}
+              >
+                <Redo2 size={18} aria-hidden="true" />
+              </button>
+              <button type="button" className="sm-button" onClick={() => setEditingGig(true)}>
+                <Pencil size={14} aria-hidden="true" />
+                Edit details
+              </button>
+              {sharing && (
+                <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
+                  <Share2 size={14} aria-hidden="true" />
+                  Share
+                </button>
+              )}
+            </>
           )}
         </div>
       </header>
@@ -155,6 +161,7 @@ export function GigSetlistPage() {
       )}
 
       <SetlistEditor
+        readOnly={!canEdit}
         setlistId={setlist.id}
         blocks={blocks}
         songs={songs.rows}

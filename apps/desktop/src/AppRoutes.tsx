@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { AppLayout } from './layout/AppLayout';
+import { BandPage } from './pages/BandPage';
 import { GigSetlistPage } from './pages/GigSetlistPage';
 import { GigsPage } from './pages/GigsPage';
 import { LibraryPage } from './pages/LibraryPage';
@@ -18,6 +19,7 @@ export function AppRoutes() {
         <Route path="venues" element={<VenuesPage />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="band" element={<BandPage />} />
         <Route path="*" element={<Navigate to="/library" replace />} />
       </Route>
     </Routes>

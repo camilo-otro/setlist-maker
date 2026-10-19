@@ -86,6 +86,7 @@ export function SetlistEditor({
   warnings,
   changes,
   run,
+  readOnly = false,
 }: {
   setlistId: string;
   blocks: readonly BlockWithEntries[];
@@ -94,6 +95,8 @@ export function SetlistEditor({
   warnings: ReadonlyMap<string, readonly EntryWarning[]>;
   changes: SetlistChanges;
   run: (change: Change) => Promise<void>;
+  /** For viewers: shows the setlist without any way to change it. */
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -215,7 +218,7 @@ export function SetlistEditor({
       onDragEnd={onDragEnd}
       onDragCancel={() => setDragging(null)}
     >
-      <div className="setlist-editor">
+      <div className={readOnly ? 'setlist-editor setlist-editor--readonly' : 'setlist-editor'}>
         <div className="setlist-editor__sets">
           <SortableContext
             items={blocks.map(({ block }) => `block:${block.id}`)}
@@ -249,19 +252,23 @@ export function SetlistEditor({
               />
             ))}
           </SortableContext>
-          <button type="button" className="sm-button setlist-editor__add-set" onClick={addSet}>
-            <Plus size={16} aria-hidden="true" />
-            Add set
-          </button>
+          {!readOnly && (
+            <button type="button" className="sm-button setlist-editor__add-set" onClick={addSet}>
+              <Plus size={16} aria-hidden="true" />
+              Add set
+            </button>
+          )}
         </div>
-        <LibraryPanel
-          songs={songs}
-          blocks={blocks.map(({ block }) => block)}
-          usedSongIds={usedSongIds}
-          targetId={targetBlockId}
-          onTargetChange={(id) => setChosen({ id, at: new Date().toISOString() })}
-          onAdd={addSong}
-        />
+        {!readOnly && (
+          <LibraryPanel
+            songs={songs}
+            blocks={blocks.map(({ block }) => block)}
+            usedSongIds={usedSongIds}
+            targetId={targetBlockId}
+            onTargetChange={(id) => setChosen({ id, at: new Date().toISOString() })}
+            onAdd={addSong}
+          />
+        )}
       </div>
 
       <DragOverlay dropAnimation={null}>

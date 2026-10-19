@@ -88,6 +88,15 @@ body {
   cursor: pointer;
 }
 
+.sidebar__band-name--static {
+  cursor: default;
+}
+
+.sidebar__band-name--static:hover {
+  background: none;
+  color: var(--sm-text-muted);
+}
+
 .sidebar__band-name span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1410,4 +1419,18 @@ body {
   padding: 12px;
   border: 1px solid var(--sm-border);
   border-radius: var(--sm-radius);
+}
+
+/* Viewers see the setlist without handles, edit buttons or add actions. Hiding the handles also
+   turns off dragging, since they carry the drag listeners. */
+.setlist-editor--readonly {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.setlist-editor--readonly .drag-handle,
+.setlist-editor--readonly .set__actions,
+.setlist-editor--readonly .entry__actions,
+.setlist-editor--readonly .set__footer,
+.setlist-editor--readonly .set__empty {
+  display: none;
 }

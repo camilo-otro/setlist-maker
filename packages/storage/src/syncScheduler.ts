@@ -1,4 +1,5 @@
 import { IdentityLostError } from './identity';
+import { NotAMemberError } from './pull';
 import { AppOutdatedError, backoffDelay } from './push';
 
 /** What the app shows about syncing. */
@@ -7,12 +8,15 @@ export type SyncStatus =
   | { state: 'syncing'; pending: number; lastSyncedAt: string | null }
   /** Offline, or the last sync failed and will be retried. */
   | { state: 'offline'; pending: number; lastSyncedAt: string | null }
-  /** Syncing stopped until the user acts: the app is too old, or the sign-in was lost. */
+  /**
+   * Syncing stopped until the user acts: the app is too old, the sign-in was lost, or this user
+   * was removed from the band (the local copy is kept).
+   */
   | {
       state: 'stopped';
       pending: number;
       lastSyncedAt: string | null;
-      reason: 'outdated' | 'signed-out';
+      reason: 'outdated' | 'signed-out' | 'removed';
     };
 
 export type SyncReason = 'start' | 'edit' | 'signal' | 'online' | 'interval' | 'retry';
@@ -101,13 +105,16 @@ export function createSyncScheduler({
       publish({ state: 'synced', pending: await pending(), lastSyncedAt: now().toISOString() });
     } catch (error) {
       const waiting = await pending().catch(() => current.pending);
-      if (error instanceof AppOutdatedError || error instanceof IdentityLostError) {
-        publish({
-          state: 'stopped',
-          pending: waiting,
-          lastSyncedAt: current.lastSyncedAt,
-          reason: error instanceof AppOutdatedError ? 'outdated' : 'signed-out',
-        });
+      const reason =
+        error instanceof AppOutdatedError
+          ? 'outdated'
+          : error instanceof IdentityLostError
+            ? 'signed-out'
+            : error instanceof NotAMemberError
+              ? 'removed'
+              : null;
+      if (reason) {
+        publish({ state: 'stopped', pending: waiting, lastSyncedAt: current.lastSyncedAt, reason });
         return;
       }
       publish({ state: 'offline', pending: waiting, lastSyncedAt: current.lastSyncedAt });

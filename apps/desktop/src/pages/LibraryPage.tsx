@@ -17,6 +17,7 @@ import { SongDialog } from '../library/SongDialog';
 import { SongFiltersPanel } from '../library/SongFiltersPanel';
 import { SongTable, type SongSort } from '../library/SongTable';
 import { useSongs } from '../library/useSongs';
+import { useMembership } from '../sharing/MembershipProvider';
 
 /** `undefined` when no dialog is open, `null` while adding, or the song being edited. */
 type Editing = Song | null | undefined;
@@ -29,6 +30,7 @@ export function LibraryPage() {
   const [sort, setSort] = useState<SongSort>({ key: 'title', direction: 'asc' });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<Editing>(undefined);
+  const { canEdit } = useMembership();
   const [importing, setImporting] = useState(false);
 
   const visible = useMemo(
@@ -144,7 +146,7 @@ export function LibraryPage() {
           <SongDetail
             key={selected.id}
             song={selected}
-            onEdit={() => setEditing(selected)}
+            onEdit={canEdit ? () => setEditing(selected) : undefined}
             onClose={() => setSelectedId(undefined)}
           />
         )}
@@ -154,9 +156,12 @@ export function LibraryPage() {
 
   return (
     <>
-      <PageHeader title="Library" actions={songs && songs.length > 0 ? addButtons : undefined} />
+      <PageHeader
+        title="Library"
+        actions={canEdit && songs && songs.length > 0 ? addButtons : undefined}
+      />
       {content}
-      {songs?.length === 0 && <div className="library-empty-action">{addButtons}</div>}
+      {canEdit && songs?.length === 0 && <div className="library-empty-action">{addButtons}</div>}
       {importing && (
         <ImportDialog
           existing={songs ?? []}

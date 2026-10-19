@@ -1,6 +1,8 @@
 import type {
   Band,
   BandInput,
+  BandMember,
+  BandMemberInput,
   Gig,
   GigInput,
   Performance,
@@ -82,6 +84,8 @@ export interface Table<T, TInput> {
  */
 export interface Repository {
   bands: Table<Band, BandInput>;
+  /** Who's in each shared band, with their role. Solo bands have none. */
+  bandMembers: Table<BandMember, BandMemberInput>;
   songs: Table<Song, SongInput>;
   venues: Table<Venue, VenueInput>;
   gigs: Table<Gig, GigInput>;
@@ -105,6 +109,7 @@ export type TableName = Exclude<keyof Repository, 'transaction' | 'outbox'>;
 
 export const TABLE_NAMES: readonly TableName[] = [
   'bands',
+  'bandMembers',
   'songs',
   'venues',
   'gigs',

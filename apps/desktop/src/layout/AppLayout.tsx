@@ -6,10 +6,12 @@ import {
   ListMusic,
   MapPin,
   Pencil,
+  Users,
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { useWorkspace } from '../storage/WorkspaceProvider';
+import { useMembership } from '../sharing/MembershipProvider';
 import { BandNameDialog } from './BandNameDialog';
 import { SyncStatusLine } from './SyncStatusLine';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -20,11 +22,13 @@ export const NAV_ITEMS = [
   { to: '/venues', label: 'Venues', icon: MapPin },
   { to: '/templates', label: 'Templates', icon: LayoutTemplate },
   { to: '/stats', label: 'Stats', icon: ChartColumn },
+  { to: '/band', label: 'Band', icon: Users },
 ] as const;
 
 export function AppLayout() {
   const { band, persistent, renameBand } = useWorkspace();
   const [renaming, setRenaming] = useState(false);
+  const { isOwner } = useMembership();
 
   return (
     <div className="app-layout">
@@ -33,16 +37,20 @@ export function AppLayout() {
           <ListMusic size={20} aria-hidden="true" />
           <div>
             <span className="sidebar__app-name">Setlist Maker</span>
-            <button
-              type="button"
-              className="sidebar__band-name"
-              title="Rename the band"
-              aria-label={`Band: ${band.name}. Rename`}
-              onClick={() => setRenaming(true)}
-            >
-              <span>{band.name}</span>
-              <Pencil size={12} aria-hidden="true" />
-            </button>
+            {isOwner ? (
+              <button
+                type="button"
+                className="sidebar__band-name"
+                title="Rename the band"
+                aria-label={`Band: ${band.name}. Rename`}
+                onClick={() => setRenaming(true)}
+              >
+                <span>{band.name}</span>
+                <Pencil size={12} aria-hidden="true" />
+              </button>
+            ) : (
+              <span className="sidebar__band-name sidebar__band-name--static">{band.name}</span>
+            )}
           </div>
         </div>
         {!persistent && (

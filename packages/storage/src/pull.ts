@@ -73,7 +73,7 @@ function fromServer(table: TableName, row: Record<string, unknown>): StoredRow |
  * replace local ones, except fields this device changed and hasn't uploaded yet: those keep the
  * local value, and the next push sends them. A deletion from the server stands even if the row has
  * unsent edits (they're uploaded, and the server keeps the row deleted). Tables this app doesn't
- * store yet (band members) are skipped.
+ * know (from a newer server) are skipped.
  */
 export function applyPulledChanges(
   repository: Repository,

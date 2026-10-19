@@ -12,7 +12,7 @@ export interface WorkspaceValue extends Workspace {
   renameBand(name: string): Promise<void>;
   /** Goes up whenever changes from other devices are applied; screens re-load when it changes. */
   dataVersion: number;
-  /** Tells every screen that changes from other devices arrived, so they re-load. */
+  /** Tells every screen that data changed outside it (another device, or the band page), so they re-load. */
   notifyRemoteChanges(): void;
 }
 

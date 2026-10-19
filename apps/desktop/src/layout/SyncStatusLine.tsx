@@ -15,7 +15,9 @@ function describe(status: SyncStatus): { label: string; tone: 'ok' | 'busy' | 'w
         label:
           status.reason === 'outdated'
             ? 'Update the app to keep syncing'
-            : "Signed out: changes aren't syncing",
+            : status.reason === 'removed'
+              ? "You're no longer in this band: changes aren't syncing"
+              : "Signed out: changes aren't syncing",
         tone: 'warn',
       };
   }
