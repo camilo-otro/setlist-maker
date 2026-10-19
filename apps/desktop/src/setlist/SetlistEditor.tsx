@@ -20,7 +20,7 @@ import { keyBetween, move, planDrop, type SetBlock, type SetEntry, type Song } f
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BlockDialog } from './BlockDialog';
-import type { SetlistChanges } from './changes';
+import { AT_END, type SetlistChanges } from './changes';
 import { EntryDialog, type EntryValues } from './EntryDialog';
 import { entryTitle } from './EntryRow';
 import { LibraryPanel } from './LibraryPanel';
@@ -102,6 +102,8 @@ export function SetlistEditor({
   const [dragging, setDragging] = useState<string | null>(null);
   // A set picked in the library's "Add to" stays the target until something else changes.
   const [chosen, setChosen] = useState<{ id: string; at: string } | null>(null);
+  // Phones: the library is a sheet over the sets, opened from a set's Add songs button.
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -124,12 +126,10 @@ export function SetlistEditor({
       : lastChanged?.id;
 
   const positioned = blocks.map(({ block, entries }) => ({ id: block.id, entries }));
-  const endOf = (blockId: string) =>
-    planDrop(positioned, null, { kind: 'block', id: blockId })!.position;
 
   function addSong(songId: string, blockId: string) {
     const title = songsById.get(songId)?.title ?? 'song';
-    void run(changes.addEntry(`Add ${title}`, blockId, endOf(blockId), { kind: 'song', songId }));
+    void run(changes.addEntry(`Add ${title}`, blockId, AT_END, { kind: 'song', songId }));
   }
 
   function onDragStart({ active }: DragStartEvent) {
@@ -190,7 +190,7 @@ export function SetlistEditor({
     if (!editing) return;
     if (editing.kind === 'new-note') {
       void run(
-        changes.addEntry('Add note', editing.blockId, endOf(editing.blockId), {
+        changes.addEntry('Add note', editing.blockId, AT_END, {
           kind: 'note',
           label: values.label,
         }),
@@ -218,7 +218,15 @@ export function SetlistEditor({
       onDragEnd={onDragEnd}
       onDragCancel={() => setDragging(null)}
     >
-      <div className={readOnly ? 'setlist-editor setlist-editor--readonly' : 'setlist-editor'}>
+      <div
+        className={[
+          'setlist-editor',
+          readOnly && 'setlist-editor--readonly',
+          libraryOpen && 'setlist-editor--library-open',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         <div className="setlist-editor__sets">
           <SortableContext
             items={blocks.map(({ block }) => `block:${block.id}`)}
@@ -234,12 +242,16 @@ export function SetlistEditor({
                 onRemoveBlock={() => void run(changes.removeBlock(item.block))}
                 onAddBreak={() =>
                   void run(
-                    changes.addEntry('Add break', item.block.id, endOf(item.block.id), {
+                    changes.addEntry('Add break', item.block.id, AT_END, {
                       kind: 'break',
                     }),
                   )
                 }
                 onAddNote={() => setEditing({ kind: 'new-note', blockId: item.block.id })}
+                onAddSongs={() => {
+                  setChosen({ id: item.block.id, at: new Date().toISOString() });
+                  setLibraryOpen(true);
+                }}
                 onEditEntry={(entry) => setEditing({ kind: 'entry', entry })}
                 onRemoveEntry={(entry) =>
                   void run(
@@ -267,6 +279,7 @@ export function SetlistEditor({
             targetId={targetBlockId}
             onTargetChange={(id) => setChosen({ id, at: new Date().toISOString() })}
             onAdd={addSong}
+            onClose={() => setLibraryOpen(false)}
           />
         )}
       </div>

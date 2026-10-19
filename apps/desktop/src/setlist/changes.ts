@@ -1,8 +1,21 @@
-import type { SetBlock, SetBlockInput, SetEntry, SetEntryInput } from '@setlist/core';
+import {
+  keyBetween,
+  sortByPosition,
+  type SetBlock,
+  type SetBlockInput,
+  type SetEntry,
+  type SetEntryInput,
+} from '@setlist/core';
 import { removeSetBlock, restoreSetBlock, type Repository, type RowPatch } from '@setlist/storage';
 import type { Change } from './useHistory';
 
 type NewEntry = Pick<SetEntryInput, 'kind' | 'songId' | 'label'>;
+
+/**
+ * Puts a new entry after the set's last one, worked out when the change is applied. Quick taps
+ * queue up, so a position worked out at tap time would be stale (and shared) by then.
+ */
+export const AT_END = { atEnd: true } as const;
 
 /** The fields of `row` that `patch` changes, as they are now, so the change can be reverted. */
 function before<T extends object>(row: T, patch: object): Partial<T> {
@@ -17,13 +30,27 @@ function before<T extends object>(row: T, patch: object): Partial<T> {
  */
 export function setlistChanges(repository: Repository, bandId: string) {
   return {
-    addEntry(label: string, setBlockId: string, position: string, values: NewEntry): Change {
+    addEntry(
+      label: string,
+      setBlockId: string,
+      position: string | typeof AT_END,
+      values: NewEntry,
+    ): Change {
       let id: string | null = null;
       return {
         label,
         apply: async () => {
           if (id) return repository.setEntries.restore(id);
-          id = (await repository.setEntries.create({ bandId, setBlockId, position, ...values })).id;
+          const at =
+            typeof position === 'string'
+              ? position
+              : keyBetween(
+                  sortByPosition(await repository.setEntries.list({ setBlockId })).at(-1)
+                    ?.position ?? null,
+                  null,
+                );
+          id = (await repository.setEntries.create({ bandId, setBlockId, position: at, ...values }))
+            .id;
         },
         revert: async () => {
           if (id) await repository.setEntries.remove(id);

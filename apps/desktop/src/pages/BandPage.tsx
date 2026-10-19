@@ -17,13 +17,13 @@ const ROLE_LABELS: Record<MemberRole, string> = {
   viewer: 'Viewer',
 };
 
-/** The band: its name, and once shared, who's in it and what they can do. */
 /** Opens the app again on its gigs, now showing the band just joined. */
 function reopenOnGigs() {
   window.location.hash = '#/gigs';
   window.location.reload();
 }
 
+/** The band: its name, and once shared, who's in it and what they can do. */
 export function BandPage({
   joinLink,
   reopen = reopenOnGigs,

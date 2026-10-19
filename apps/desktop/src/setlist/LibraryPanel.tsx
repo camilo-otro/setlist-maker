@@ -71,6 +71,7 @@ export function LibraryPanel({
   targetId,
   onTargetChange,
   onAdd,
+  onClose,
 }: {
   songs: readonly Song[];
   blocks: readonly SetBlock[];
@@ -79,6 +80,8 @@ export function LibraryPanel({
   targetId: string | undefined;
   onTargetChange: (blockId: string) => void;
   onAdd: (songId: string, blockId: string) => void;
+  /** Closes the panel where it's a sheet (phones); the button is hidden elsewhere. */
+  onClose?: () => void;
 }) {
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -104,7 +107,14 @@ export function LibraryPanel({
 
   return (
     <aside className="library-panel" aria-label="Library">
-      <h2 className="library-panel__title">Library</h2>
+      <div className="library-panel__header">
+        <h2 className="library-panel__title">Library</h2>
+        {onClose && (
+          <button type="button" className="sm-button library-panel__close" onClick={onClose}>
+            Done
+          </button>
+        )}
+      </div>
       <label className="search-box">
         <Search size={16} aria-hidden="true" />
         <input

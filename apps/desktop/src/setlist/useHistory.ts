@@ -10,7 +10,8 @@ export interface Change {
 const LIMIT = 50;
 
 /**
- * Undo/redo for the last 50 changes. `run` applies a change and records it; after every change,
+ * Undo/redo for the last 50 changes. `run` applies a change and records it, one at a time in the
+ * order they come (quick taps queue up rather than being lost); after every change,
  * undo or redo, `onChanged` runs (to reload data). Ctrl/Cmd+Z undoes; Ctrl+Y or Ctrl/Cmd+Shift+Z
  * redoes, except while typing in a field, where the field's own undo applies.
  */
@@ -19,10 +20,11 @@ export function useHistory(onChanged: () => void) {
   const [future, setFuture] = useState<Change[]>([]);
   const [failure, setFailure] = useState<string | null>(null);
   const busy = useRef(false);
+  // New changes wait their turn instead of being dropped, so quick taps all count.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   const step = useCallback(
     async (work: () => Promise<unknown>) => {
-      if (busy.current) return false;
       busy.current = true;
       setFailure(null);
       try {
@@ -40,16 +42,22 @@ export function useHistory(onChanged: () => void) {
   );
 
   const run = useCallback(
-    async (change: Change) => {
-      if (await step(change.apply)) {
-        setPast((list) => [...list, change].slice(-LIMIT));
-        setFuture([]);
-      }
+    (change: Change) => {
+      const done = queue.current.then(async () => {
+        if (await step(change.apply)) {
+          setPast((list) => [...list, change].slice(-LIMIT));
+          setFuture([]);
+        }
+      });
+      queue.current = done;
+      return done;
     },
     [step],
   );
 
+  // Undo and redo act on the history as it is now, so they're ignored while a change is saving.
   const undo = useCallback(async () => {
+    if (busy.current) return;
     const change = past.at(-1);
     if (change && (await step(change.revert))) {
       setPast((list) => list.slice(0, -1));
@@ -58,6 +66,7 @@ export function useHistory(onChanged: () => void) {
   }, [past, step]);
 
   const redo = useCallback(async () => {
+    if (busy.current) return;
     const change = future.at(-1);
     if (change && (await step(change.apply))) {
       setFuture((list) => list.slice(0, -1));

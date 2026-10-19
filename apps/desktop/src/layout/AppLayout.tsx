@@ -16,13 +16,14 @@ import { BandNameDialog } from './BandNameDialog';
 import { SyncStatusLine } from './SyncStatusLine';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
+/** `onPhone`: shown in the phone's bottom tab bar too; the rest is desktop-only for now (#42). */
 export const NAV_ITEMS = [
-  { to: '/library', label: 'Library', icon: Library },
-  { to: '/gigs', label: 'Gigs', icon: CalendarDays },
-  { to: '/venues', label: 'Venues', icon: MapPin },
-  { to: '/templates', label: 'Templates', icon: LayoutTemplate },
-  { to: '/stats', label: 'Stats', icon: ChartColumn },
-  { to: '/band', label: 'Band', icon: Users },
+  { to: '/library', label: 'Library', icon: Library, onPhone: true },
+  { to: '/gigs', label: 'Gigs', icon: CalendarDays, onPhone: true },
+  { to: '/venues', label: 'Venues', icon: MapPin, onPhone: false },
+  { to: '/templates', label: 'Templates', icon: LayoutTemplate, onPhone: false },
+  { to: '/stats', label: 'Stats', icon: ChartColumn, onPhone: false },
+  { to: '/band', label: 'Band', icon: Users, onPhone: true },
 ] as const;
 
 export function AppLayout() {
@@ -32,6 +33,16 @@ export function AppLayout() {
 
   return (
     <div className="app-layout">
+      {/* Phones: the band and sync status on top; the sidebar becomes a tab bar at the bottom. */}
+      <header className="mobile-header">
+        <span className="mobile-header__band">{band.name}</span>
+        <SyncStatusLine />
+        {!persistent && (
+          <p className="mobile-header__notice" role="status">
+            {storageNote ?? "Browser preview: changes aren't saved."}
+          </p>
+        )}
+      </header>
       <aside className="sidebar">
         <div className="sidebar__brand">
           <ListMusic size={20} aria-hidden="true" />
@@ -59,8 +70,12 @@ export function AppLayout() {
           </p>
         )}
         <nav className="sidebar__nav" aria-label="Main">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className="sidebar__link">
+          {NAV_ITEMS.map(({ to, label, icon: Icon, onPhone }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={onPhone ? 'sidebar__link' : 'sidebar__link sidebar__link--desktop-only'}
+            >
               <Icon size={18} aria-hidden="true" />
               {label}
             </NavLink>

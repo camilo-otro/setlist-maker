@@ -8,7 +8,7 @@ import {
   type SetEntry,
   type Song,
 } from '@setlist/core';
-import { Coffee, GripVertical, Pencil, StickyNote, Trash2 } from 'lucide-react';
+import { Coffee, GripVertical, Pencil, Plus, StickyNote, Trash2 } from 'lucide-react';
 import { EntryRow } from './EntryRow';
 import type { BlockWithEntries } from './useGigSetlist';
 
@@ -20,6 +20,7 @@ export function SetBlockCard({
   onRemoveBlock,
   onAddBreak,
   onAddNote,
+  onAddSongs,
   onEditEntry,
   onRemoveEntry,
 }: {
@@ -30,6 +31,8 @@ export function SetBlockCard({
   onRemoveBlock: () => void;
   onAddBreak: () => void;
   onAddNote: () => void;
+  /** Opens the library to add songs to this set (on phones, where it isn't on screen). */
+  onAddSongs: () => void;
   onEditEntry: (entry: SetEntry) => void;
   onRemoveEntry: (entry: SetEntry) => void;
 }) {
@@ -143,6 +146,10 @@ export function SetBlockCard({
       </ul>
 
       <footer className="set__footer">
+        <button type="button" className="sm-button set__add-songs" onClick={onAddSongs}>
+          <Plus size={14} aria-hidden="true" />
+          Add songs
+        </button>
         <button type="button" className="sm-button" onClick={onAddBreak}>
           <Coffee size={14} aria-hidden="true" />
           Add break
