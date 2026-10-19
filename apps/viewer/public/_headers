@@ -8,3 +8,7 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
+
+# The web app's manifest, with its proper type (Netlify doesn't know .webmanifest).
+/app/manifest.webmanifest
+  Content-Type: application/manifest+json
