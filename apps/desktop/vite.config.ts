@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { serviceWorkerPlugin } from './build/serviceWorker';
+import { serviceWorkerPlugin } from './build/serviceWorker.ts';
 
 // Fixed port and no screen clearing, as Tauri's dev server integration expects.
 // The web build (`--mode web`) also gets a service worker, for installing and offline use.

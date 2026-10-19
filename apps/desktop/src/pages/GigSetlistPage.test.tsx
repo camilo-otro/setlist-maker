@@ -62,6 +62,18 @@ describe('GigSetlistPage', () => {
     expect(summary()).toContain('0:00 total · 0 songs');
   });
 
+  it('copies the setlist as WhatsApp text', async () => {
+    const { user } = await setup();
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita']));
+
+    await user.click(screen.getByRole('button', { name: 'Copy for WhatsApp' }));
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeTruthy();
+    const text = await navigator.clipboard.readText();
+    expect(text).toContain('*Friday at the Cavern*');
+    expect(text).toContain('*Set 1* (3:45)\n1. Basurita · A');
+  });
+
   it('adds songs from the library and adds up the running time', async () => {
     const { user } = await setup();
     await user.click(library().getByRole('button', { name: 'Add Basurita' }));

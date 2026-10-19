@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
 import { setlistChanges } from '../setlist/changes';
+import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { useGigSetlist } from '../setlist/useGigSetlist';
 import { useMembership } from '../sharing/MembershipProvider';
@@ -102,6 +103,13 @@ export function GigSetlistPage() {
           <p className="muted gig-header__details">{details.join(' · ')}</p>
         </div>
         <div className="gig-header__actions">
+          <CopyForWhatsApp
+            gig={gig}
+            venue={venue}
+            blocks={blocks}
+            songsById={songsById}
+            sharing={sharing}
+          />
           {canEdit && (
             <>
               <button
