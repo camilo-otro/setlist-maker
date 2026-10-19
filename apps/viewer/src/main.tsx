@@ -29,7 +29,14 @@ const fragment = () => decodeURIComponent(location.hash.slice(1));
 function App() {
   const hash = fragment();
   if (hash.startsWith('join=')) {
-    return <Invitation token={hash.slice(5)} link={location.href} load={loadInvite} />;
+    return (
+      <Invitation
+        token={hash.slice(5)}
+        link={location.href}
+        load={loadInvite}
+        appUrl={import.meta.env.VITE_APP_URL || undefined}
+      />
+    );
   }
   return <Viewer token={hash || null} load={load} />;
 }

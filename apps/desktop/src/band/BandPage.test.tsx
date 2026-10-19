@@ -265,6 +265,18 @@ describe('Joining a band', () => {
     expect(await screen.findByText('Opening the band…')).toBeTruthy();
   });
 
+  it('starts from an invite opened on the phone, without pasting', async () => {
+    const previewInvite = vi.fn(async () => preview);
+    await setup({
+      shared: false,
+      path: '/join/abcdefghijklmnopqrstuvwxyz',
+      overrides: { previewInvite },
+    });
+    expect(await screen.findByText(/Juan invited you to join/)).toBeTruthy();
+    expect(previewInvite).toHaveBeenCalledWith('abcdefghijklmnopqrstuvwxyz');
+    expect(screen.getByRole('button', { name: 'Join The Rock House' })).toBeTruthy();
+  });
+
   it('explains links that are wrong, closed or refused', async () => {
     let status: 'open' | 'expired' = 'expired';
     const { user } = await setup({

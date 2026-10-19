@@ -25,6 +25,12 @@ describe('Invitation', () => {
     expect(screen.getByText(/Join a band/)).toBeTruthy();
   });
 
+  it('offers joining in the browser, keeping the token in the fragment', async () => {
+    show(async () => invite);
+    const join = await screen.findByRole('link', { name: 'Join in your browser' });
+    expect(join.getAttribute('href')).toBe('/app/#/join/t');
+  });
+
   it('says when an invite no longer works, and when a link is wrong', async () => {
     show(async () => ({ ...invite, status: 'expired' }));
     expect(await screen.findByRole('heading', { name: 'This invite has expired.' })).toBeTruthy();

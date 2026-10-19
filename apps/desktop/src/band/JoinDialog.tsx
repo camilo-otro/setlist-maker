@@ -19,16 +19,19 @@ const CLOSED_TEXT = {
 /** Joins a band from an invite link pasted in: shows what it offers, asks for a name, joins. */
 export function JoinDialog({
   sharing,
+  initialLink = '',
   onClose,
   onJoined,
 }: {
   sharing: Sharing;
+  /** An invite link or token to check straight away, e.g. from a link opened on a phone. */
+  initialLink?: string;
   onClose: () => void;
   /** Called after joining, to open the app on the band. */
   onJoined: (bandId: string) => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: 'paste' });
-  const [link, setLink] = useState('');
+  const [link, setLink] = useState(initialLink);
   const [name, setName] = useState('');
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -37,8 +40,15 @@ export function JoinDialog({
     void sharing.identity.current().then((me) => me && setName(me.displayName));
   }, [sharing]);
 
-  async function check(event: FormEvent) {
-    event.preventDefault();
+  // A link opened from an invite: check it at once instead of asking to paste it.
+  useEffect(() => {
+    if (initialLink) void check();
+    // Only on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function check(event?: FormEvent) {
+    event?.preventDefault();
     const token = inviteTokenFromLink(link);
     if (!token) {
       setError('Paste the invite link your bandmate sent you');
@@ -128,7 +138,7 @@ export function JoinDialog({
             />
           </Field>
           <p className="muted form-grid__wide">
-            The app then opens on {step.invite.band}. Your current band stays on this computer.
+            The app then opens on {step.invite.band}. Your current band stays on this device.
           </p>
           <div className="modal__actions form-grid__wide">
             <button type="button" className="sm-button" onClick={onClose} disabled={busy}>

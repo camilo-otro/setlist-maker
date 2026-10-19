@@ -15,17 +15,20 @@ const CLOSED_TEXT = {
 } as const;
 
 /**
- * What an invite link (`#join=<token>`) offers, and how to use it. Joining happens in the app:
- * the desktop app today, the phone app later (#42).
+ * What an invite link (`#join=<token>`) offers, and how to use it: join in the browser (the web
+ * app at `appUrl`, handy on a phone), or paste the link into the desktop app.
  */
 export function Invitation({
   token,
   link,
   load,
+  appUrl = '/app/',
 }: {
   token: string;
   link: string;
   load: (token: string) => Promise<InvitePreview | null>;
+  /** The web app; joining opens its /join/<token> route, keeping the token in the fragment. */
+  appUrl?: string;
 }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
 
@@ -77,16 +80,19 @@ export function Invitation({
             <strong>{invite.band}</strong>, where you can {ROLE_TEXT[invite.role]}. The invite works
             until {new Date(invite.expiresAt).toLocaleDateString()}.
           </p>
-          <ol className="invitation__steps">
-            <li>Open Setlist Maker on your computer.</li>
-            <li>
-              Go to <strong>Band</strong> and choose <strong>Join a band</strong>.
-            </li>
-            <li>Paste this link and enter your name.</li>
-          </ol>
+          <a
+            className="sm-button sm-button--primary invitation__join"
+            href={`${appUrl}#/join/${encodeURIComponent(token)}`}
+          >
+            Join in your browser
+          </a>
+          <p className="invitation__or">
+            Or, with the Setlist Maker app on your computer: go to <strong>Band</strong>, choose{' '}
+            <strong>Join a band</strong> and paste this link.
+          </p>
           <button
             type="button"
-            className="sm-button sm-button--primary"
+            className="sm-button"
             onClick={() => void navigator.clipboard?.writeText(link)}
           >
             Copy this link

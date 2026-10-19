@@ -18,9 +18,18 @@ const ROLE_LABELS: Record<MemberRole, string> = {
 };
 
 /** The band: its name, and once shared, who's in it and what they can do. */
+/** Opens the app again on its gigs, now showing the band just joined. */
+function reopenOnGigs() {
+  window.location.hash = '#/gigs';
+  window.location.reload();
+}
+
 export function BandPage({
-  reopen = () => window.location.reload(),
+  joinLink,
+  reopen = reopenOnGigs,
 }: {
+  /** An invite to start joining straight away (the /join/<token> route). */
+  joinLink?: string;
   /** Opens the app again after joining a band, so it shows that band. */
   reopen?: () => void;
 }) {
@@ -30,7 +39,7 @@ export function BandPage({
   const [renaming, setRenaming] = useState(false);
   const [opened, setOpened] = useState<BandMember | null>(null);
   const [inviting, setInviting] = useState(false);
-  const [joining, setJoining] = useState(false);
+  const [joining, setJoining] = useState(Boolean(joinLink));
   const [invites, setInvites] = useState<InviteInfo[] | null>(null);
   const [inviteGeneration, setInviteGeneration] = useState(0);
   const canInvite = Boolean(sharing && shared && isOwner);
@@ -164,7 +173,12 @@ export function BandPage({
         />
       )}
       {joining && sharing && (
-        <JoinDialog sharing={sharing} onClose={() => setJoining(false)} onJoined={() => reopen()} />
+        <JoinDialog
+          sharing={sharing}
+          initialLink={joinLink}
+          onClose={() => setJoining(false)}
+          onJoined={() => reopen()}
+        />
       )}
       {renaming && (
         <BandNameDialog name={band.name} onClose={() => setRenaming(false)} onSave={renameBand} />
