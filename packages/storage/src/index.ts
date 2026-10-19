@@ -20,3 +20,4 @@ export * from './pull';
 export * from './syncScheduler';
 export * from './changeSignal';
 export * from './invites';
+export * from './account';

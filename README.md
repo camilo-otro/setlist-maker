@@ -91,7 +91,34 @@ pnpm exec supabase stop
 
 ## Identity
 
-The first time someone shares, the app signs them in anonymously (no email or password, just a display name) and keeps the sign-in in the OS keychain: Windows Credential Manager or the macOS Keychain, under `io.github.camilootro.setlistmaker`. That sign-in is what proves the device owns its shared bands, so it's kept out of the database file. Linking an email or Google/Apple account to keep it safe across devices comes with [#51](https://github.com/camilo-otro/setlist-maker/issues/51).
+The first time someone shares, the app signs them in anonymously (no email or password, just a display name) and keeps the sign-in in the OS keychain: Windows Credential Manager or the macOS Keychain, under `io.github.camilootro.setlistmaker`. That sign-in is what proves the device owns its shared bands, so it's kept out of the database file. (The web app keeps it in the site's localStorage.)
+
+## Accounts
+
+An anonymous sign-in only works on its own device. Under **Band → Your account** ([#51](https://github.com/camilo-otro/setlist-maker/issues/51)):
+
+- **Add your email:** Supabase emails a 6-digit code, and entering it adds the email to the same user, so bands and data don't change.
+- **Sign in with email,** on another device: a code to that email signs the device in as that user. Its own earlier memberships in that user's bands (e.g. a phone that joined as "CamiPhone") are removed, and the bands download. Owners can also remove any member from the band page.
+
+Locally, codes land in the test mailbox at http://127.0.0.1:54324 (Mailpit), and `config.toml` uses the templates in `supabase/templates`.
+
+**One-time setup** for the hosted project. Supabase's own email service only sends a few emails an hour for testing, so codes go out through [Resend](https://resend.com), which is free up to 3,000 emails a month and 100 a day. Keep the API key out of the repo and chat.
+
+1. **Resend:** sign up, then go to **Domains → Add domain** and add `rockthehouse.app`. Resend shows a few DNS records (DKIM, SPF and MX for its sending subdomain).
+2. **Cloudflare:** add those records to `rockthehouse.app` exactly as shown, with the proxy **off** (DNS only). Back in Resend, click **Verify**.
+3. **Resend:** go to **API Keys → Create API key** with _Sending access_, and copy it (it's shown once).
+4. **Supabase dashboard → Authentication → Emails → SMTP Settings:** turn on **Enable custom SMTP** and enter:
+   - Sender email `setlist@rockthehouse.app`, sender name `Setlist Maker`
+   - Host `smtp.resend.com`, port `465`, username `resend`, password: the Resend API key
+5. **Supabase dashboard → Authentication → Emails → Templates:**
+   - **Magic Link:** subject `Your Setlist Maker sign-in code`, body: the contents of `supabase/templates/sign_in_code.html`.
+   - **Change Email Address:** subject `Your Setlist Maker code`, body: the contents of `supabase/templates/add_email_code.html`.
+
+   Both show `{{ .Token }}`, the code.
+
+6. **Supabase dashboard → Authentication → Sign In / Providers → Email:**
+   - Leave **Confirm email** on, so adding an email sends a code.
+   - Check **Email OTP length** is 6. Any length from 6 to 10 works, but the emails and the app say 6.
 
 ## Share links
 

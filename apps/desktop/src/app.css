@@ -1435,6 +1435,30 @@ body {
   display: none;
 }
 
+/* Your account, on the band page */
+.account-section {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--sm-border);
+  border-radius: 12px;
+  background: var(--sm-surface);
+}
+
+.account-section__title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.account-section p {
+  margin: 0 0 12px;
+}
+
+.account-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Pending invites on the band page */
 .pending-invites {
   margin-top: 24px;
