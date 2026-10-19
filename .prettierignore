@@ -2,6 +2,8 @@ pnpm-lock.yaml
 dist/
 dist-web/
 misc/
+supabase/.temp/
+supabase/.branches/
 **/src-tauri/target/
 **/src-tauri/gen/
 # Hand-aligned for readability

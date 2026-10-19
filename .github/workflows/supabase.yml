@@ -2,7 +2,7 @@ name: Supabase
 
 # Pull requests: apply every migration to a throwaway local database and run the database tests,
 # so broken SQL or access rules never merge.
-# Pushes to main: apply new migrations to the hosted project.
+# Pushes to main: apply new migrations to the hosted project, then deploy the Edge Functions.
 on:
   pull_request:
     paths:
@@ -81,3 +81,7 @@ jobs:
 
       - name: Apply new migrations
         run: pnpm exec supabase db push --project-ref "$SUPABASE_PROJECT_ID" --yes
+
+      # Spotify's client ID and secret are function secrets, set once by hand (README, "Spotify").
+      - name: Deploy Edge Functions
+        run: pnpm exec supabase functions deploy catalog-search --project-ref "$SUPABASE_PROJECT_ID" --use-api
