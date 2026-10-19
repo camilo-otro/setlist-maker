@@ -1,13 +1,13 @@
 import { HashRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { BackgroundPush } from './sharing/BackgroundPush';
+import { BackgroundSync } from './sharing/BackgroundSync';
 import { WorkspaceProvider } from './storage/WorkspaceProvider';
 
 // Hash URLs work when the app is loaded from local files, as Tauri does in production builds.
 export function App() {
   return (
     <WorkspaceProvider>
-      <BackgroundPush />
+      <BackgroundSync />
       <HashRouter>
         <AppRoutes />
       </HashRouter>

@@ -31,7 +31,19 @@ export interface Outbox {
   pending(limit: number): Promise<OutboxOp[]>;
   /** Removes operations the server has dealt with. */
   acknowledge(ids: readonly string[]): Promise<void>;
+  /** Where the band's last pull stopped; the start for a band never pulled. */
+  pullCursor(bandId: string): Promise<PullCursor>;
+  setPullCursor(bandId: string, cursor: PullCursor): Promise<void>;
 }
+
+/** Position in the server's change stream (see sync_pull): the last row a device received. */
+export interface PullCursor {
+  /** Transaction ID of the write, as text (64-bit). */
+  xid: string;
+  seq: number;
+}
+
+export const START_CURSOR: PullCursor = { xid: '0', seq: 0 };
 
 /** camelCase field → snake_case column, e.g. `setBlockId` → `set_block_id`. */
 export const snakeCase = (field: string) =>

@@ -391,6 +391,43 @@ export function describeRepositoryContract(
       });
     });
 
+    describe('applySynced and pull cursors', () => {
+      it('stores server rows exactly as given, new or replacing, without recording them', async () => {
+        await repo.outbox.shareBand(bandId);
+        const song = await repo.songs.create({ bandId, title: 'Local' });
+        await repo.outbox.acknowledge((await repo.outbox.pending(10)).map((op) => op.id));
+        const remote = {
+          ...song,
+          title: 'From the server',
+          version: 7,
+          updatedAt: '2026-10-18T12:00:00.000Z',
+          updatedBy: '01900000-0000-7000-8000-0000000000a1',
+        };
+        const added = {
+          ...song,
+          id: '01900000-0000-7000-8000-000000000b01',
+          title: 'New',
+          deletedAt: '2026-10-18T12:00:00.000Z',
+        };
+        await repo.songs.applySynced([remote, added]);
+
+        expect(await repo.songs.get(song.id)).toEqual(remote);
+        expect(await repo.songs.get(added.id, { includeDeleted: true })).toEqual(added);
+        expect(await repo.outbox.pending(10)).toEqual([]);
+      });
+
+      it('keeps a pull cursor per band, starting at the beginning', async () => {
+        expect(await repo.outbox.pullCursor(bandId)).toEqual({ xid: '0', seq: 0 });
+        await repo.outbox.setPullCursor(bandId, { xid: '1369', seq: 153 });
+        await repo.outbox.setPullCursor(bandId, { xid: '1400', seq: 160 });
+        expect(await repo.outbox.pullCursor(bandId)).toEqual({ xid: '1400', seq: 160 });
+        expect(await repo.outbox.pullCursor('01900000-0000-7000-8000-00000000ffff')).toEqual({
+          xid: '0',
+          seq: 0,
+        });
+      });
+    });
+
     describe('outbox', () => {
       it('records nothing for a solo band', async () => {
         await repo.songs.create({ bandId, title: 'Solo' });

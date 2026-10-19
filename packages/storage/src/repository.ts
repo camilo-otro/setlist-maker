@@ -67,6 +67,12 @@ export interface Table<T, TInput> {
 
   /** Brings back a soft-deleted row (for undo). A row that isn't deleted is returned unchanged. */
   restore(id: string): Promise<T>;
+
+  /**
+   * Stores rows downloaded from the server exactly as given (inserting or replacing by ID): no
+   * system fields are set and nothing is recorded for upload. Only sync uses this.
+   */
+  applySynced(rows: readonly T[]): Promise<void>;
 }
 
 /**

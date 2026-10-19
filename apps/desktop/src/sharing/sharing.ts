@@ -1,11 +1,13 @@
 import {
   AppOutdatedError,
+  createPuller,
   createPusher,
   createShareLinks,
   IdentityLostError,
   retryWithBackoff,
   shareBand,
   type Identity,
+  type PullResult,
   type PushResult,
   type Repository,
   type ShareLinks,
@@ -24,6 +26,8 @@ export interface Sharing {
   share(displayName: string): Promise<void>;
   /** Uploads waiting changes. */
   push(): Promise<PushResult>;
+  /** Downloads and applies changes made on other devices. */
+  pull(): Promise<PullResult>;
 }
 
 export function createSharing({
@@ -42,6 +46,7 @@ export function createSharing({
   viewerUrl?: string;
 }): Sharing {
   const pusher = createPusher({ repository, identity, url, key });
+  const puller = createPuller({ repository, identity, url, key });
   return {
     identity,
     links: createShareLinks({ identity, url, key, viewerUrl }),
@@ -55,5 +60,6 @@ export function createSharing({
       });
     },
     push: () => pusher.push(),
+    pull: () => puller.pull(bandId),
   };
 }

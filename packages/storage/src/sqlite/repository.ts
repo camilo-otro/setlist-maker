@@ -1,5 +1,5 @@
 import { assembleRepository } from '../assemble';
-import { bandOf, outboxOp, snakeCase, type OutboxOp } from '../outbox';
+import { bandOf, outboxOp, snakeCase, START_CURSOR, type OutboxOp } from '../outbox';
 import type { ReadOptions, Repository, RepositoryOptions, TableName } from '../repository';
 import {
   buildDeletedRow,
@@ -175,6 +175,16 @@ export async function openSqliteRepository(
             if (!row) throw new NotFoundError(name, id);
             return row.deletedAt ? replace(row, buildRestoredRow(row, ctx)) : row;
           }),
+        // Server rows replace local ones whole; INSERT OR REPLACE keeps it one statement per row.
+        applySynced: (rows: readonly StoredRow[]) =>
+          atomic(async () => {
+            for (const row of rows) {
+              await driver.execute(
+                `INSERT OR REPLACE INTO ${table} (${columns.join(', ')}) VALUES ${rowPlaceholders}`,
+                values(row),
+              );
+            }
+          }),
       };
     },
     (run) => ({
@@ -220,6 +230,23 @@ export async function openSqliteRepository(
             );
           }
         }),
+      pullCursor: (bandId) =>
+        run(async () => {
+          const [row] = await driver.select(
+            'SELECT "after_xid", "after_seq" FROM "pull_cursors" WHERE "band_id" = ?',
+            [bandId],
+          );
+          return row
+            ? { xid: row.after_xid as string, seq: Number(row.after_seq) }
+            : { ...START_CURSOR };
+        }),
+      setPullCursor: (bandId, cursor) =>
+        run(() =>
+          driver.execute(
+            'INSERT OR REPLACE INTO "pull_cursors" ("band_id", "after_xid", "after_seq") VALUES (?, ?, ?)',
+            [bandId, cursor.xid, cursor.seq],
+          ),
+        ),
     }),
     {
       begin: () => driver.execute('BEGIN IMMEDIATE'),

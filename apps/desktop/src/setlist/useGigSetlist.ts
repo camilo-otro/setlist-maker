@@ -29,7 +29,7 @@ type State =
 
 /** A gig with its setlist, sets in order and each set's entries in order. */
 export function useGigSetlist(gigId: string) {
-  const { repository } = useWorkspace();
+  const { repository, dataVersion } = useWorkspace();
   const [state, setState] = useState<State>({ status: 'loading' });
   const [generation, setGeneration] = useState(0);
 
@@ -60,7 +60,7 @@ export function useGigSetlist(gigId: string) {
     return () => {
       current = false;
     };
-  }, [repository, gigId, generation]);
+  }, [repository, gigId, generation, dataVersion]);
 
   const reload = useCallback(() => setGeneration((n) => n + 1), []);
   return { state, reload };

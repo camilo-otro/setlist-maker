@@ -137,6 +137,18 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT`,
     ],
   },
+  {
+    version: 3,
+    name: 'Remember where each band last pulled',
+    statements: [
+      // The last server change each shared band has applied (see PullCursor). Local only.
+      `CREATE TABLE "pull_cursors" (
+        "band_id" TEXT PRIMARY KEY NOT NULL,
+        "after_xid" TEXT NOT NULL,
+        "after_seq" INTEGER NOT NULL
+      ) STRICT`,
+    ],
+  },
 ];
 
 /**

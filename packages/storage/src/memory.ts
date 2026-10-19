@@ -1,5 +1,5 @@
 import { assembleRepository } from './assemble';
-import { bandOf, outboxOp, type OutboxOp } from './outbox';
+import { bandOf, outboxOp, START_CURSOR, type OutboxOp, type PullCursor } from './outbox';
 import {
   TABLE_NAMES,
   type ReadOptions,
@@ -25,6 +25,7 @@ interface State {
   tables: Map<TableName, Map<string, StoredRow>>;
   outbox: OutboxOp[];
   shared: Set<string>;
+  cursors: Map<string, PullCursor>;
 }
 
 /**
@@ -37,6 +38,7 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
     tables: new Map(TABLE_NAMES.map((name) => [name, new Map()])),
     outbox: [],
     shared: new Set(),
+    cursors: new Map(),
   };
 
   return assembleRepository(
@@ -83,6 +85,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
             if (!row) throw new NotFoundError(name, id);
             return row.deletedAt ? save(buildRestoredRow(row, ctx)) : copyRow(row);
           }),
+        applySynced: (synced: readonly StoredRow[]) =>
+          run(() => {
+            for (const row of synced) rows().set(row.id, copyRow(row));
+          }),
       };
     },
     (run) => ({
@@ -102,6 +108,11 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
           const done = new Set(ids);
           state.outbox = state.outbox.filter((op) => !done.has(op.id));
         }),
+      pullCursor: (bandId) => run(() => ({ ...(state.cursors.get(bandId) ?? START_CURSOR) })),
+      setPullCursor: (bandId, cursor) =>
+        run(() => {
+          state.cursors.set(bandId, { ...cursor });
+        }),
     }),
     {
       // Rows and operations are replaced, never mutated, so copying the containers is a full
@@ -110,6 +121,7 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
         tables: new Map([...state.tables].map(([name, rows]) => [name, new Map(rows)])),
         outbox: [...state.outbox],
         shared: new Set(state.shared),
+        cursors: new Map(state.cursors),
       }),
       commit: () => {},
       rollback: (snapshot) => {

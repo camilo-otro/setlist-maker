@@ -10,6 +10,10 @@ type State =
 export interface WorkspaceValue extends Workspace {
   /** Renames the band everywhere in the app; shared bands upload the new name with other changes. */
   renameBand(name: string): Promise<void>;
+  /** Goes up whenever changes from other devices are applied; screens re-load when it changes. */
+  dataVersion: number;
+  /** Tells every screen that changes from other devices arrived, so they re-load. */
+  notifyRemoteChanges(): void;
 }
 
 const WorkspaceContext = createContext<WorkspaceValue | null>(null);
@@ -17,14 +21,21 @@ const WorkspaceContext = createContext<WorkspaceValue | null>(null);
 /** Keeps the band in state, so a rename shows up on every screen at once. */
 function ProvideWorkspace({ workspace, children }: { workspace: Workspace; children: ReactNode }) {
   const [band, setBand] = useState(workspace.band);
+  const [dataVersion, setDataVersion] = useState(0);
   const value = useMemo<WorkspaceValue>(
     () => ({
       ...workspace,
       band,
       renameBand: async (name) =>
         setBand(await workspace.repository.bands.update(band.id, { name })),
+      dataVersion,
+      notifyRemoteChanges: () => {
+        setDataVersion((n) => n + 1);
+        // The band itself may have been renamed on another device.
+        void workspace.repository.bands.get(band.id).then((latest) => latest && setBand(latest));
+      },
     }),
-    [workspace, band],
+    [workspace, band, dataVersion],
   );
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
