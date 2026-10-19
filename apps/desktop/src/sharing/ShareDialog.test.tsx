@@ -26,6 +26,11 @@ function fakeSharing({ signedIn = false, failShare = 0 } = {}) {
       if (failures-- > 0) throw new Error('offline');
     }),
     push: async () => ({ sent: 0, rejected: [] }),
+    pull: async () => ({ applied: 0, skipped: 0 }),
+    invites: {} as Sharing['invites'],
+    previewInvite: async () => null,
+    joinBand: async () => ({ bandId: '', role: 'editor' as const }),
+    listen: () => () => {},
     links: {
       active: async () => links.at(-1) ?? null,
       create: vi.fn<ShareLinks['create']>(async () => {

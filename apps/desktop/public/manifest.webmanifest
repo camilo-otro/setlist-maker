@@ -1,0 +1,22 @@
+{
+  "name": "Setlist Maker",
+  "short_name": "Setlists",
+  "description": "Plan and organize setlists for your band, and share them with your bandmates.",
+  "id": "./",
+  "start_url": "./#/gigs",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141417",
+  "theme_color": "#18181c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

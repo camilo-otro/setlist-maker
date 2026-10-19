@@ -160,3 +160,21 @@ body {
 .entry--note {
   font-style: italic;
 }
+
+.invitation p {
+  color: var(--sm-text);
+}
+
+.invitation__join {
+  display: inline-flex;
+  margin: 8px 0 4px;
+  padding: 12px 24px;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.invitation__or {
+  margin: 20px auto 12px;
+  max-width: 420px;
+  font-size: 0.9rem;
+}

@@ -13,6 +13,18 @@ describe('ensureBand', () => {
     expect(await repository.bands.list()).toHaveLength(1);
   });
 
+  it('opens on the band most recently shared or joined', async () => {
+    const repository = createMemoryRepository();
+    const solo = await ensureBand(repository);
+    const joined = await repository.bands.create({ name: 'Joined band' });
+    expect((await ensureBand(repository)).id).toBe(solo.id);
+
+    await repository.outbox.shareBand(joined.id);
+    expect((await ensureBand(repository)).id).toBe(joined.id);
+    await repository.outbox.shareBand(solo.id);
+    expect((await ensureBand(repository)).id).toBe(solo.id);
+  });
+
   it('never creates two bands when called at the same time', async () => {
     const repository = createMemoryRepository();
     const [a, b] = await Promise.all([ensureBand(repository), ensureBand(repository)]);

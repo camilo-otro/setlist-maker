@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Modal } from '../components/Modal';
 import { DisplayNameDialog } from './DisplayNameDialog';
 import type { Sharing } from './sharing';
+import { useSync } from './SyncProvider';
 
 type Step =
   | { kind: 'checking' }
@@ -40,6 +41,7 @@ export function ShareDialog({
 }) {
   const [step, setStep] = useState<Step>({ kind: 'checking' });
   const [copied, setCopied] = useState(false);
+  const requestSync = useSync()?.requestSync;
 
   const prepare = useCallback(
     async (displayName?: string) => {
@@ -52,6 +54,8 @@ export function ShareDialog({
         }
         setStep({ kind: 'uploading' });
         await sharing.share(name);
+        // Start listening for bandmates' changes now rather than at the next scheduled sync.
+        requestSync?.();
         const link =
           (await sharing.links.active(gigId)) ?? (await sharing.links.create(bandId, gigId));
         setStep({ kind: 'ready', link, confirmOff: false });
@@ -59,7 +63,7 @@ export function ShareDialog({
         setStep({ kind: 'failed', message: failureMessage(error) });
       }
     },
-    [sharing, bandId, gigId],
+    [sharing, bandId, gigId, requestSync],
   );
 
   // On open: ask for a name first if this device has never shared, otherwise go straight on.

@@ -55,6 +55,12 @@ body {
   font-weight: 700;
 }
 
+/* The app and band names take the rest of the row; long band names end with an ellipsis. */
+.sidebar__brand > div {
+  flex: 1;
+  min-width: 0;
+}
+
 .sidebar__app-name,
 .sidebar__band-name {
   display: block;
@@ -65,9 +71,53 @@ body {
 }
 
 .sidebar__band-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
   color: var(--sm-text-muted);
+  font: inherit;
   font-size: 0.8125rem;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__band-name--static {
+  cursor: default;
+}
+
+.sidebar__band-name--static:hover {
+  background: none;
+  color: var(--sm-text-muted);
+}
+
+.sidebar__band-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The pencil only shows on hover or focus, so the name reads as a name. */
+.sidebar__band-name svg {
+  flex: none;
+  opacity: 0;
+}
+
+.sidebar__band-name:hover,
+.sidebar__band-name:focus-visible {
+  background: var(--sm-hover);
+  color: var(--sm-text);
+}
+
+.sidebar__band-name:hover svg,
+.sidebar__band-name:focus-visible svg {
+  opacity: 1;
 }
 
 .sidebar__notice {
@@ -133,6 +183,36 @@ body {
 .sidebar__footer {
   margin-top: auto;
   padding: 0 10px;
+}
+
+/* Sync status, above the theme switcher */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--sm-text-muted);
+  font-size: 0.75rem;
+}
+
+.sync-status__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sync-status--ok .sync-status__dot {
+  background: #22a06b;
+}
+
+.sync-status--busy .sync-status__dot {
+  background: var(--sm-accent);
+}
+
+.sync-status--warn {
+  color: var(--sm-danger);
 }
 
 /* Theme switcher */
@@ -1339,4 +1419,300 @@ body {
   padding: 12px;
   border: 1px solid var(--sm-border);
   border-radius: var(--sm-radius);
+}
+
+/* Viewers see the setlist without handles, edit buttons or add actions. Hiding the handles also
+   turns off dragging, since they carry the drag listeners. */
+.setlist-editor--readonly {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.setlist-editor--readonly .drag-handle,
+.setlist-editor--readonly .set__actions,
+.setlist-editor--readonly .entry__actions,
+.setlist-editor--readonly .set__footer,
+.setlist-editor--readonly .set__empty {
+  display: none;
+}
+
+/* Pending invites on the band page */
+.pending-invites {
+  margin-top: 24px;
+}
+
+.pending-invites__title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.pending-invites ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pending-invites li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--sm-border);
+}
+
+.pending-invites li > span {
+  flex: 1;
+}
+
+/* Web app: a suggestion to install it to the home screen. */
+.install-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+}
+
+.install-hint p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.install-hint svg {
+  vertical-align: -2px;
+}
+
+/*
+ * Phones (#42): the sidebar becomes a tab bar at the bottom, a slim header shows the band and
+ * sync status, pages go single column, and the setlist editor's library becomes a sheet opened
+ * from a set's "Add songs". Desktop never matches this, so its layout is unchanged.
+ */
+.mobile-header,
+.set__add-songs,
+.library-panel__close {
+  display: none;
+}
+
+.library-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+    border-bottom: 1px solid var(--sm-border);
+    background: var(--sm-sidebar);
+  }
+
+  .mobile-header__band {
+    overflow: hidden;
+    color: var(--sm-accent-text);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-header .sync-status {
+    margin: 0;
+  }
+
+  .mobile-header__notice {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--sm-danger);
+    font-size: 0.8125rem;
+  }
+
+  .app-main {
+    flex: 1;
+    padding: 16px 16px calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* The sidebar as a tab bar. */
+  .sidebar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    flex-direction: row;
+    gap: 0;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--sm-border);
+    border-right: 0;
+  }
+
+  .sidebar__brand,
+  .sidebar__notice,
+  .sidebar__footer,
+  .sidebar__link--desktop-only {
+    display: none;
+  }
+
+  .sidebar__nav {
+    flex: 1;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  .sidebar__link {
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 120px;
+    padding: 6px 4px;
+    font-size: 0.75rem;
+  }
+
+  /* Page headers: the actions go under the title and wrap. */
+  .sm-page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .sm-page-header__actions {
+    flex-wrap: wrap;
+  }
+
+  /* Bigger targets for fingers. */
+  .sm-button {
+    min-height: 40px;
+  }
+
+  .icon-button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .drag-handle {
+    padding: 8px;
+  }
+
+  /* No hover on touch screens: an entry's buttons are always there. */
+  .entry__actions {
+    opacity: 1;
+  }
+
+  /* The song table keeps title, key and length. */
+  .song-table th:nth-child(2),
+  .song-table td:nth-child(2),
+  .song-table th:nth-child(4),
+  .song-table td:nth-child(4),
+  .song-table th:nth-child(n + 6),
+  .song-table td:nth-child(n + 6) {
+    display: none;
+  }
+
+  .pending-invites li {
+    flex-wrap: wrap;
+  }
+
+  /* Dialogs fill the width and rise from the bottom, near the thumb. */
+  .modal-backdrop {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: 90vh;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Setlist editor: sets full width; the library is a sheet. */
+  .setlist-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .set__add-songs,
+  .library-panel__close {
+    display: inline-flex;
+  }
+
+  .setlist-editor .library-panel {
+    display: none;
+  }
+
+  .setlist-editor--library-open .library-panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    max-height: 75vh;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -12px 40px rgb(0 0 0 / 35%);
+  }
+
+  .setlist-editor--readonly .set__add-songs {
+    display: none;
+  }
+
+  /* Rows in a set: the fixed columns shrink to their content so the title gets the room. */
+  .entry {
+    gap: 4px;
+    padding: 4px 2px;
+  }
+
+  .entry__key,
+  .entry__length {
+    width: auto;
+    min-width: 28px;
+  }
+
+  .entry .icon-button {
+    min-width: 36px;
+    min-height: 40px;
+  }
+
+  .entry .drag-handle,
+  .set__header .drag-handle {
+    padding: 8px 4px;
+  }
+
+  .set__header {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  /* The totals line above the sets says the same. */
+  .set__count {
+    display: none;
+  }
+
+  .set__footer {
+    padding: 8px;
+  }
+
+  .set__footer .sm-button {
+    flex: 1;
+    justify-content: center;
+    padding: 0 6px;
+    white-space: nowrap;
+  }
 }

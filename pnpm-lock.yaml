@@ -71,6 +71,9 @@ importers:
       '@setlist/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@sqlite.org/sqlite-wasm':
+        specifier: 3.53.4-build2
+        version: 3.53.4-build2
       '@tauri-apps/api':
         specifier: ^2.12.4
         version: 2.12.4
@@ -173,6 +176,9 @@ importers:
       '@setlist/core':
         specifier: workspace:*
         version: link:../core
+      '@supabase/realtime-js':
+        specifier: ^2.118.0
+        version: 2.118.0
     devDependencies:
       '@types/node':
         specifier: ^24.19.2
@@ -714,6 +720,10 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
+  '@sqlite.org/sqlite-wasm@3.53.4-build2':
+    resolution: {integrity: sha512-kQVArGJA4z7s56Dm8t+eTBXad4LiohuVj9pfgDNOcxa+Ic5xMrWlLPTq6cT0hw5S4MIvtpsraW+B0wD+IPvC7A==}
+    engines: {node: '>=22'}
+
   '@supabase/cli-darwin-arm64@2.121.0':
     resolution: {integrity: sha512-ZvXKj3wW4Kq5/MrG2xdgZeOWETxmUC9jl16X/i/np7u5A/WLuC/L0+KKY5i0eCrTnNwWFpZdlWKzu/J9QgkPgg==}
     cpu: [arm64]
@@ -757,6 +767,13 @@ packages:
     resolution: {integrity: sha512-uvWiQ3cGKrZhtkctXHJJY0r0L6D2s/Dbc8/CxOVDxlXIH5mG3f8ZbqwMs9eRbPDqifyYFlwl+BX+tY3aJosIxQ==}
     cpu: [x64]
     os: [win32]
+
+  '@supabase/phoenix@0.4.5':
+    resolution: {integrity: sha512-aAn9H9ovVyeApKy11OWOrrOGq8DV68yWeH4ud2lN9fzn4aO8Zb5GLL9m1pUg9nLqIcT+ZDfAcsZe0E/nqdv2lw==}
+
+  '@supabase/realtime-js@2.118.0':
+    resolution: {integrity: sha512-pzCIEWjqD5/xqEZQerpt+q9rsgYkcrkgCJgf0W2ULqC4fYUeB/p9CFa3t9vn+IVh6dMN9r4ZCE262lZvUC+Bfw==}
+    engines: {node: '>=22.0.0'}
 
   '@tauri-apps/api@2.12.4':
     resolution: {integrity: sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg==}
@@ -2185,6 +2202,8 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
+  '@sqlite.org/sqlite-wasm@3.53.4-build2': {}
+
   '@supabase/cli-darwin-arm64@2.121.0':
     optional: true
 
@@ -2208,6 +2227,13 @@ snapshots:
 
   '@supabase/cli-windows-x64@2.121.0':
     optional: true
+
+  '@supabase/phoenix@0.4.5': {}
+
+  '@supabase/realtime-js@2.118.0':
+    dependencies:
+      '@supabase/phoenix': 0.4.5
+      tslib: 2.8.1
 
   '@tauri-apps/api@2.12.4': {}
 

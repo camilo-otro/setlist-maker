@@ -1,5 +1,5 @@
 import { assembleRepository } from '../assemble';
-import { bandOf, outboxOp, snakeCase, type OutboxOp } from '../outbox';
+import { bandOf, outboxOp, snakeCase, START_CURSOR, type OutboxOp } from '../outbox';
 import type { ReadOptions, Repository, RepositoryOptions, TableName } from '../repository';
 import {
   buildDeletedRow,
@@ -60,6 +60,7 @@ export async function openSqliteRepository(
       (await driver.select('SELECT "band_id" FROM "shared_bands"')).map((r) => r.band_id as string),
     );
 
+  const listeners = new Set<() => void>();
   const appendOp = (op: OutboxOp) =>
     driver.execute(
       'INSERT INTO "outbox" ("id", "table_name", "row_id", "band_id", "fields") VALUES (?, ?, ?, ?, ?)',
@@ -73,7 +74,10 @@ export async function openSqliteRepository(
     for (const [before, after] of changes) {
       if (!shared.has(bandOf(name, after))) continue;
       const op = outboxOp(name, before, after);
-      if (op) await appendOp(op);
+      if (op) {
+        await appendOp(op);
+        for (const listener of listeners) listener();
+      }
     }
   }
 
@@ -175,6 +179,16 @@ export async function openSqliteRepository(
             if (!row) throw new NotFoundError(name, id);
             return row.deletedAt ? replace(row, buildRestoredRow(row, ctx)) : row;
           }),
+        // Server rows replace local ones whole; INSERT OR REPLACE keeps it one statement per row.
+        applySynced: (rows: readonly StoredRow[]) =>
+          atomic(async () => {
+            for (const row of rows) {
+              await driver.execute(
+                `INSERT OR REPLACE INTO ${table} (${columns.join(', ')}) VALUES ${rowPlaceholders}`,
+                values(row),
+              );
+            }
+          }),
       };
     },
     (run) => ({
@@ -185,6 +199,10 @@ export async function openSqliteRepository(
             [bandId, ctx.now()],
           ),
         ),
+      onRecorded: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
       append: (ops) =>
         run(async () => {
           for (const op of ops) await appendOp(op);
@@ -220,6 +238,23 @@ export async function openSqliteRepository(
             );
           }
         }),
+      pullCursor: (bandId) =>
+        run(async () => {
+          const [row] = await driver.select(
+            'SELECT "after_xid", "after_seq" FROM "pull_cursors" WHERE "band_id" = ?',
+            [bandId],
+          );
+          return row
+            ? { xid: row.after_xid as string, seq: Number(row.after_seq) }
+            : { ...START_CURSOR };
+        }),
+      setPullCursor: (bandId, cursor) =>
+        run(() =>
+          driver.execute(
+            'INSERT OR REPLACE INTO "pull_cursors" ("band_id", "after_xid", "after_seq") VALUES (?, ?, ?)',
+            [bandId, cursor.xid, cursor.seq],
+          ),
+        ),
     }),
     {
       begin: () => driver.execute('BEGIN IMMEDIATE'),

@@ -1,4 +1,5 @@
 import {
+  BandMemberSchema,
   BandSchema,
   comparePositioned,
   GigSchema,
@@ -30,6 +31,7 @@ export const SCHEMAS: Record<
   { parse(value: unknown): unknown; shape: Record<string, unknown> }
 > = {
   bands: BandSchema,
+  bandMembers: BandMemberSchema,
   songs: SongSchema,
   venues: VenueSchema,
   gigs: GigSchema,

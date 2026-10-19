@@ -137,6 +137,32 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT`,
     ],
   },
+  {
+    version: 3,
+    name: 'Remember where each band last pulled',
+    statements: [
+      // The last server change each shared band has applied (see PullCursor). Local only.
+      `CREATE TABLE "pull_cursors" (
+        "band_id" TEXT PRIMARY KEY NOT NULL,
+        "after_xid" TEXT NOT NULL,
+        "after_seq" INTEGER NOT NULL
+      ) STRICT`,
+    ],
+  },
+  {
+    version: 4,
+    name: 'Create band members',
+    statements: [
+      `CREATE TABLE "band_members" (${bandScoped},
+        "user_id" TEXT NOT NULL,
+        "display_name" TEXT NOT NULL,
+        "role" TEXT NOT NULL
+      ) STRICT`,
+      `CREATE INDEX "band_members_band" ON "band_members" ("band_id")`,
+      // Earlier pulls skipped members; start over so they come down too.
+      `DELETE FROM "pull_cursors"`,
+    ],
+  },
 ];
 
 /**

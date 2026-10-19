@@ -2,12 +2,12 @@ import type { Repository } from '@setlist/storage';
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkspace } from './WorkspaceProvider';
 
-type BandTable = 'songs' | 'venues' | 'gigs';
+type BandTable = 'songs' | 'venues' | 'gigs' | 'bandMembers';
 type RowOf<K extends BandTable> = Awaited<ReturnType<Repository[K]['list']>>[number];
 
 /** Every (non-deleted) row of one table for the current band, and a way to reload after changes. */
 export function useBandRows<K extends BandTable>(table: K) {
-  const { repository, band } = useWorkspace();
+  const { repository, band, dataVersion } = useWorkspace();
   const [rows, setRows] = useState<RowOf<K>[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [generation, setGeneration] = useState(0);
@@ -27,7 +27,7 @@ export function useBandRows<K extends BandTable>(table: K) {
     return () => {
       current = false;
     };
-  }, [repository, band.id, table, generation]);
+  }, [repository, band.id, table, generation, dataVersion]);
 
   const reload = useCallback(() => setGeneration((n) => n + 1), []);
 

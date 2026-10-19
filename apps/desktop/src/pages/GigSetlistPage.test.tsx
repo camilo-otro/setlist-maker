@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createGig, createMemoryRepository } from '@setlist/storage';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -73,6 +73,17 @@ describe('GigSetlistPage', () => {
     expect(library().getAllByText('Already in this setlist')).toHaveLength(2);
   });
 
+  it('keeps every song added in quick succession', async () => {
+    await setup();
+    // Clicks with no pause between them, so each starts a save while the last is still running.
+    fireEvent.click(library().getByRole('button', { name: 'Add Basurita' }));
+    fireEvent.click(library().getByRole('button', { name: 'Add Here Without You' }));
+    fireEvent.click(library().getByRole('button', { name: 'Add Untimed' }));
+    await waitFor(() =>
+      expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You', 'Untimed']),
+    );
+  });
+
   it('adds sets, and adds songs to the chosen set', async () => {
     const { user } = await setup();
     await user.click(screen.getByRole('button', { name: 'Add set' }));
@@ -119,6 +130,23 @@ describe('GigSetlistPage', () => {
     await waitFor(() =>
       expect(songsIn('Set 2')).toEqual(['Basurita', 'Break', 'Here Without You']),
     );
+  });
+
+  it("opens the library aimed at a set from its Add songs button (the phone's sheet)", async () => {
+    const { user } = await setup();
+    await user.click(screen.getByRole('button', { name: 'Add set' }));
+    await screen.findByRole('heading', { name: 'Set 2' });
+    const editor = () => document.querySelector('.setlist-editor')!;
+    expect(editor().classList.contains('setlist-editor--library-open')).toBe(false);
+
+    await user.click(set('Set 1').getByRole('button', { name: 'Add songs' }));
+    expect(editor().classList.contains('setlist-editor--library-open')).toBe(true);
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita']));
+    expect(songsIn('Set 2')).toEqual([]);
+
+    await user.click(library().getByRole('button', { name: 'Done' }));
+    expect(editor().classList.contains('setlist-editor--library-open')).toBe(false);
   });
 
   it('adds breaks and notes, and requires text for a note', async () => {

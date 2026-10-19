@@ -1,5 +1,5 @@
 import { assembleRepository } from './assemble';
-import { bandOf, outboxOp, type OutboxOp } from './outbox';
+import { bandOf, outboxOp, START_CURSOR, type OutboxOp, type PullCursor } from './outbox';
 import {
   TABLE_NAMES,
   type ReadOptions,
@@ -25,6 +25,7 @@ interface State {
   tables: Map<TableName, Map<string, StoredRow>>;
   outbox: OutboxOp[];
   shared: Set<string>;
+  cursors: Map<string, PullCursor>;
 }
 
 /**
@@ -33,10 +34,12 @@ interface State {
  */
 export function createMemoryRepository(options: RepositoryOptions = {}): Repository {
   const ctx = writeContext(options);
+  const listeners = new Set<() => void>();
   let state: State = {
     tables: new Map(TABLE_NAMES.map((name) => [name, new Map()])),
     outbox: [],
     shared: new Set(),
+    cursors: new Map(),
   };
 
   return assembleRepository(
@@ -52,7 +55,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
         rows().set(row.id, row);
         if (state.shared.has(bandOf(name, row))) {
           const op = outboxOp(name, before, row);
-          if (op) state.outbox.push(op);
+          if (op) {
+            state.outbox.push(op);
+            for (const listener of listeners) listener();
+          }
         }
         return copyRow(row);
       };
@@ -83,6 +89,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
             if (!row) throw new NotFoundError(name, id);
             return row.deletedAt ? save(buildRestoredRow(row, ctx)) : copyRow(row);
           }),
+        applySynced: (synced: readonly StoredRow[]) =>
+          run(() => {
+            for (const row of synced) rows().set(row.id, copyRow(row));
+          }),
       };
     },
     (run) => ({
@@ -91,6 +101,10 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
           state.shared.add(bandId);
         }),
       sharedBands: () => run(() => [...state.shared]),
+      onRecorded: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
       append: (ops) =>
         run(() => {
           state.outbox.push(...ops);
@@ -102,6 +116,11 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
           const done = new Set(ids);
           state.outbox = state.outbox.filter((op) => !done.has(op.id));
         }),
+      pullCursor: (bandId) => run(() => ({ ...(state.cursors.get(bandId) ?? START_CURSOR) })),
+      setPullCursor: (bandId, cursor) =>
+        run(() => {
+          state.cursors.set(bandId, { ...cursor });
+        }),
     }),
     {
       // Rows and operations are replaced, never mutated, so copying the containers is a full
@@ -110,6 +129,7 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
         tables: new Map([...state.tables].map(([name, rows]) => [name, new Map(rows)])),
         outbox: [...state.outbox],
         shared: new Set(state.shared),
+        cursors: new Map(state.cursors),
       }),
       commit: () => {},
       rollback: (snapshot) => {

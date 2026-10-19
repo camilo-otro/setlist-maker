@@ -5,14 +5,16 @@
   "description": "Repository interface, SQLite implementation and sync",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing/contract": "./src/testing/contract.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
     "test": "vitest run"
   },
   "dependencies": {
-    "@setlist/core": "workspace:*"
+    "@setlist/core": "workspace:*",
+    "@supabase/realtime-js": "^2.118.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2"

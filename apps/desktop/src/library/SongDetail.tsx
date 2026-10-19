@@ -20,7 +20,8 @@ export function SongDetail({
   onClose,
 }: {
   song: Song;
-  onEdit: () => void;
+  /** Leave out for viewers, who can't edit. */
+  onEdit?: () => void;
   onClose: () => void;
 }) {
   return (
@@ -47,10 +48,12 @@ export function SongDetail({
 
       <div className="song-detail__actions">
         <span className={`status status--${song.status}`}>{SONG_STATUS_LABELS[song.status]}</span>
-        <button type="button" className="sm-button" onClick={onEdit}>
-          <Pencil size={14} aria-hidden="true" />
-          Edit
-        </button>
+        {onEdit && (
+          <button type="button" className="sm-button" onClick={onEdit}>
+            <Pencil size={14} aria-hidden="true" />
+            Edit
+          </button>
+        )}
       </div>
 
       <dl className="song-detail__facts">
