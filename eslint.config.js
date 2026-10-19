@@ -6,7 +6,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['**/dist/', '**/src-tauri/target/', '**/src-tauri/gen/', 'misc/']),
+  globalIgnores(['**/dist/', '**/dist-web/', '**/src-tauri/target/', '**/src-tauri/gen/', 'misc/']),
   js.configs.recommended,
   tseslint.configs.recommended,
   {

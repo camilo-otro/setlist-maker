@@ -24,6 +24,7 @@ pnpm install
 pnpm app:desktop   # the desktop app in a native window (first run compiles Rust, ~2 min)
 pnpm dev:desktop   # just the desktop UI, in a browser at http://localhost:1420
 pnpm dev:viewer    # the share-link viewer, at http://localhost:1440/#<token>
+pnpm --filter @setlist/desktop dev:web  # the web app (data saved in the browser), at http://localhost:1450
 pnpm check        # everything CI checks: format, lint, typecheck, tests, build
 pnpm check:rust   # Rust tests for the desktop shell
 pnpm test          # or run one step: typecheck, lint, format, build
@@ -111,6 +112,15 @@ A gig's **Share** button gives a read-only link to its setlist, like `https://se
 5. Make sure anonymous sign-ins are on in Supabase (Supabase setup, step 4).
 
 The desktop app opens links at `https://setlist.rockthehouse.app/`; set `VITE_VIEWER_URL` in `apps/desktop/.env.local` to point it elsewhere, e.g. `http://localhost:1440/` with a local viewer.
+
+## Web app
+
+The same app runs in a browser at `https://setlist.rockthehouse.app/app/`, for editing from a phone (#42). It's the desktop app's code built with `pnpm --filter @setlist/desktop build:web`; only storage differs:
+
+- **Data:** SQLite compiled to WebAssembly (`@sqlite.org/sqlite-wasm`) in a Web Worker, kept in the browser's origin private file system (the "opfs-sahpool" mode, which needs no special server headers). It's the same repository, migrations and contract tests as desktop. That storage allows one tab at a time: a second tab works in memory and says so.
+- **Sign-in:** kept in the site's localStorage.
+
+The **Viewer** workflow builds the viewer and the web app together and publishes them as one Netlify site: the viewer at `/`, the app at `/app/`. The site's `_headers` allow WebAssembly (`'wasm-unsafe-eval'`, which doesn't allow JavaScript `eval`) and Realtime's `wss://` connections.
 
 ## Song catalog
 

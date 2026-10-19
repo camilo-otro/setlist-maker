@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:web": "vite --mode web --port 1450",
     "build": "tsc -p tsconfig.json && vite build",
+    "build:web": "tsc -p tsconfig.json && vite build --mode web --base /app/ --outDir dist-web",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
@@ -19,6 +21,7 @@
     "@setlist/core": "workspace:*",
     "@setlist/storage": "workspace:*",
     "@setlist/ui": "workspace:*",
+    "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "@tauri-apps/api": "^2.12.4",
     "lucide-react": "^1.57.0",
     "react": "^19.3.1",

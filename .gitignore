@@ -8,3 +8,5 @@ target/
 # Seed data exports (kept out of the public repo)
 misc/
 .env.local
+# Web build of the app (served at /app/ next to the viewer)
+dist-web/

@@ -5,7 +5,8 @@
   "description": "Repository interface, SQLite implementation and sync",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing/contract": "./src/testing/contract.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",

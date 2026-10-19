@@ -1,8 +1,10 @@
-# Netlify response headers. Links are private to whoever has them: keep them out of search
-# engines and other sites' frames, and only talk to Supabase.
+# Netlify response headers for the whole site: the share-link viewer at / and the web app at
+# /app/. Links are private to whoever has them: keep them out of search engines and other sites'
+# frames, and only talk to Supabase (HTTPS, and WebSockets for Realtime). 'wasm-unsafe-eval' lets
+# the app compile SQLite's WebAssembly; it doesn't allow JavaScript eval.
 /*
   X-Robots-Tag: noindex, nofollow
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'

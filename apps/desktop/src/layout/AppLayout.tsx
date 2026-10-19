@@ -26,7 +26,7 @@ export const NAV_ITEMS = [
 ] as const;
 
 export function AppLayout() {
-  const { band, persistent, renameBand } = useWorkspace();
+  const { band, persistent, storageNote, renameBand } = useWorkspace();
   const [renaming, setRenaming] = useState(false);
   const { isOwner } = useMembership();
 
@@ -55,7 +55,7 @@ export function AppLayout() {
         </div>
         {!persistent && (
           <p className="sidebar__notice" role="status">
-            Browser preview: changes aren&apos;t saved.
+            {storageNote ?? "Browser preview: changes aren't saved."}
           </p>
         )}
         <nav className="sidebar__nav" aria-label="Main">

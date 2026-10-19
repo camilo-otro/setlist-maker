@@ -22,6 +22,8 @@ export interface Workspace {
   band: Band;
   /** False in the browser preview, where data lives in memory and is lost on reload. */
   persistent: boolean;
+  /** Why data isn't saved, when that's not just the preview (e.g. the app is open in another tab). */
+  storageNote?: string;
   /** The shared song catalog, or null when the app isn't configured with a Supabase project. */
   catalog?: CatalogSearch | null;
   /** Who this device is on the server, for sharing; null without a Supabase project. */
@@ -68,22 +70,66 @@ export function ensureBand(repository: Repository): Promise<Band> {
   });
 }
 
+/** Where this copy of the app runs, and so how it stores data and the sign-in. */
+export type Platform = 'desktop' | 'web' | 'preview';
+
+/** Desktop inside Tauri; the web build (`vite build --mode web`); otherwise the dev preview. */
+export function currentPlatform(): Platform {
+  if (isTauri()) return 'desktop';
+  return import.meta.env.MODE === 'web' ? 'web' : 'preview';
+}
+
+const STORAGE_NOTES = {
+  'other-tab':
+    "Setlist Maker is open in another tab, so changes here aren't saved. Close this tab.",
+  unsupported: "This browser can't store the app's data, so changes here aren't saved.",
+} as const;
+
+/** Storage for each platform. The preview keeps data and sign-in in memory. */
+async function openStorage(platform: Platform): Promise<{
+  repository: Repository;
+  identityStore: IdentityStore;
+  persistent: boolean;
+  storageNote?: string;
+}> {
+  if (platform === 'desktop') {
+    return {
+      repository: await openSqliteRepository(createTauriDriver()),
+      identityStore: createTauriIdentityStore(),
+      persistent: true,
+    };
+  }
+  if (platform === 'web') {
+    // Loaded only in the web build: it brings the SQLite worker and WebAssembly with it.
+    const { createWebSqlDriver } = await import('./web/webSqlDriver');
+    const { createWebIdentityStore } = await import('./web/webIdentityStore');
+    const driver = createWebSqlDriver();
+    const storage = await driver.opened;
+    return {
+      repository: await openSqliteRepository(driver),
+      identityStore: createWebIdentityStore(),
+      persistent: storage.persistent,
+      storageNote: storage.persistent ? undefined : STORAGE_NOTES[storage.reason],
+    };
+  }
+  return {
+    repository: createMemoryRepository(),
+    identityStore: createMemoryIdentityStore(),
+    persistent: false,
+  };
+}
+
 async function open(): Promise<Workspace> {
-  const persistent = isTauri();
-  const repository = persistent
-    ? await openSqliteRepository(createTauriDriver())
-    : createMemoryRepository();
+  const { repository, identityStore, persistent, storageNote } =
+    await openStorage(currentPlatform());
   const band = await ensureBand(repository);
   const env = import.meta.env;
-  // The browser preview keeps its sign-in in memory, like its data.
-  const identity = identityFromEnv(
-    env,
-    persistent ? createTauriIdentityStore() : createMemoryIdentityStore(),
-  );
+  const identity = identityFromEnv(env, identityStore);
   return {
     repository,
     band,
     persistent,
+    storageNote,
     catalog: catalogFromEnv(env),
     identity,
     sharing:

@@ -5,6 +5,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
+  // The web build (`--mode web`) runs SQLite as WebAssembly in a worker. Vite mustn't pre-bundle
+  // sqlite-wasm, or it loses track of its .wasm file; workers are ES modules like the app.
+  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
+  worker: { format: 'es' },
   server: {
     port: 1420,
     strictPort: true,
