@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions, and opening Spotify links in the browser or Spotify app",
+  "description": "enables the default permissions, opening Spotify links, and opening files the app saves to Downloads",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -10,6 +10,14 @@
       "allow": [
         {
           "url": "https://open.spotify.com/*"
+        }
+      ]
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$DOWNLOAD/**"
         }
       ]
     }

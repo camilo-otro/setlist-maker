@@ -3,7 +3,7 @@ import type { BlockWithEntries } from './useGigSetlist';
 
 /**
  * A gig's setlist drawn as one tall, phone-width picture for a chat (#84), in the web viewer's
- * light look. The layout is plain data (boxes, lines and text at fixed spots), worked out here so
+ * look, light or dark to match the app. The layout is plain data (boxes, lines and text at fixed spots), worked out here so
  * it can be tested; `drawSetlistImage` paints it on a canvas.
  */
 
@@ -12,15 +12,44 @@ export const IMAGE_WIDTH = 540;
 export const IMAGE_SCALE = 2;
 
 const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
-const COLORS = {
-  bg: '#f7f7f8',
-  surface: '#ffffff',
-  border: '#dcdce1',
-  text: '#1c1c21',
-  muted: '#5f5f69',
-  hover: '#e4e4e9',
-  accent: '#5b21b6',
+export type ImageTheme = 'light' | 'dark';
+
+/** The app's own colours (packages/ui), so the picture looks like the screen it came from. */
+const PALETTES: Record<
+  ImageTheme,
+  Record<'bg' | 'surface' | 'border' | 'text' | 'muted' | 'hover' | 'accent' | 'danger', string>
+> = {
+  light: {
+    bg: '#f7f7f8',
+    surface: '#ffffff',
+    border: '#dcdce1',
+    text: '#1c1c21',
+    muted: '#5f5f69',
+    hover: '#e4e4e9',
+    accent: '#5b21b6',
+    danger: '#b42318',
+  },
+  dark: {
+    bg: '#141417',
+    surface: '#1c1c21',
+    border: '#2e2e36',
+    text: '#ececf1',
+    muted: '#a0a0ac',
+    hover: '#26262d',
+    accent: '#c4b5fd',
+    danger: '#f97066',
+  },
 };
+
+/**
+ * The theme the app is showing: the one picked in the app (`data-theme` on the page), or the
+ * system's when it follows the system.
+ */
+export function activeImageTheme(): ImageTheme {
+  const picked = document.documentElement.dataset.theme;
+  if (picked === 'light' || picked === 'dark') return picked;
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 const PAD = 24;
 const CARD_X = PAD;
@@ -44,6 +73,7 @@ export type ImageItem =
 export interface ImageLayout {
   width: number;
   height: number;
+  background: string;
   items: ImageItem[];
 }
 
@@ -84,6 +114,7 @@ export function layoutSetlistImage({
   songsById,
   measure,
   locale,
+  theme = 'light',
 }: {
   gig: Gig;
   venue: Venue | null;
@@ -92,7 +123,9 @@ export function layoutSetlistImage({
   measure: Measure;
   /** For the date; the device's own by default. */
   locale?: string;
+  theme?: ImageTheme;
 }): ImageLayout {
+  const COLORS = PALETTES[theme];
   // Deleted songs are left out, as in the viewer.
   const sets = blocks.map(({ block, entries }) => ({
     block,
@@ -139,7 +172,7 @@ export function layoutSetlistImage({
   }
   if (gig.status === 'cancelled') {
     y += 24;
-    text(PAD, y, 'Cancelled', font(15, 700), '#b42318');
+    text(PAD, y, 'Cancelled', font(15, 700), COLORS.danger);
   }
   const total = sets.reduce(
     (sum, { entries }) => {
@@ -264,7 +297,7 @@ export function layoutSetlistImage({
 
   y += 28;
   text(IMAGE_WIDTH / 2, y, 'Setlist Maker', font(13), COLORS.muted, 'center');
-  return { width: IMAGE_WIDTH, height: y + PAD, items };
+  return { width: IMAGE_WIDTH, height: y + PAD, background: COLORS.bg, items };
 }
 
 /** Paints `layout` and hands back the PNG. */
@@ -275,7 +308,7 @@ export function drawSetlistImage(layout: ImageLayout): Promise<Blob> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return Promise.reject(new Error("This device can't draw images."));
   ctx.scale(IMAGE_SCALE, IMAGE_SCALE);
-  ctx.fillStyle = COLORS.bg;
+  ctx.fillStyle = layout.background;
   ctx.fillRect(0, 0, layout.width, layout.height);
   for (const item of layout.items) {
     if (item.kind === 'rect') {

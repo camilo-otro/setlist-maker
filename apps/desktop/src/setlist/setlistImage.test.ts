@@ -57,6 +57,22 @@ describe('layoutSetlistImage', () => {
     expect(card.kind === 'rect' && card.y + card.h).toBeGreaterThan(numbers.at(-1)!.y);
   });
 
+  it('uses the dark colours when the app is dark', async () => {
+    const sample = await sampleGig();
+    const light = layoutSetlistImage({ ...sample, measure });
+    const dark = layoutSetlistImage({ ...sample, measure, theme: 'dark' });
+    expect(light.background).toBe('#f7f7f8');
+    expect(dark.background).toBe('#141417');
+    // Same layout, other colours.
+    expect(dark.items.map(({ kind, y }) => [kind, y])).toEqual(
+      light.items.map(({ kind, y }) => [kind, y]),
+    );
+    const title = (layout: typeof light) =>
+      layout.items.find((item) => item.kind === 'text' && item.text === 'Rock Party at the Pub');
+    expect(title(dark)).toMatchObject({ color: '#ececf1' });
+    expect(title(light)).toMatchObject({ color: '#1c1c21' });
+  });
+
   it('shortens titles too wide for the card', async () => {
     const sample = await sampleGig();
     const id = sample.blocks[0]!.entries[0]!.songId!;
