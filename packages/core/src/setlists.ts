@@ -3,7 +3,7 @@ import type { SetEntry } from './schemas/setlist';
 import type { Song } from './schemas/song';
 
 type EntryLike = Pick<SetEntry, 'id' | 'kind' | 'songId'>;
-type SongLike = Pick<Song, 'durationSec' | 'status'>;
+type SongLike = Pick<Song, 'durationSec' | 'status'> & Partial<Pick<Song, 'tags'>>;
 
 /** Running time of a set: the known song lengths, and how many songs have no length yet. */
 export function setDuration(
@@ -23,19 +23,34 @@ export function setDuration(
   return { totalSec, songs, missingLengths };
 }
 
-export type EntryWarning = 'duplicate' | 'retired' | 'no-length' | 'missing-song';
+export type EntryWarning = 'duplicate' | 'retired' | 'no-length' | 'missing-song' | 'needs-missing';
 
 export const ENTRY_WARNING_LABELS: Record<EntryWarning, string> = {
   duplicate: 'Played more than once in this setlist',
   retired: 'Archived song',
   'no-length': 'No length set, so the running time is incomplete',
   'missing-song': 'This song was deleted from the library',
+  'needs-missing': 'Needs something this gig is missing',
 };
 
-/** Problems with each song entry of a whole setlist, keyed by entry ID. Entries without problems are left out. */
+/** Which of `missing` (a gig's missing tags) the song needs, compared ignoring case. */
+export function missingNeeds(
+  song: Partial<Pick<Song, 'tags'>> | undefined,
+  missing: readonly string[],
+): string[] {
+  if (!song?.tags || missing.length === 0) return [];
+  const tags = new Set(song.tags.map((tag) => tag.toLowerCase()));
+  return missing.filter((tag) => tags.has(tag.toLowerCase()));
+}
+
+/**
+ * Problems with each song entry of a whole setlist, keyed by entry ID. Entries without problems
+ * are left out. `missing` is the gig's missing tags: songs needing one are flagged.
+ */
 export function setlistWarnings(
   entries: readonly EntryLike[],
   songsById: ReadonlyMap<string, SongLike>,
+  missing: readonly string[] = [],
 ): Map<string, EntryWarning[]> {
   const uses = new Map<string, number>();
   for (const entry of entries) {
@@ -52,6 +67,7 @@ export function setlistWarnings(
     if ((uses.get(entry.songId) ?? 0) > 1) found.push('duplicate');
     if (song?.status === 'retired') found.push('retired');
     if (song && song.durationSec === null) found.push('no-length');
+    if (missingNeeds(song, missing).length > 0) found.push('needs-missing');
     if (found.length > 0) warnings.set(entry.id, found);
   }
   return warnings;
@@ -64,6 +80,7 @@ export function countWarnings(warnings: ReadonlyMap<string, readonly EntryWarnin
     retired: 0,
     'no-length': 0,
     'missing-song': 0,
+    'needs-missing': 0,
   };
   for (const list of warnings.values()) for (const warning of list) counts[warning] += 1;
   return counts;
@@ -99,4 +116,26 @@ export function planDrop(
   const to = Math.min(overIndex, entries.length - 1);
   if (to === from) return null;
   return { blockId: target.id, position: move(entries, from, to) };
+}
+
+/**
+ * How many song entries need each of the gig's missing tags, for "2 need piano". Tags no entry
+ * needs are left out.
+ */
+export function missingCounts(
+  entries: readonly EntryLike[],
+  songsById: ReadonlyMap<string, SongLike>,
+  missing: readonly string[],
+): { tag: string; count: number }[] {
+  return missing
+    .map((tag) => ({
+      tag,
+      count: entries.filter(
+        (entry) =>
+          entry.kind === 'song' &&
+          entry.songId &&
+          missingNeeds(songsById.get(entry.songId), [tag]).length > 0,
+      ).length,
+    }))
+    .filter(({ count }) => count > 0);
 }

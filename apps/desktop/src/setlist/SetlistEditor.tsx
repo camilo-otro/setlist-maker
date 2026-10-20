@@ -84,6 +84,7 @@ export function SetlistEditor({
   songs,
   songsById,
   warnings,
+  missing = [],
   changes,
   run,
   readOnly = false,
@@ -93,6 +94,8 @@ export function SetlistEditor({
   songs: readonly Song[];
   songsById: ReadonlyMap<string, Song>;
   warnings: ReadonlyMap<string, readonly EntryWarning[]>;
+  /** Tags the band can't cover at this gig (#88): flagged in the sets, hideable in the library. */
+  missing?: readonly string[];
   changes: SetlistChanges;
   run: (change: Change) => Promise<void>;
   /** For viewers: shows the setlist without any way to change it. */
@@ -238,6 +241,7 @@ export function SetlistEditor({
                 item={item}
                 songsById={songsById}
                 warnings={warnings}
+                missing={missing}
                 onEditBlock={() => setEditing({ kind: 'block', block: item.block })}
                 onRemoveBlock={() => void run(changes.removeBlock(item.block))}
                 onAddBreak={() =>
@@ -276,6 +280,7 @@ export function SetlistEditor({
             songs={songs}
             blocks={blocks.map(({ block }) => block)}
             usedSongIds={usedSongIds}
+            missing={missing}
             targetId={targetBlockId}
             onTargetChange={(id) => setChosen({ id, at: new Date().toISOString() })}
             onAdd={addSong}

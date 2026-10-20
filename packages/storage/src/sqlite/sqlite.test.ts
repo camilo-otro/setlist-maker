@@ -40,6 +40,26 @@ describe('SQLite schema', () => {
       isOriginal: true,
       tags: ['opener', 'fast'],
     });
+    const gig = await repo.gigs.create({
+      bandId,
+      title: 'Friday',
+      date: '2026-10-23',
+      missingTags: ['piano'],
+    });
+    expect((await repo.gigs.get(gig.id))!.missingTags).toEqual(['piano']);
+  });
+
+  it('gives gigs saved before missing tags existed an empty list', async () => {
+    const driver = createNodeSqliteDriver();
+    await migrate(driver, MIGRATIONS.slice(0, 4));
+    const now = '2026-10-20T12:00:00.000Z';
+    await driver.execute(
+      `INSERT INTO "gigs" ("id", "created_at", "updated_at", "version", "band_id", "venue_id", "title", "date", "load_in_time", "start_time", "status", "notes")
+       VALUES ('01900000-0000-7000-8000-000000000061', ?, ?, 1, '01900000-0000-7000-8000-00000000000a', NULL, 'Old gig', '2026-10-01', NULL, NULL, 'played', NULL)`,
+      [now, now],
+    );
+    const repo = await openSqliteRepository(driver);
+    expect((await repo.gigs.list())[0]).toMatchObject({ title: 'Old gig', missingTags: [] });
   });
 });
 

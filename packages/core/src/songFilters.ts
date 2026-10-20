@@ -82,3 +82,13 @@ export function keysInUse(songs: readonly Pick<Song, 'key'>[]): string[] {
   const used = new Set(songs.map((song) => song.key).filter((key) => key !== null));
   return MUSICAL_KEYS.filter((key) => used.has(key));
 }
+
+/** Instrument tags offered when tagging a song (#88). Tags stay free text. */
+export const SUGGESTED_TAGS: readonly string[] = [
+  'piano',
+  'keys',
+  '5-string',
+  'acoustic',
+  'tambourine',
+  'capo',
+];

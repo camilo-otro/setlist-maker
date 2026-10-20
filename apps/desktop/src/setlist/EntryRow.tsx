@@ -16,6 +16,7 @@ import {
   StickyNote,
   X,
 } from 'lucide-react';
+import { SongTags } from '../components/SongTags';
 
 /** What an entry is called: the song title, the break's label, or the note. */
 export function entryTitle(entry: SetEntry, song: Song | undefined): string {
@@ -29,6 +30,7 @@ export function EntryRow({
   number,
   song,
   warnings,
+  missing = [],
   onEdit,
   onRemove,
 }: {
@@ -37,6 +39,8 @@ export function EntryRow({
   number: number | null;
   song: Song | undefined;
   warnings: readonly EntryWarning[];
+  /** The gig's missing tags, to mark the song's tags that need them. */
+  missing?: readonly string[];
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -79,6 +83,9 @@ export function EntryRow({
           <span className="entry__artist muted">· {song.artist}</span>
         )}
         {entry.notes && <span className="entry__notes muted">{entry.notes}</span>}
+        {entry.kind === 'song' && song && (
+          <SongTags tags={song.tags} missing={missing} className="entry__tags" />
+        )}
       </span>
       {entry.segueToNext && (
         <span className="entry__segue" title="Segues into the next song">

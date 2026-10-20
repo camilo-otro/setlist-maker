@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { keysBetween, sortByPosition, type Positioned } from './ordering';
-import { countWarnings, planDrop, setDuration, setlistWarnings } from './setlists';
+import {
+  countWarnings,
+  missingCounts,
+  missingNeeds,
+  planDrop,
+  setDuration,
+  setlistWarnings,
+} from './setlists';
 
 const songs = new Map([
   ['a', { durationSec: 200, status: 'active' as const }],
@@ -19,6 +26,37 @@ describe('setDuration', () => {
       songs: 3,
       missingLengths: 1,
     });
+  });
+});
+
+describe('what a gig is missing', () => {
+  const songs = new Map([
+    ['keys', { durationSec: 200, status: 'active' as const, tags: ['Piano', 'slow'] }],
+    ['bass', { durationSec: 200, status: 'active' as const, tags: ['5-string'] }],
+    ['plain', { durationSec: 200, status: 'active' as const, tags: [] }],
+  ]);
+  const entry = (id: string, songId: string) => ({ id, kind: 'song' as const, songId });
+  const entries = [
+    entry('e1', 'keys'),
+    entry('e2', 'bass'),
+    entry('e3', 'plain'),
+    entry('e4', 'keys'),
+  ];
+
+  it('flags songs that need a missing tag, ignoring case', () => {
+    const warnings = setlistWarnings(entries, songs, ['piano']);
+    expect(warnings.get('e1')).toEqual(['duplicate', 'needs-missing']);
+    expect(warnings.get('e2')).toBeUndefined();
+    expect(countWarnings(warnings)['needs-missing']).toBe(2);
+    expect(missingNeeds(songs.get('keys'), ['piano', 'capo'])).toEqual(['piano']);
+  });
+
+  it('counts the entries needing each missing tag', () => {
+    expect(missingCounts(entries, songs, ['piano', '5-string', 'capo'])).toEqual([
+      { tag: 'piano', count: 2 },
+      { tag: '5-string', count: 1 },
+    ]);
+    expect(setlistWarnings(entries, songs).get('e2')).toBeUndefined();
   });
 });
 
@@ -47,6 +85,7 @@ describe('setlistWarnings', () => {
       retired: 1,
       'no-length': 1,
       'missing-song': 1,
+      'needs-missing': 0,
     });
   });
 });

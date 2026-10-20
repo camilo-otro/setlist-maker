@@ -184,7 +184,11 @@ describe('VenueSchema and GigSchema', () => {
       date: '2026-10-23',
       startTime: '21:00',
     };
-    expect(GigSchema.parse(gig)).toMatchObject({ status: 'upcoming', loadInTime: null });
+    expect(GigSchema.parse(gig)).toMatchObject({
+      status: 'upcoming',
+      loadInTime: null,
+      missingTags: [],
+    });
 
     const paths = errorPaths(GigSchema, { ...gig, date: '2026-02-30', startTime: '21:00:00' });
     expect(paths).toEqual(['date', 'startTime']);

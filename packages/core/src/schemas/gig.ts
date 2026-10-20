@@ -6,6 +6,7 @@ import {
   LocalTimeSchema,
   nullable,
   optionalText,
+  TagsSchema,
   text,
 } from './common';
 
@@ -27,6 +28,11 @@ export const GigSchema = BandScopedSchema.extend({
   startTime: nullable(LocalTimeSchema),
   status: GigStatusSchema.default('upcoming'),
   notes: optionalText(5000),
+  /**
+   * Tags the band can't cover at this gig, e.g. `piano` when the keyboardist can't come (#88).
+   * Songs with one of them are flagged in the setlist.
+   */
+  missingTags: TagsSchema.default([]),
 });
 
 export type Venue = z.infer<typeof VenueSchema>;

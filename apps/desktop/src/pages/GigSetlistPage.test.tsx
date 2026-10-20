@@ -26,7 +26,14 @@ async function setup() {
   });
   await repository.songs.createMany([
     { bandId, title: 'Basurita', artist: '1280 Almas', key: 'A', durationSec: 225 },
-    { bandId, title: 'Here Without You', artist: '3 Doors Down', key: 'Bb', durationSec: 238 },
+    {
+      bandId,
+      title: 'Here Without You',
+      artist: '3 Doors Down',
+      key: 'Bb',
+      durationSec: 238,
+      tags: ['piano'],
+    },
     { bandId, title: 'Untimed', artist: 'Someone' },
   ]);
   const user = userEvent.setup();
@@ -103,6 +110,46 @@ describe('GigSetlistPage', () => {
     await user.click(dialog().getByRole('button', { name: 'Not played after all' }));
     expect(await screen.findByRole('button', { name: 'Mark as played' })).toBeTruthy();
     expect(await workspace.repository.performances.list({ gigId: gig.id })).toEqual([]);
+  });
+
+  it('flags songs needing what the gig is missing, and can hide them from the library', async () => {
+    const { user, workspace, gig } = await setup();
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await user.click(library().getByRole('button', { name: 'Add Here Without You' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You']));
+    expect(summary()).not.toContain('need');
+
+    // The keyboardist can't make it.
+    await user.click(screen.getByRole('button', { name: 'Edit details' }));
+    await user.click(
+      within(dialog().getByRole('group', { name: 'Missing at this gig' })).getByRole('button', {
+        name: 'piano',
+      }),
+    );
+    await user.click(dialog().getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    expect((await workspace.repository.gigs.get(gig.id))!.missingTags).toEqual(['piano']);
+    await waitFor(() => expect(summary()).toContain('1 needs piano'));
+    expect(screen.getByText(/Missing piano/)).toBeTruthy();
+    expect(set('Set 1').getByText(/Needs something this gig is missing/)).toBeTruthy();
+    expect(set('Set 1').getByText('(missing at this gig)')).toBeTruthy();
+
+    // The library hides it, unless asked.
+    expect(library().queryByRole('button', { name: 'Add Here Without You' })).toBeNull();
+    await user.click(library().getByLabelText('Show 1 song needing piano'));
+    expect(library().getByRole('button', { name: 'Add Here Without You' })).toBeTruthy();
+  });
+
+  it('filters the library panel by tag', async () => {
+    const { user } = await setup();
+    await user.click(
+      within(library().getByRole('group', { name: 'Filter by tag' })).getByRole('button', {
+        name: 'piano',
+      }),
+    );
+    expect(library().getByRole('button', { name: 'Add Here Without You' })).toBeTruthy();
+    expect(library().queryByRole('button', { name: 'Add Basurita' })).toBeNull();
   });
 
   it('adds songs from the library and adds up the running time', async () => {

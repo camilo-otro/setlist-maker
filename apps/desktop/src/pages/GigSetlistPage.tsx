@@ -3,6 +3,7 @@ import {
   ENTRY_WARNING_LABELS,
   formatDuration,
   localDateString,
+  missingCounts,
   setDuration,
   setlistWarnings,
   type EntryWarning,
@@ -35,6 +36,8 @@ const WARNING_SUMMARY: Record<EntryWarning, (n: number) => string> = {
   retired: (n) => `${n} archived`,
   'no-length': (n) => `${n} without length`,
   'missing-song': (n) => `${n} deleted`,
+  // Said per tag instead ("2 need piano"); see missingCounts below.
+  'needs-missing': () => '',
 };
 
 export function GigSetlistPage() {
@@ -56,7 +59,11 @@ export function GigSetlistPage() {
   );
   const data = state.status === 'ready' ? state.data : null;
   const allEntries = useMemo(() => data?.blocks.flatMap((b) => b.entries) ?? [], [data]);
-  const warnings = useMemo(() => setlistWarnings(allEntries, songsById), [allEntries, songsById]);
+  const missing = useMemo(() => data?.gig.missingTags ?? [], [data]);
+  const warnings = useMemo(
+    () => setlistWarnings(allEntries, songsById, missing),
+    [allEntries, songsById, missing],
+  );
   const total = setDuration(allEntries, songsById);
 
   const back = (
@@ -86,12 +93,16 @@ export function GigSetlistPage() {
 
   const { gig, venue, setlist, blocks } = data;
   const counts = countWarnings(warnings);
-  const summary = (Object.keys(counts) as EntryWarning[]).filter((w) => counts[w] > 0);
+  const summary = (Object.keys(counts) as EntryWarning[]).filter(
+    (w) => counts[w] > 0 && w !== 'needs-missing',
+  );
+  const needs = missingCounts(allEntries, songsById, missing);
   const details = [
     longDate.format(toDate(gig.date)),
     venue && (venue.city ? `${venue.name}, ${venue.city}` : venue.name),
     gig.loadInTime && `Load-in ${gig.loadInTime}`,
     gig.startTime && `Start ${gig.startTime}`,
+    missing.length > 0 && `Missing ${missing.join(', ')}`,
   ].filter(Boolean);
 
   return (
@@ -186,6 +197,15 @@ export function GigSetlistPage() {
             {WARNING_SUMMARY[warning](counts[warning])}
           </span>
         ))}
+        {needs.map(({ tag, count }) => (
+          <span
+            key={tag}
+            className="setlist-summary__warning"
+            title={`Missing at this gig: ${tag}`}
+          >
+            {count} {count === 1 ? 'needs' : 'need'} {tag}
+          </span>
+        ))}
       </p>
       {history.failure && (
         <p className="sm-field__error" role="alert">
@@ -200,6 +220,7 @@ export function GigSetlistPage() {
         songs={songs.rows}
         songsById={songsById}
         warnings={warnings}
+        missing={missing}
         changes={changes}
         run={history.run}
       />

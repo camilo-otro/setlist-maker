@@ -8,17 +8,11 @@ import {
   MusicalKeySchema,
   nullable,
   optionalText,
+  TagsSchema,
   text,
 } from './common';
 
 export const SongStatusSchema = z.enum(['active', 'learning', 'retired']);
-
-const TagsSchema = z
-  .array(text(40))
-  .max(30)
-  .refine((tags) => new Set(tags.map((tag) => tag.toLowerCase())).size === tags.length, {
-    message: 'Tags must be unique',
-  });
 
 /**
  * A song in the band's repertoire. Display fields are copied from the catalog when the song is

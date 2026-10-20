@@ -64,3 +64,14 @@ export const SyncFieldsSchema = z.object({
 export const BandScopedSchema = SyncFieldsSchema.extend({
   bandId: IdSchema,
 });
+
+/**
+ * Free-text labels such as `piano` or `5-string`: up to 30, each up to 40 characters, and no two
+ * the same ignoring case. Songs have them; a gig lists the ones it's missing.
+ */
+export const TagsSchema = z
+  .array(text(40))
+  .max(30)
+  .refine((tags) => new Set(tags.map((tag) => tag.toLowerCase())).size === tags.length, {
+    message: 'Tags must be unique',
+  });

@@ -1867,3 +1867,58 @@ body {
 .played-list__song:hover {
   background: var(--sm-hover);
 }
+
+/* Tags in the setlist editor and what a gig is missing (#88) */
+.song-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.song-tags .tag {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 0.6875rem;
+}
+
+.tag--missing {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--sm-danger) 14%, transparent);
+  color: var(--sm-danger);
+}
+
+.entry__tags {
+  flex: none;
+}
+
+.library-song__tags {
+  margin-top: 2px;
+}
+
+.chip--small {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.library-panel__tags,
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-suggestions {
+  margin-top: 6px;
+}
+
+.library-panel__missing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sm-text-muted);
+  font-size: 0.8125rem;
+}
+
+.gig-form__hint {
+  font-size: 0.75rem;
+}

@@ -1,17 +1,28 @@
 import { useDndMonitor, useDraggable } from '@dnd-kit/core';
-import { formatDuration, searchSongs, sortSongs, type SetBlock, type Song } from '@setlist/core';
+import {
+  formatDuration,
+  missingNeeds,
+  searchSongs,
+  sortSongs,
+  tagCounts,
+  type SetBlock,
+  type Song,
+} from '@setlist/core';
 import { Check, GripVertical, Plus, Search } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { SongTags } from '../components/SongTags';
 
 const SHOWN = 100;
 
 function LibrarySong({
   song,
   inSetlist,
+  missing,
   onAdd,
 }: {
   song: Song;
   inSetlist: boolean;
+  missing: readonly string[];
   onAdd: () => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
@@ -40,6 +51,7 @@ function LibrarySong({
             .filter(Boolean)
             .join(' · ')}
         </span>
+        <SongTags tags={song.tags} missing={missing} className="library-song__tags" />
       </span>
       {inSetlist && (
         <span className="library-song__used" title="Already in this setlist">
@@ -60,14 +72,16 @@ function LibrarySong({
 }
 
 /**
- * The band's active and learning songs, searchable. Songs can be dragged into a set, or added to
- * the target set with their Add button (the keyboard-friendly way). Adding a song clears the
- * search, ready for the next one.
+ * The band's active and learning songs, searchable and filterable by tag. Songs can be dragged
+ * into a set, or added to the target set with their Add button (the keyboard-friendly way).
+ * Adding a song clears the search, ready for the next one. Songs needing something the gig is
+ * missing (#88) are hidden unless asked for.
  */
 export function LibraryPanel({
   songs,
   blocks,
   usedSongIds,
+  missing = [],
   targetId,
   onTargetChange,
   onAdd,
@@ -76,6 +90,8 @@ export function LibraryPanel({
   songs: readonly Song[];
   blocks: readonly SetBlock[];
   usedSongIds: ReadonlySet<string>;
+  /** The gig's missing tags. */
+  missing?: readonly string[];
   /** The set Add buttons add to. */
   targetId: string | undefined;
   onTargetChange: (blockId: string) => void;
@@ -84,6 +100,8 @@ export function LibraryPanel({
   onClose?: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [tags, setTags] = useState<readonly string[]>([]);
+  const [showMissing, setShowMissing] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   function added() {
@@ -100,10 +118,28 @@ export function LibraryPanel({
     },
   });
 
+  const playable = useMemo(() => songs.filter((song) => song.status !== 'retired'), [songs]);
+  const tagsInUse = useMemo(() => tagCounts(playable), [playable]);
+  const needingMissing = useMemo(
+    () => playable.filter((song) => missingNeeds(song, missing).length > 0).length,
+    [playable, missing],
+  );
   const matches = useMemo(() => {
-    const playable = songs.filter((song) => song.status !== 'retired');
-    return sortSongs(searchSongs(playable, query), 'title');
-  }, [songs, query]);
+    const wanted = tags.map((tag) => tag.toLowerCase());
+    const shown = playable.filter((song) => {
+      if (!showMissing && missingNeeds(song, missing).length > 0) return false;
+      const own = song.tags.map((tag) => tag.toLowerCase());
+      return wanted.every((tag) => own.includes(tag));
+    });
+    return sortSongs(searchSongs(shown, query), 'title');
+  }, [playable, query, tags, showMissing, missing]);
+
+  const toggleTag = (tag: string) =>
+    setTags((current) =>
+      current.some((t) => t.toLowerCase() === tag.toLowerCase())
+        ? current.filter((t) => t.toLowerCase() !== tag.toLowerCase())
+        : [...current, tag],
+    );
 
   return (
     <aside className="library-panel" aria-label="Library">
@@ -127,6 +163,32 @@ export function LibraryPanel({
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
+      {tagsInUse.length > 0 && (
+        <div className="library-panel__tags" role="group" aria-label="Filter by tag">
+          {tagsInUse.map(({ tag }) => (
+            <button
+              key={tag}
+              type="button"
+              className="chip chip--small"
+              aria-pressed={tags.some((t) => t.toLowerCase() === tag.toLowerCase())}
+              onClick={() => toggleTag(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+      {needingMissing > 0 && (
+        <label className="library-panel__missing">
+          <input
+            type="checkbox"
+            checked={showMissing}
+            onChange={(e) => setShowMissing(e.target.checked)}
+          />
+          Show {needingMissing} {needingMissing === 1 ? 'song' : 'songs'} needing{' '}
+          {missing.join(', ')}
+        </label>
+      )}
       {blocks.length > 1 && (
         <label className="library-panel__target">
           <span className="muted">Add to</span>
@@ -154,6 +216,7 @@ export function LibraryPanel({
             key={song.id}
             song={song}
             inSetlist={usedSongIds.has(song.id)}
+            missing={missing}
             onAdd={() => {
               if (!targetId) return;
               onAdd(song.id, targetId);
