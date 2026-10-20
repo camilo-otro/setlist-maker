@@ -4,7 +4,13 @@ import { Check, Download, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import { currentPlatform } from '../storage/workspace';
 import { canShareSheet } from './shareSheet';
-import { canvasMeasure, drawSetlistImage, imageFileName, layoutSetlistImage } from './setlistImage';
+import {
+  activeImageTheme,
+  canvasMeasure,
+  drawSetlistImage,
+  imageFileName,
+  layoutSetlistImage,
+} from './setlistImage';
 import type { BlockWithEntries } from './useGigSetlist';
 
 type Status = { kind: 'idle' } | { kind: 'done'; message: string } | { kind: 'failed' };
@@ -29,7 +35,14 @@ export function ShareImage({
   const name = imageFileName(gig);
   const picture = () =>
     drawSetlistImage(
-      layoutSetlistImage({ gig, venue, blocks, songsById, measure: canvasMeasure() }),
+      layoutSetlistImage({
+        gig,
+        venue,
+        blocks,
+        songsById,
+        measure: canvasMeasure(),
+        theme: activeImageTheme(),
+      }),
     );
 
   async function run(action: () => Promise<string | null>) {
