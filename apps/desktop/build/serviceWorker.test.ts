@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serviceWorkerSource } from './serviceWorker';
 
-const SCOPE = 'https://setlist.rockthehouse.app/app/';
+const SCOPE = 'https://setlist.rockthehouse.app/';
 const FILES = [
   'index.html',
   'assets/index-abc.js',
@@ -107,7 +107,9 @@ describe('the web app service worker', () => {
   it('leaves Supabase, other sites, the viewer and non-GET requests alone', async () => {
     const worker = startWorker();
     expect(await worker.request('https://abc.supabase.co/rest/v1/rpc/sync_pull')).toBeNull();
-    expect(await worker.request('https://setlist.rockthehouse.app/#token')).toBeNull();
+    expect(await worker.request(`${SCOPE}viewer/#token`, { mode: 'navigate' })).toBeNull();
+    expect(await worker.request(`${SCOPE}viewer/assets/index-x.js`)).toBeNull();
+    expect(await worker.request(`${SCOPE}app/sw.js`)).toBeNull();
     expect(await worker.request(`${SCOPE}assets/x.js`, { method: 'POST' })).toBeNull();
   });
 

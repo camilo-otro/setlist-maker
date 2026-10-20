@@ -23,7 +23,7 @@ import {
 } from '@setlist/storage';
 
 /** The web viewer share links open, unless VITE_VIEWER_URL says otherwise. */
-export const DEFAULT_VIEWER_URL = 'https://setlist.rockthehouse.app/';
+export const DEFAULT_VIEWER_URL = 'https://setlist.rockthehouse.app/viewer/';
 
 /** Everything the app needs to share a band and keep the server up to date. */
 export interface Sharing {

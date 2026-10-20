@@ -77,8 +77,8 @@ export function LibraryPage() {
   } else if (songs.length === 0) {
     content = (
       <EmptyState icon={<Library size={24} />} title="No songs yet">
-        Add the songs your band plays one by one, or import them from a spreadsheet. Searching
-        Spotify is coming soon.
+        Add the songs your band plays: search for them with Add song, type them in, or import them
+        from a spreadsheet.
       </EmptyState>
     );
   } else {

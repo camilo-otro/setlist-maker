@@ -1,5 +1,5 @@
-# Netlify response headers for the whole site: the share-link viewer at / and the web app at
-# /app/. Links are private to whoever has them: keep them out of search engines and other sites'
+# Netlify response headers for the whole site: the web app at / and the share-link viewer at
+# /viewer/. Links are private to whoever has them: keep them out of search engines and other sites'
 # frames, and only talk to Supabase (HTTPS, and WebSockets for Realtime). Images can also be
 # Spotify's artwork, in song search. 'wasm-unsafe-eval' lets the app compile SQLite's WebAssembly;
 # it doesn't allow JavaScript eval.
@@ -11,5 +11,5 @@
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.scdn.co; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
 
 # The web app's manifest, with its proper type (Netlify doesn't know .webmanifest).
-/app/manifest.webmanifest
+/manifest.webmanifest
   Content-Type: application/manifest+json

@@ -1,7 +1,8 @@
 name: Viewer
 
-# The website at setlist.rockthehouse.app, on Netlify: the share-link viewer (apps/viewer) at /
-# and the web build of the app (apps/desktop, `build:web`) at /app/.
+# The website at setlist.rockthehouse.app, on Netlify: the web build of the app (apps/desktop,
+# `build:web`) at /, the share-link viewer (apps/viewer) at /viewer/, and the site's own files
+# (site/: headers, redirects, and what's left at the old /app/ address).
 # Pull requests: build both, so a broken site never merges.
 # Pushes to main: build both and publish them to the Netlify site.
 on:
@@ -12,6 +13,9 @@ on:
       - apps/desktop/index.html
       - apps/desktop/vite.config.ts
       - apps/desktop/package.json
+      - apps/desktop/public/**
+      - apps/desktop/build/**
+      - site/**
       - packages/**
       - pnpm-lock.yaml
       - .github/workflows/viewer.yml
@@ -23,6 +27,9 @@ on:
       - apps/desktop/index.html
       - apps/desktop/vite.config.ts
       - apps/desktop/package.json
+      - apps/desktop/public/**
+      - apps/desktop/build/**
+      - site/**
       - packages/**
       - pnpm-lock.yaml
       - .github/workflows/viewer.yml
@@ -61,7 +68,11 @@ jobs:
         run: |
           pnpm --filter @setlist/viewer build
           pnpm --filter @setlist/desktop build:web
-          cp -r apps/desktop/dist-web apps/viewer/dist/app
+          rm -rf "$RUNNER_TEMP/site" && mkdir -p "$RUNNER_TEMP/site"
+          cp -r apps/desktop/dist-web/. "$RUNNER_TEMP/site"
+          cp -r apps/viewer/dist "$RUNNER_TEMP/site/viewer"
+          cp -r site/. "$RUNNER_TEMP/site"
+          echo "SITE_DIR=$RUNNER_TEMP/site" >> "$GITHUB_ENV"
 
       - name: Check the Netlify settings
         id: settings
@@ -78,7 +89,7 @@ jobs:
       - name: Deploy to Netlify
         if: github.event_name != 'pull_request' && steps.settings.outputs.ready == 'true'
         run: |
-          (cd apps/viewer/dist && zip -qr "$RUNNER_TEMP/viewer.zip" .)
+          (cd "$SITE_DIR" && zip -qr "$RUNNER_TEMP/viewer.zip" .)
           status=$(curl -sS -o "$RUNNER_TEMP/deploy.json" -w '%{http_code}' \
             -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
             -H "Content-Type: application/zip" \

@@ -28,7 +28,7 @@ describe('Invitation', () => {
   it('offers joining in the browser, keeping the token in the fragment', async () => {
     show(async () => invite);
     const join = await screen.findByRole('link', { name: 'Join in your browser' });
-    expect(join.getAttribute('href')).toBe('/app/#/join/t');
+    expect(join.getAttribute('href')).toBe('/#/join/t');
   });
 
   it('says when an invite no longer works, and when a link is wrong', async () => {

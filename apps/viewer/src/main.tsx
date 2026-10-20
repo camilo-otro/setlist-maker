@@ -20,7 +20,8 @@ const loadInvite = (token: string) =>
     : Promise.reject(new Error('The viewer is missing its Supabase settings'));
 
 /**
- * The link's token is the URL fragment: setlist.rockthehouse.app/#<token> for a shared setlist,
+ * The link's token is the URL fragment: setlist.rockthehouse.app/viewer/#<token> for a shared
+ * setlist,
  * #join=<token> for a band invite. Browsers never send fragments to the server, so tokens don't
  * end up in any host's logs.
  */

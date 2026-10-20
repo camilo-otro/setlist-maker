@@ -23,7 +23,7 @@ winget install --id Rustlang.Rustup -e
 pnpm install
 pnpm app:desktop   # the desktop app in a native window (first run compiles Rust, ~2 min)
 pnpm dev:desktop   # just the desktop UI, in a browser at http://localhost:1420
-pnpm dev:viewer    # the share-link viewer, at http://localhost:1440/#<token>
+pnpm dev:viewer    # the share-link viewer, at http://localhost:1440/viewer/#<token>
 pnpm --filter @setlist/desktop dev:web  # the web app (data saved in the browser), at http://localhost:1450
 pnpm check        # everything CI checks: format, lint, typecheck, tests, build
 pnpm check:rust   # Rust tests for the desktop shell
@@ -122,7 +122,7 @@ Locally, codes land in the test mailbox at http://127.0.0.1:54324 (Mailpit), and
 
 ## Share links
 
-A gig's **Share** button gives a read-only link to its setlist, like `https://setlist.rockthehouse.app/#<token>`. Anyone with it sees the setlist on any device, without an account, and it refreshes every 30 seconds. The first share asks for a display name, signs the device in anonymously (see Identity) and uploads the band; after that, the app uploads changes every few seconds while the band is shared.
+A gig's **Share** button gives a read-only link to its setlist, like `https://setlist.rockthehouse.app/viewer/#<token>`. Links made before the viewer moved to `/viewer/` (`https://setlist.rockthehouse.app/#<token>`) still work: the site's root sends them on. Anyone with it sees the setlist on any device, without an account, and it refreshes every 30 seconds. The first share asks for a display name, signs the device in anonymously (see Identity) and uploads the band; after that, the app uploads changes every few seconds while the band is shared.
 
 - **Server:** `public.share_links` stores each link's target and the SHA-256 hash of its token, never the token. `shared_setlist(token)` returns only that gig's public details (no notes, tags or load-in time); revoked links and deleted gigs return nothing.
 - **Tokens** are an HMAC of the link's ID with a secret kept in the device's keychain, so the app can show a link again while nobody else can rebuild one.
@@ -138,17 +138,17 @@ A gig's **Share** button gives a read-only link to its setlist, like `https://se
 4. In the site's domain settings, add `setlist.rockthehouse.app`. At the DNS provider for `rockthehouse.app`, add a `CNAME` record from `setlist` to the site's `<name>.netlify.app` address. Netlify then issues the HTTPS certificate on its own.
 5. Make sure anonymous sign-ins are on in Supabase (Supabase setup, step 4).
 
-The desktop app opens links at `https://setlist.rockthehouse.app/`; set `VITE_VIEWER_URL` in `apps/desktop/.env.local` to point it elsewhere, e.g. `http://localhost:1440/` with a local viewer.
+The desktop app makes links to `https://setlist.rockthehouse.app/viewer/`; set `VITE_VIEWER_URL` in `apps/desktop/.env.local` to point them elsewhere, e.g. `http://localhost:1440/viewer/` with a local viewer.
 
 ## Web app
 
-The same app runs in a browser at `https://setlist.rockthehouse.app/app/`, for editing from a phone (#42). It's the desktop app's code built with `pnpm --filter @setlist/desktop build:web`; only storage differs:
+The same app runs in a browser at `https://setlist.rockthehouse.app/`, for editing from a phone (#42). It's the desktop app's code built with `pnpm --filter @setlist/desktop build:web`; only storage differs:
 
 - **Data:** SQLite compiled to WebAssembly (`@sqlite.org/sqlite-wasm`) in a Web Worker, kept in the browser's origin private file system (the "opfs-sahpool" mode, which needs no special server headers). It's the same repository, migrations and contract tests as desktop. That storage allows one tab at a time: a second tab works in memory and says so.
 - **Sign-in:** kept in the site's localStorage.
 - **Installing and offline:** a web app manifest and icons (`apps/desktop/public`), and a service worker that `build/serviceWorker.ts` writes into each web build listing that build's files. The app opens from the cache when offline and syncs when back online; a new version takes over once every window of the app is closed. The app asks the browser to keep its data, and suggests adding it to the home screen (Share, then Add to Home Screen on iPhone; an Install button where the browser offers one).
 
-The **Viewer** workflow builds the viewer and the web app together and publishes them as one Netlify site: the viewer at `/`, the app at `/app/`. The site's `_headers` allow WebAssembly (`'wasm-unsafe-eval'`, which doesn't allow JavaScript `eval`) and Realtime's `wss://` connections.
+The **Viewer** workflow builds the web app and the viewer together and publishes them as one Netlify site: the app at `/`, the viewer at `/viewer/`, plus the site's own files from [`site/`](site). Its `_headers` allow WebAssembly (`'wasm-unsafe-eval'`, which doesn't allow JavaScript `eval`) and Realtime's `wss://` connections.
 
 ## Song catalog
 

@@ -8,7 +8,7 @@
     "dev": "vite",
     "dev:web": "vite --mode web --port 1450",
     "build": "tsc -p tsconfig.json && vite build",
-    "build:web": "tsc -p tsconfig.json && vite build --mode web --base /app/ --outDir dist-web",
+    "build:web": "tsc -p tsconfig.json && vite build --mode web --base / --outDir dist-web",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "test": "vitest run",

@@ -1,0 +1,4 @@
+# Netlify redirects. The web app moved from /app/ to the site's root: old addresses and installs
+# land on the same page there (browsers keep the #fragment, so /app/#/join/<token> still joins).
+# Files that exist, like app/sw.js, are served instead of redirected.
+/app/*  /:splat  301

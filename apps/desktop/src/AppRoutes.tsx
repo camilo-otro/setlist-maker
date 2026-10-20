@@ -9,7 +9,7 @@ import { TemplatesPage } from './pages/TemplatesPage';
 import { VenuesPage } from './pages/VenuesPage';
 
 /**
- * Where invite links opened on a phone land (`/app/#/join/<token>`, from the viewer's invitation
+ * Where invite links opened on a phone land (`/#/join/<token>`, from the viewer's invitation
  * page): the band page, already joining. The token stays in the URL fragment, out of server logs.
  */
 function JoinFromLink() {
