@@ -193,6 +193,45 @@ describe('GigSetlistPage', () => {
     expect(titles[0]).toBe('Here Without You');
   });
 
+  it('starts the setlist from a past gig, after saying it replaces what is there', async () => {
+    const { user, workspace } = await setup({ history: ['Here Without You'] });
+    const { repository } = workspace;
+    // The earlier gig's setlist: Basurita, then Here Without You.
+    const earlier = (await repository.setlists.list()).find(
+      (s) => s.name === 'Last time at the Cavern',
+    )!;
+    const [earlierSet] = await repository.setBlocks.list({ setlistId: earlier.id });
+    const songs = await repository.songs.list();
+    const id = (title: string) => songs.find((x) => x.title === title)!.id;
+    for (const [position, title] of [
+      ['a0', 'Basurita'],
+      ['a1', 'Here Without You'],
+    ] as const) {
+      await repository.setEntries.create({
+        bandId: workspace.band.id,
+        setBlockId: earlierSet!.id,
+        position,
+        kind: 'song',
+        songId: id(title),
+      });
+    }
+    await user.click(library().getByRole('button', { name: 'Add Untimed' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Untimed']));
+
+    await user.click(screen.getByRole('button', { name: 'Start from…' }));
+    await user.click(await dialog().findByRole('button', { name: /Last time at the Cavern/ }));
+    const preview = within(await dialog().findByRole('region', { name: 'Set 1' }));
+    expect(preview.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Basurita',
+      'Here Without You',
+    ]);
+    expect(dialog().getByRole('alert').textContent).toContain('replaces the 1 song');
+    await user.click(dialog().getByRole('button', { name: 'Replace setlist' }));
+
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You']));
+    expect(screen.getByText('Started from Last time at the Cavern.')).toBeTruthy();
+  });
+
   it('adds songs from the library and adds up the running time', async () => {
     const { user } = await setup();
     await user.click(library().getByRole('button', { name: 'Add Basurita' }));

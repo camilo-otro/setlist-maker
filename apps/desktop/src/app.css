@@ -1946,3 +1946,134 @@ body {
   background: var(--sm-accent-soft);
   color: var(--sm-accent-text);
 }
+
+/* Start from another gig or a template (#24) */
+.start-from {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 320px;
+}
+
+.start-from__pick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.start-from__pick .search-box {
+  flex: none;
+}
+
+.start-from__list {
+  max-height: 50vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.start-from__group {
+  margin: 10px 0 4px;
+  color: var(--sm-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.start-from__source {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--sm-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-from__source:hover {
+  background: var(--sm-hover);
+}
+
+.start-from__source[aria-pressed='true'] {
+  background: var(--sm-accent-soft);
+}
+
+.start-from__source:focus-visible {
+  outline-offset: -2px;
+}
+
+.start-from__title {
+  font-weight: 600;
+}
+
+.start-from__source .muted {
+  font-size: 0.8125rem;
+}
+
+.start-from__preview {
+  max-height: 56vh;
+  padding: 12px;
+  overflow-y: auto;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+}
+
+.start-from__preview p {
+  margin: 0;
+}
+
+.start-from__preview-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.start-from__set h4 {
+  margin: 8px 0 4px;
+  font-size: 0.875rem;
+}
+
+.start-from__set ol {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 0.875rem;
+}
+
+.start-from__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sm-border);
+}
+
+.start-from__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.start-from__warning {
+  margin: 12px 0 0;
+  color: var(--sm-danger);
+  font-size: 0.875rem;
+}
+
+.start-from__done {
+  margin: 0 0 8px;
+}
+
+@media (max-width: 699px) {
+  .start-from {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

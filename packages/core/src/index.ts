@@ -19,3 +19,4 @@ export * from './schemas/gig';
 export * from './schemas/setlist';
 export * from './schemas/performance';
 export * from './songStats';
+export * from './cloneSetlist';

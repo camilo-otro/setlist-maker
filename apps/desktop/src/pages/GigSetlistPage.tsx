@@ -10,7 +10,7 @@ import {
   setlistWarnings,
   type EntryWarning,
 } from '@setlist/core';
-import { ArrowLeft, CircleCheck, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Copy, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
@@ -20,6 +20,7 @@ import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { PrintSetlist } from '../setlist/PrintSetlist';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ShareImage } from '../setlist/ShareImage';
+import { StartFromDialog } from '../setlist/StartFromDialog';
 import { useGigSetlist } from '../setlist/useGigSetlist';
 import { useMembership } from '../sharing/MembershipProvider';
 import { ShareDialog } from '../sharing/ShareDialog';
@@ -55,6 +56,8 @@ export function GigSetlistPage() {
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
   const [markingPlayed, setMarkingPlayed] = useState(false);
+  const [startingFrom, setStartingFrom] = useState(false);
+  const [startedFrom, setStartedFrom] = useState<{ from: string; dropped: string[] } | null>(null);
   const { canEdit } = useMembership();
 
   const songsById = useMemo(
@@ -161,6 +164,10 @@ export function GigSetlistPage() {
                 <Pencil size={14} aria-hidden="true" />
                 Edit details
               </button>
+              <button type="button" className="sm-button" onClick={() => setStartingFrom(true)}>
+                <Copy size={14} aria-hidden="true" />
+                Start from…
+              </button>
               {gig.status !== 'cancelled' && (
                 <button
                   type="button"
@@ -220,6 +227,12 @@ export function GigSetlistPage() {
           </span>
         ))}
       </p>
+      {startedFrom && (
+        <p className="muted start-from__done" role="status">
+          Started from {startedFrom.from}.
+          {startedFrom.dropped.length > 0 && ` Left out: ${startedFrom.dropped.join(', ')}.`}
+        </p>
+      )}
       {history.failure && (
         <p className="sm-field__error" role="alert">
           That change didn&apos;t save: {history.failure}
@@ -246,6 +259,19 @@ export function GigSetlistPage() {
           gigId={gig.id}
           gigTitle={gig.title}
           onClose={() => setSharingOpen(false)}
+        />
+      )}
+      {startingFrom && (
+        <StartFromDialog
+          gig={gig}
+          setlistId={setlist.id}
+          songCount={total.songs}
+          songsById={songsById}
+          onClose={() => setStartingFrom(false)}
+          onDone={(from, dropped) => {
+            setStartedFrom({ from, dropped });
+            reload();
+          }}
         />
       )}
       {markingPlayed && (
