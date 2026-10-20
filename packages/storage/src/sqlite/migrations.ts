@@ -163,6 +163,14 @@ export const MIGRATIONS: readonly Migration[] = [
       `DELETE FROM "pull_cursors"`,
     ],
   },
+  {
+    version: 5,
+    name: "Add a gig's missing tags",
+    statements: [
+      // Tags the band can't cover at the gig (#88), as JSON like songs' tags.
+      `ALTER TABLE "gigs" ADD COLUMN "missing_tags" TEXT NOT NULL DEFAULT '[]'`,
+    ],
+  },
 ];
 
 /**

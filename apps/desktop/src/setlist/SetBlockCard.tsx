@@ -16,6 +16,7 @@ export function SetBlockCard({
   item,
   songsById,
   warnings,
+  missing,
   onEditBlock,
   onRemoveBlock,
   onAddBreak,
@@ -27,6 +28,8 @@ export function SetBlockCard({
   item: BlockWithEntries;
   songsById: ReadonlyMap<string, Song>;
   warnings: ReadonlyMap<string, readonly EntryWarning[]>;
+  /** The gig's missing tags (#88). */
+  missing: readonly string[];
   onEditBlock: () => void;
   onRemoveBlock: () => void;
   onAddBreak: () => void;
@@ -132,6 +135,7 @@ export function SetBlockCard({
                 number={number}
                 song={song}
                 warnings={warnings.get(entry.id) ?? []}
+                missing={missing}
                 onEdit={() => onEditEntry(entry)}
                 onRemove={() => onRemoveEntry(entry)}
               />

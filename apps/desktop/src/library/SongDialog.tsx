@@ -5,6 +5,7 @@ import {
   type CatalogTrack,
   type Song,
   type SongStatus,
+  SUGGESTED_TAGS,
 } from '@setlist/core';
 import { Link2, X } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
@@ -21,6 +22,30 @@ import {
 } from './songForm';
 
 type DeleteState = { step: 'idle' } | { step: 'confirm' } | { step: 'blocked'; gigs: number };
+
+/** Common instrument tags (#88), one tap to add; tags stay free text. */
+function TagSuggestions({ value, onAdd }: { value: string; onAdd: (tags: string) => void }) {
+  const current = value
+    .split(',')
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean);
+  const offered = SUGGESTED_TAGS.filter((tag) => !current.includes(tag));
+  if (offered.length === 0) return null;
+  return (
+    <div className="tag-suggestions" role="group" aria-label="Suggested tags">
+      {offered.map((tag) => (
+        <button
+          key={tag}
+          type="button"
+          className="chip chip--small"
+          onClick={() => onAdd(value.trim() ? `${value.trim().replace(/,$/, '')}, ${tag}` : tag)}
+        >
+          + {tag}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Adds a song (`song` is null) or edits one. Saving, archiving, restoring and deleting all close the
@@ -267,12 +292,15 @@ export function SongDialog({
           {field(
             'tags',
             'Tags (separated by commas)',
-            <input
-              {...inputProps('tags')}
-              placeholder="opener, slow, crowd favourite"
-              value={form.tags}
-              onChange={(e) => set('tags', e.target.value)}
-            />,
+            <>
+              <input
+                {...inputProps('tags')}
+                placeholder="opener, slow, crowd favourite"
+                value={form.tags}
+                onChange={(e) => set('tags', e.target.value)}
+              />
+              <TagSuggestions value={form.tags} onAdd={(tags) => set('tags', tags)} />
+            </>,
             true,
           )}
           {field(

@@ -3,11 +3,14 @@ import {
   ENTRY_WARNING_LABELS,
   formatDuration,
   localDateString,
+  missingCounts,
+  playedHereLastTime,
+  songStatistics,
   setDuration,
   setlistWarnings,
   type EntryWarning,
 } from '@setlist/core';
-import { ArrowLeft, CircleCheck, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Copy, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
@@ -17,6 +20,7 @@ import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { PrintSetlist } from '../setlist/PrintSetlist';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ShareImage } from '../setlist/ShareImage';
+import { StartFromDialog } from '../setlist/StartFromDialog';
 import { useGigSetlist } from '../setlist/useGigSetlist';
 import { useMembership } from '../sharing/MembershipProvider';
 import { ShareDialog } from '../sharing/ShareDialog';
@@ -35,6 +39,8 @@ const WARNING_SUMMARY: Record<EntryWarning, (n: number) => string> = {
   retired: (n) => `${n} archived`,
   'no-length': (n) => `${n} without length`,
   'missing-song': (n) => `${n} deleted`,
+  // Said per tag instead ("2 need piano"); see missingCounts below.
+  'needs-missing': () => '',
 };
 
 export function GigSetlistPage() {
@@ -43,11 +49,15 @@ export function GigSetlistPage() {
   const { state, reload } = useGigSetlist(gigId);
   const songs = useBandRows('songs');
   const venues = useBandRows('venues');
+  const performances = useBandRows('performances');
+  const gigs = useBandRows('gigs');
   const history = useHistory(reload);
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
   const [markingPlayed, setMarkingPlayed] = useState(false);
+  const [startingFrom, setStartingFrom] = useState(false);
+  const [startedFrom, setStartedFrom] = useState<{ from: string; dropped: string[] } | null>(null);
   const { canEdit } = useMembership();
 
   const songsById = useMemo(
@@ -56,7 +66,20 @@ export function GigSetlistPage() {
   );
   const data = state.status === 'ready' ? state.data : null;
   const allEntries = useMemo(() => data?.blocks.flatMap((b) => b.entries) ?? [], [data]);
-  const warnings = useMemo(() => setlistWarnings(allEntries, songsById), [allEntries, songsById]);
+  const missing = useMemo(() => data?.gig.missingTags ?? [], [data]);
+  // The band's history, for hints while picking songs (#33).
+  const songHistory = useMemo(() => {
+    if (!data || !performances.rows || !gigs.rows) return undefined;
+    return {
+      stats: songStatistics(performances.rows, gigs.rows),
+      hereLastTime: playedHereLastTime(data.gig, gigs.rows, performances.rows),
+      today: localDateString(),
+    };
+  }, [data, performances.rows, gigs.rows]);
+  const warnings = useMemo(
+    () => setlistWarnings(allEntries, songsById, missing),
+    [allEntries, songsById, missing],
+  );
   const total = setDuration(allEntries, songsById);
 
   const back = (
@@ -86,12 +109,16 @@ export function GigSetlistPage() {
 
   const { gig, venue, setlist, blocks } = data;
   const counts = countWarnings(warnings);
-  const summary = (Object.keys(counts) as EntryWarning[]).filter((w) => counts[w] > 0);
+  const summary = (Object.keys(counts) as EntryWarning[]).filter(
+    (w) => counts[w] > 0 && w !== 'needs-missing',
+  );
+  const needs = missingCounts(allEntries, songsById, missing);
   const details = [
     longDate.format(toDate(gig.date)),
     venue && (venue.city ? `${venue.name}, ${venue.city}` : venue.name),
     gig.loadInTime && `Load-in ${gig.loadInTime}`,
     gig.startTime && `Start ${gig.startTime}`,
+    missing.length > 0 && `Missing ${missing.join(', ')}`,
   ].filter(Boolean);
 
   return (
@@ -136,6 +163,10 @@ export function GigSetlistPage() {
               <button type="button" className="sm-button" onClick={() => setEditingGig(true)}>
                 <Pencil size={14} aria-hidden="true" />
                 Edit details
+              </button>
+              <button type="button" className="sm-button" onClick={() => setStartingFrom(true)}>
+                <Copy size={14} aria-hidden="true" />
+                Start from…
               </button>
               {gig.status !== 'cancelled' && (
                 <button
@@ -186,7 +217,22 @@ export function GigSetlistPage() {
             {WARNING_SUMMARY[warning](counts[warning])}
           </span>
         ))}
+        {needs.map(({ tag, count }) => (
+          <span
+            key={tag}
+            className="setlist-summary__warning"
+            title={`Missing at this gig: ${tag}`}
+          >
+            {count} {count === 1 ? 'needs' : 'need'} {tag}
+          </span>
+        ))}
       </p>
+      {startedFrom && (
+        <p className="muted start-from__done" role="status">
+          Started from {startedFrom.from}.
+          {startedFrom.dropped.length > 0 && ` Left out: ${startedFrom.dropped.join(', ')}.`}
+        </p>
+      )}
       {history.failure && (
         <p className="sm-field__error" role="alert">
           That change didn&apos;t save: {history.failure}
@@ -200,6 +246,8 @@ export function GigSetlistPage() {
         songs={songs.rows}
         songsById={songsById}
         warnings={warnings}
+        missing={missing}
+        history={songHistory}
         changes={changes}
         run={history.run}
       />
@@ -213,13 +261,30 @@ export function GigSetlistPage() {
           onClose={() => setSharingOpen(false)}
         />
       )}
+      {startingFrom && (
+        <StartFromDialog
+          gig={gig}
+          setlistId={setlist.id}
+          songCount={total.songs}
+          songsById={songsById}
+          onClose={() => setStartingFrom(false)}
+          onDone={(from, dropped) => {
+            setStartedFrom({ from, dropped });
+            reload();
+          }}
+        />
+      )}
       {markingPlayed && (
         <MarkPlayedDialog
           gig={gig}
           blocks={blocks}
           songsById={songsById}
           onClose={() => setMarkingPlayed(false)}
-          onChanged={reload}
+          onChanged={() => {
+            reload();
+            performances.reload();
+            gigs.reload();
+          }}
         />
       )}
       {editingGig && (

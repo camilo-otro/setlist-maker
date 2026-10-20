@@ -1,8 +1,9 @@
-import type { Gig, Venue } from '@setlist/core';
+import { tagCounts, type Gig, type Venue } from '@setlist/core';
 import { createGig } from '@setlist/storage';
 import { useState, type FormEvent } from 'react';
 import { Field, inputProps, validationErrors, type FieldErrors } from '../components/forms';
 import { Modal } from '../components/Modal';
+import { useBandRows } from '../storage/useBandRows';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 import { VenuePicker, type VenueChoice } from '../venues/VenuePicker';
 
@@ -15,7 +16,8 @@ const MESSAGES = {
 
 /**
  * Creates a gig (`gig` is null), with its empty setlist, or edits one. A venue typed in as new is
- * created in the same step. Editing also offers cancelling and reinstating the gig.
+ * created in the same step. Editing also offers cancelling and reinstating the gig. "Missing at
+ * this gig" picks tags the band can't cover there (#88), from the tags its songs use.
  */
 export function GigDialog({
   gig,
@@ -39,6 +41,24 @@ export function GigDialog({
   const [venue, setVenue] = useState<VenueChoice>(
     gig?.venueId ? { kind: 'existing', id: gig.venueId } : { kind: 'none' },
   );
+  const [missing, setMissing] = useState<readonly string[]>(gig?.missingTags ?? []);
+  const songs = useBandRows('songs');
+  // The library's tags, and any the gig already lists that no song uses any more.
+  const tagChoices = [
+    ...tagCounts(songs.rows ?? []).map(({ tag }) => tag),
+    ...missing.filter(
+      (tag) =>
+        !(songs.rows ?? []).some((song) =>
+          song.tags.some((own) => own.toLowerCase() === tag.toLowerCase()),
+        ),
+    ),
+  ];
+  const toggleMissing = (tag: string) =>
+    setMissing((current) =>
+      current.some((t) => t.toLowerCase() === tag.toLowerCase())
+        ? current.filter((t) => t.toLowerCase() !== tag.toLowerCase())
+        : [...current, tag],
+    );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -81,6 +101,7 @@ export function GigDialog({
           venueId,
           loadInTime: form.loadInTime || null,
           startTime: form.startTime || null,
+          missingTags: [...missing],
         };
         if (gig) await tx.gigs.update(gig.id, values);
         else await createGig(tx, { bandId: band.id, ...values });
@@ -136,6 +157,34 @@ export function GigDialog({
           onChange={setVenue}
           nameError={errors.newVenueName}
         />
+        {tagChoices.length > 0 && (
+          <div
+            className="sm-field form-grid__wide"
+            role="group"
+            aria-labelledby="gig-missing-label"
+          >
+            <span className="sm-field__label" id="gig-missing-label">
+              Missing at this gig
+            </span>
+            <div className="filters__chips">
+              {tagChoices.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="chip"
+                  aria-pressed={missing.some((t) => t.toLowerCase() === tag.toLowerCase())}
+                  onClick={() => toggleMissing(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <span className="muted gig-form__hint">
+              Songs with these tags are flagged in the setlist, e.g. piano when the keyboardist
+              can&apos;t come.
+            </span>
+          </div>
+        )}
         <Field id="gig-notes" label="Notes" error={errors.notes} wide>
           <textarea
             {...inputProps('gig-notes', errors.notes)}

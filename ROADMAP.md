@@ -11,7 +11,7 @@ A desktop-first tool for a band to keep a song library with performance history,
 1. **Core is platform-agnostic.** All domain logic (types, validation, cloning, ordering, stats) lives in a pure TypeScript package with no UI or storage imports. Desktop, web and mobile are thin shells.
 2. **Storage behind an interface.** A `Repository` interface hides the database. Desktop and mobile use SQLite; web uses SQLite compiled to WebAssembly.
 3. **Local-first, synced.** Every device has a full local SQLite copy and works offline. Our own sync protocol replicates changes through Supabase once the band starts collaborating ([ADR 0002](docs/adr/0002-sync-stack.md)). UUIDs, `updatedAt`, `updatedBy`, soft deletes and a `version` counter on every record make this possible from day one.
-4. **No account until you collaborate.** Solo use needs no sign-up. Sharing creates an anonymous identity silently, and linking an email or Google/Apple account is optional (see [Sharing model](#sharing-model)).
+4. **No account until you collaborate.** Solo use needs no sign-up. Sharing creates an anonymous identity silently, and adding an email is optional (see [Sharing model](#sharing-model)).
 5. **History is immutable.** When a gig is marked as played, its setlist is snapshotted into performance records. Editing or deleting a song later never rewrites the past.
 
 ## Recommended stack
@@ -24,8 +24,8 @@ A desktop-first tool for a band to keep a song library with performance history,
 | Validation / schemas | Zod                                                                                                              | Single source for types, runtime validation and JSON import/export                                                                |
 | Local DB             | SQLite with numbered SQL migrations, behind a small driver interface                                             | Relational data, portable to mobile; columns come from the Zod schemas, so there is one schema to maintain                        |
 | Sync                 | **Our own protocol on Supabase**: local outbox → push RPC → pull by server sequence, Realtime as a change signal | Offline-first, no extra service or alpha SDK, plain TypeScript reused on every platform ([ADR 0002](docs/adr/0002-sync-stack.md)) |
-| Backend              | **Supabase** (Postgres, Auth, row-level security, Edge Functions), a dedicated project                           | Anonymous sign-in, upgrading to email/social login, per-band access rules, the shared song catalog                                |
-| Song metadata        | **Spotify Web API**, called only from a Supabase Edge Function                                                   | Consistent titles, artists, durations and artwork; the client secret never ships in the app                                       |
+| Backend              | **Supabase** (Postgres, Auth, row-level security, Edge Functions), a dedicated project                           | Anonymous sign-in, upgrading to an email account, per-band access rules, the shared song catalog                                  |
+| Song metadata        | **Spotify Web API**, called only from a Supabase Edge Function                                                   | Consistent titles, artists and durations; the client secret never ships in the app ([ADR 0003](docs/adr/0003-spotify.md))         |
 | Monorepo             | pnpm workspaces                                                                                                  | `packages/core`, `packages/storage`, `packages/ui`, `apps/*`                                                                      |
 | Tests                | Vitest (core/UI), Playwright (E2E)                                                                               |                                                                                                                                   |
 
@@ -40,9 +40,9 @@ setlist-maker/
 │  ├─ storage/     # Repository interface + SQLite implementation + migrations + sync wiring
 │  └─ ui/          # shared React components (song list, set editor, DnD)
 ├─ apps/
-│  ├─ desktop/     # Tauri shell
-│  ├─ web/         # read-only share viewer (Phase 4), full web app (Phase 8)
-│  └─ mobile/      # (Phase 8)
+│  ├─ desktop/     # Tauri shell; also built as the web app, served at the site's root
+│  └─ viewer/      # read-only share-link and invite viewer, served at /viewer/
+├─ site/           # the website's own files: headers, redirects
 ├─ supabase/       # Postgres schema, row-level security, sync functions, Edge Functions, catalog seed script
 └─ .github/workflows/
 ```
@@ -51,12 +51,12 @@ setlist-maker/
 
 Each level is added only when someone needs it. Nobody sees a sign-up screen.
 
-| Level              | Who it's for                     | What the user does                                                                      | Account                     |
-| ------------------ | -------------------------------- | --------------------------------------------------------------------------------------- | --------------------------- |
-| **0. Solo**        | Just you                         | Use the app; everything stays on your machine                                           | None                        |
-| **1. View link**   | Bandmates, sound engineer, venue | **Share → Copy link**. The setlist opens live in any browser, no install                | None                        |
-| **2. Collaborate** | Band members                     | **Invite to band**. Bandmates open the link, type a display name and can edit           | Anonymous, created silently |
-| **3. Secure**      | Anyone who wants it              | Link an email (magic link) or Google/Apple to use a second device or recover a lost one | Real account, same data     |
+| Level              | Who it's for                     | What the user does                                                            | Account                     |
+| ------------------ | -------------------------------- | ----------------------------------------------------------------------------- | --------------------------- |
+| **0. Solo**        | Just you                         | Use the app; everything stays on your machine                                 | None                        |
+| **1. View link**   | Bandmates, sound engineer, venue | **Share → Copy link**. The setlist opens live in any browser, no install      | None                        |
+| **2. Collaborate** | Band members                     | **Invite to band**. Bandmates open the link, type a display name and can edit | Anonymous, created silently |
+| **3. Secure**      | Anyone who wants it              | Add an email (sign-in codes) to use a second device or recover a lost one     | Real account, same data     |
 
 - View links and invites use unguessable tokens (only a hash is stored) and can be revoked. Invites carry a role, an expiry date and a maximum number of uses.
 - An anonymous identity lives on one device. If that device is lost before the account is secured, the person loses access but the band keeps its data, and an owner can re-invite them. The app suggests securing the account once a second member joins.
@@ -67,14 +67,14 @@ Each level is added only when someone needs it. Nobody sees a sign-up screen.
 Adding a song starts with a search box instead of an empty form.
 
 1. The app sends the query to the **`catalog-search` Edge Function**. It works with the public anon key, so no sign-up is needed.
-2. The function searches the **shared catalog** first. On a miss, it searches Spotify using the app's own credentials (client credentials flow, so users never log in to Spotify), stores the results in the catalog and returns them.
-3. Picking a result pre-fills the band's song: title, artists, duration and artwork, plus the catalog and Spotify IDs. The band then sets its own key, tempo, tuning and notes.
+2. The function searches the **shared catalog** first. When that finds little, it also searches Spotify using the app's own credentials (client credentials flow, so users never log in to Spotify), and keeps Spotify's results for 24 hours so repeat searches don't call it again.
+3. Picking a result pre-fills the band's song: title, artists and duration, plus the Spotify ID and ISRC. The band then sets its own key, tempo, tuning and notes.
 
 - **The catalog is global and read-only for clients.** One row per recording, shared by every band and never synced to devices. The band's own `Song` rows are what sync.
-- **Seeded from an existing Supabase project.** A CSV export of its general song catalog (6,573 tracks, each with a Spotify link) is loaded by a re-runnable script keyed on Spotify ID. A second pass fills in ISRC, album, year and artwork from Spotify.
+- **Seeded from an existing Supabase project.** A CSV export of its general song catalog (6,573 tracks, each with a Spotify link) is loaded by a re-runnable script keyed on Spotify ID. Spotify's data isn't added to it, since its terms don't allow keeping it permanently; growing the catalog further would use MusicBrainz.
 - **Key and BPM don't come from Spotify.** Spotify stopped giving audio features to new apps in late 2024, and a band's key and tempo often differ from the recording anyway. A suggestion service (for example GetSongBPM) is an optional extra.
 - **Manual entry stays** for originals, songs that aren't on Spotify, and adding songs offline.
-- **Spotify's rules apply:** show Spotify attribution and a link back wherever its data appears, and confirm what may be stored long-term in the catalog before launch.
+- **Spotify's rules apply** ([ADR 0003](docs/adr/0003-spotify.md)): its results are cached for 24 hours, not kept; artwork is shown in results but not stored; and its logo and an Open Spotify link appear wherever its data does.
 
 ## Data model (v1)
 
@@ -137,47 +137,65 @@ Performance { bandId, gigId, songId, playedAt, setName, positionInSet,
 
 ### Phase 0 — Foundations
 
+**Status:** done.
+
 Monorepo, tooling, CI, core schemas (including sharing entities), repository interface, sync-ready SQLite schema and migrations, the sync stack decision (done: our own protocol), the dedicated Supabase project with local development, and an empty Tauri app that builds on Windows/macOS.
 **Exit:** `pnpm test` and a desktop build both pass in CI, the sync stack is chosen, and Supabase migrations deploy from the repo.
 
 ### Phase 1 — Song library (MVP part 1)
+
+**Status:** mostly done. Left: matching imported rows to search results (#13), tags in the setlist builder (#88).
 
 Shared song catalog seeded from the existing Supabase project, Spotify search through an Edge Function, adding songs from search with manual entry as a fallback, CRUD for songs, search/filter/sort, tags, status (active/learning/retired), CSV import that matches rows to the catalog.
 **Exit:** the band's full repertoire is in the app, mostly added by search.
 
 ### Phase 2 — Gigs and setlist builder (MVP part 2)
 
+**Status:** done.
+
 Venues, gigs, upcoming/past views, setlist editor with multiple set blocks, **drag and drop** from library into sets and within/between sets, breaks and notes, running time per set, duplicate-song warnings.
 **Exit:** you can plan a real upcoming gig end to end.
 
 ### Phase 3 — Cloning and templates
+
+**Status:** not started.
 
 Clone any setlist (from a past gig, another upcoming gig, or a template) into a new gig, save as template, "cloned from" lineage, with options to drop retired songs and refresh keys.
 **Exit:** a new gig's setlist starts from a previous one in a couple of clicks.
 
 ### Phase 4 — Sharing and collaboration
 
-Band data schema in Supabase with row-level security, our sync protocol (outbox, push, pull, Realtime signal, first-share upload), silent anonymous identity, read-only share links with a web viewer, band invites with roles, live updates and an activity feed, and optional account securing (email or Google/Apple).
+**Status:** done, apart from the activity feed (#50), offline and concurrency tests (#52), clean-up of old deletions (#82) and song suggestions (#89).
+
+Band data schema in Supabase with row-level security, our sync protocol (outbox, push, pull, Realtime signal, first-share upload), silent anonymous identity, read-only share links with a web viewer, band invites with roles, live updates and an activity feed, and optional account securing (email).
 **Exit:** a bandmate opens an invite link, edits the next gig's setlist, and you see the change within seconds, with nobody signing up.
 
 ### Phase 5 — History and insights
+
+**Status:** started: marking a gig as played records its performances (#27).
 
 "Mark gig as played" snapshots performances, per-song history timeline, stats dashboard (most and least played, staleness), rating songs after a gig, and highlights in the builder (for example "played at this venue last time").
 **Exit:** you can answer "what haven't we played in a while?" instantly.
 
 ### Phase 6 — Output and stage use
 
-Print/PDF setlists (large font, one page per set), stage mode (full-screen, big text), JSON backup/restore, export to CSV.
-**Exit:** you can print or display the setlist used on stage.
+**Status:** printing (#34) and sharing to chats (#83, #84) are done; backup and export are left.
+
+Print/PDF setlists (large font, one page per set), sharing a setlist to chats as text or a picture, JSON backup/restore, export to CSV. Stage mode was dropped: bands print their setlists.
+**Exit:** you can print the setlist used on stage.
 
 ### Phase 7 — Release and distribution
+
+**Status:** not started; test installers are built on every change.
 
 Signed installers for Windows and macOS, auto-update, release workflow, crash/error logging (opt-in).
 **Exit:** a tagged release produces downloadable installers.
 
 ### Phase 8 — Web and mobile apps
 
-Full web app reusing `core` and `ui` on SQLite in WebAssembly with the same sync protocol, and a mobile app (Tauri mobile or React Native) for viewing setlists and stage mode.
+**Status:** done: the web app runs at https://setlist.rockthehouse.app/.
+
+Full web app reusing `core` and `ui` on SQLite in WebAssembly with the same sync protocol, installable on phones and working offline. A native mobile app isn't planned while the web app covers phones.
 **Exit:** a band member edits the setlist on their phone.
 
 ---

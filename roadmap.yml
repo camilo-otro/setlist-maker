@@ -31,7 +31,7 @@ milestones:
   - title: "Phase 5 — History & insights"
     description: "Performance snapshots, song history, stats."
   - title: "Phase 6 — Output & stage use"
-    description: "Print/PDF, stage mode, backup/restore."
+    description: "Print/PDF setlists, sharing to chats, backup and export."
   - title: "Phase 7 — Release & distribution"
     description: "Signed installers, auto-update, release pipeline."
   - title: "Phase 8 — Web & mobile apps"
