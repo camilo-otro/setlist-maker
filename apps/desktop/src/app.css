@@ -2320,3 +2320,52 @@ body {
   color: var(--sm-text-muted);
   font-size: 0.6875rem;
 }
+
+/* Rating songs after a gig (#32) */
+.rate-song {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--sm-border);
+}
+
+.rate-song__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rate-song__notes {
+  grid-column: 1 / -1;
+}
+
+.stars {
+  display: inline-flex;
+}
+
+.stars__star {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sm-radius);
+  background: transparent;
+  color: var(--sm-text-muted);
+  cursor: pointer;
+}
+
+.stars__star:hover {
+  background: var(--sm-hover);
+}
+
+.stars__star--on {
+  color: var(--sm-accent-text);
+}
+
+.stars__star--on svg {
+  fill: currentColor;
+}

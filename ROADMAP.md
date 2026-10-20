@@ -172,7 +172,7 @@ Band data schema in Supabase with row-level security, our sync protocol (outbox,
 
 ### Phase 5 — History and insights
 
-**Status:** started: marking a gig as played records its performances (#27), song statistics and hints in the builder (#29, #33), the stats dashboard (#31) and each song's history (#30) are done. Left: post-gig ratings (#32) and importing past gigs (#28).
+**Status:** started: marking a gig as played records its performances (#27), song statistics and hints in the builder (#29, #33), the stats dashboard (#31), each song's history (#30) and post-gig ratings (#32) are done. Left: importing past gigs (#28).
 
 "Mark gig as played" snapshots performances, per-song history timeline, stats dashboard (most and least played, staleness), rating songs after a gig, and highlights in the builder (for example "played at this venue last time").
 **Exit:** you can answer "what haven't we played in a while?" instantly.
