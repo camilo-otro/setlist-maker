@@ -173,3 +173,16 @@ The `--out` files need no database password: upload the CSV with **Table Editor 
 - **Local development:** copy `apps/desktop/.env.example` to `apps/desktop/.env.local` (git-ignored) and fill them in, then restart `pnpm app:desktop`.
 
 Without them, Add song simply skips the catalog search.
+
+## Spotify
+
+When the catalog finds little, the `catalog-search` Edge Function (`supabase/functions/catalog-search`) also searches Spotify with the app's own token, so nobody signs in to Spotify. What it may keep, and how Spotify must be credited, is in [ADR 0003](docs/adr/0003-spotify.md). In short, results are cached for 24 hours and then deleted, and each caller is limited to 30 Spotify searches per 10 minutes.
+
+- **Calling it:** `GET <project URL>/functions/v1/catalog-search?q=basurita`. It returns `{ results, spotify }`; `results` are rows shaped like `catalog_tracks`. `spotify` says whether Spotify was `used`, `cached`, `skipped`, `limited` or `unavailable`. If Spotify is unavailable, results come from the catalog alone.
+- **Secrets:** the Spotify app's client ID and secret are function secrets, set once in your own terminal:
+  ```sh
+  npx supabase secrets set --project-ref <project id> SPOTIFY_CLIENT_ID=… SPOTIFY_CLIENT_SECRET=…
+  ```
+  The Spotify app's owner must keep Spotify Premium, or Spotify stops answering.
+- **Deploys:** the Supabase workflow deploys the function on every push to `main`, after the migrations.
+- **Locally:** run `pnpm exec supabase functions serve catalog-search`. Without the secrets it answers from the catalog alone. The logic is tested in Node with `vitest run supabase/functions`.

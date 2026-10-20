@@ -977,6 +977,7 @@ body {
 
 .gig-header__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
@@ -1383,6 +1384,65 @@ body {
   font-weight: 600;
 }
 
+.catalog-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.catalog-picker__item .catalog-picker__track {
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+.catalog-picker__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.catalog-picker__text > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Spotify's artwork: unaltered, with the small rounded corners its rules ask for. */
+.catalog-picker__art {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: var(--sm-hover);
+  object-fit: cover;
+}
+
+.spotify-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--sm-radius);
+  color: var(--sm-accent-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.spotify-link:hover {
+  background: var(--sm-hover);
+}
+
+.spotify-attribution {
+  color: var(--sm-text-muted);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
 .catalog-link {
   display: flex;
   align-items: center;
@@ -1739,4 +1799,43 @@ body {
     padding: 0 6px;
     white-space: nowrap;
   }
+}
+
+.played-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.played-list__set {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.played-list__set legend {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.played-list__set .muted {
+  margin: 0;
+}
+
+.played-list__song {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: var(--sm-radius);
+  cursor: pointer;
+}
+
+.played-list__song:hover {
+  background: var(--sm-hover);
 }

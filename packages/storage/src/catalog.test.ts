@@ -2,13 +2,23 @@ import { newId } from '@setlist/core';
 import { describe, expect, it } from 'vitest';
 import { createCatalogClient, type FetchLike } from './catalog';
 
-function fakeFetch(status: number, body: unknown) {
+/** `rpc` answers the database function; `edge` the catalog-search function (404: not deployed). */
+function fakeFetch(
+  status: number,
+  body: unknown,
+  edge: { status: number; body?: unknown } = { status: 404 },
+) {
   const calls: { url: string; init: RequestInit }[] = [];
   const fetch = (async (url: string, init: RequestInit) => {
     calls.push({ url, init });
+    if (url.includes('/functions/v1/')) {
+      return new Response(JSON.stringify(edge.body ?? { message: 'Not found' }), {
+        status: edge.status,
+      });
+    }
     return new Response(JSON.stringify(body), { status });
   }) as unknown as FetchLike;
-  return { fetch, calls };
+  return { fetch, calls, rpcCalls: () => calls.filter((c) => c.url.includes('/rest/v1/')) };
 }
 
 const row = {
@@ -28,18 +38,46 @@ const row = {
 };
 
 describe('createCatalogClient', () => {
-  it('calls the search function and returns catalog tracks', async () => {
-    const { fetch, calls } = fakeFetch(200, [row]);
+  it('searches through catalog-search, with Spotify results, when it is deployed', async () => {
+    const spotifyRow = {
+      ...row,
+      id: newId(),
+      spotify_id: '7ouMYWpwJ422jRcDASZB7P',
+      source: 'spotify',
+      created_at: '2026-10-19T12:00:00.000Z',
+      updated_at: '2026-10-19T12:00:00.000Z',
+    };
+    const { fetch, calls, rpcCalls } = fakeFetch(200, [], {
+      status: 200,
+      body: { results: [row, spotifyRow, { title: 'broken' }], spotify: 'used' },
+    });
+    const client = createCatalogClient({
+      url: 'https://abc.supabase.co/',
+      key: 'sb_publishable_x',
+      fetch,
+    });
+    const tracks = await client.search(' bye bye ', { limit: 5 });
+
+    expect(calls[0]!.url).toBe('https://abc.supabase.co/functions/v1/catalog-search?q=bye%20bye');
+    expect(calls[0]!.init.method).toBe('GET');
+    expect(tracks.map((t) => t.source)).toEqual(['seed', 'spotify']);
+    expect(rpcCalls()).toHaveLength(0);
+  });
+
+  it('falls back to the database search when the function is missing', async () => {
+    const { fetch, calls: allCalls, rpcCalls } = fakeFetch(200, [row]);
     const client = createCatalogClient({
       url: 'https://abc.supabase.co/',
       key: 'sb_publishable_x',
       fetch,
     });
     const [track] = await client.search('bye', { limit: 5 });
+    const rpc = rpcCalls();
 
-    expect(calls[0]!.url).toBe('https://abc.supabase.co/rest/v1/rpc/search_catalog');
-    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ query: 'bye', max_results: 5 });
-    expect(calls[0]!.init.headers).toEqual({
+    expect(allCalls).toHaveLength(2);
+    expect(rpc[0]!.url).toBe('https://abc.supabase.co/rest/v1/rpc/search_catalog');
+    expect(JSON.parse(String(rpc[0]!.init.body))).toEqual({ query: 'bye', max_results: 5 });
+    expect(rpc[0]!.init.headers).toEqual({
       apikey: 'sb_publishable_x',
       'Content-Type': 'application/json',
     });
