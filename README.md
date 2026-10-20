@@ -36,12 +36,15 @@ Day-to-day work happens on **`dev`**: commit there, run `pnpm check` (and `pnpm 
 
 `main` only changes through a pull request from `dev`, opened when a batch of work is ready. That PR runs CI and the desktop builds once for the whole batch, and must pass CI before merging (see the "Protect main" ruleset). Issues referenced with `Closes #N` close when the PR merges.
 
-| Path               | Package            | What it holds                                       |
-| ------------------ | ------------------ | --------------------------------------------------- |
-| `packages/core`    | `@setlist/core`    | Domain types, schemas and pure logic                |
-| `packages/storage` | `@setlist/storage` | Repository interface, SQLite and sync               |
-| `packages/ui`      | `@setlist/ui`      | Shared React components                             |
-| `apps/desktop`     | `@setlist/desktop` | Desktop app: Tauri 2 shell (`src-tauri`) + React UI |
+| Path               | Package            | What it holds                                               |
+| ------------------ | ------------------ | ----------------------------------------------------------- |
+| `packages/core`    | `@setlist/core`    | Domain types, schemas and pure logic                        |
+| `packages/storage` | `@setlist/storage` | Repository interface, SQLite and sync                       |
+| `packages/ui`      | `@setlist/ui`      | Shared React components                                     |
+| `apps/desktop`     | `@setlist/desktop` | Desktop app: Tauri 2 shell (`src-tauri`) + React UI         |
+| `apps/viewer`      | `@setlist/viewer`  | Share-link and invite viewer, served at `/viewer/`          |
+| `site`             |                    | The website's own files: Netlify headers and redirects      |
+| `supabase`         |                    | Migrations, database tests, Edge Functions, email templates |
 
 Shared packages export their TypeScript source directly, so there's no build step between them: Vite, Vitest and `tsc` read the `.ts` files. Only apps produce build output.
 
