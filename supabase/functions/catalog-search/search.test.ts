@@ -193,6 +193,48 @@ describe('catalog-search', () => {
   });
 });
 
+describe('mergeResults', () => {
+  const spotify = (title: string, artists: string[], extra: Partial<TrackRow> = {}) =>
+    row(title, { artists, source: 'spotify', ...extra });
+
+  it('keeps only Spotify results with every word of the query, when there are any', () => {
+    const results = mergeResults(
+      [],
+      [
+        spotify('Basurita', ['1280 Almas']),
+        spotify('Surah Yasin', ['Sheikh Abdul Rahman Al Sudais']),
+        spotify('Basurita', ['Otro Artista'], { album: '1280 Grandes Exitos' }),
+      ],
+      'basurita 1280',
+    );
+    expect(results.map((t) => `${t.title} / ${t.artists[0]}`)).toEqual([
+      'Basurita / 1280 Almas',
+      'Basurita / Otro Artista',
+    ]);
+  });
+
+  it("keeps Spotify's loose matches when nothing matches every word, e.g. a typo", () => {
+    const results = mergeResults([], [spotify('Basurita', ['1280 Almas'])], 'basurtia');
+    expect(results.map((t) => t.title)).toEqual(['Basurita']);
+  });
+
+  it('shows a song once, preferring the catalog, even when Spotify has another release', () => {
+    const results = mergeResults(
+      [row('Basurita', { artists: ['1280 Almas'], spotify_id: '0000000000000000000001' })],
+      [
+        spotify('BASURITA', ['1280 Almas'], { spotify_id: '0000000000000000000002' }),
+        spotify('Basurita', ['1280 Almas'], { spotify_id: '0000000000000000000003' }),
+        spotify('Basurita - En Vivo', ['1280 Almas'], { spotify_id: '0000000000000000000004' }),
+      ],
+      'basurita',
+    );
+    expect(results.map((t) => [t.title, t.source])).toEqual([
+      ['Basurita', 'seed'],
+      ['Basurita - En Vivo', 'spotify'],
+    ]);
+  });
+});
+
 describe('trackFromSpotify', () => {
   it('keeps the names as Spotify gives them, with the artwork closest to 300 px', () => {
     expect(trackFromSpotify(spotifyTrack('4uLU6hMCjMI75M1A2tKUQC', 'Basurita'), NOW)).toMatchObject(
@@ -242,6 +284,6 @@ describe('helpers', () => {
 
   it('caps merged results', () => {
     const many = Array.from({ length: 12 }, (_, i) => row(`Song ${i}`));
-    expect(mergeResults(many, [], 10)).toHaveLength(10);
+    expect(mergeResults(many, [], 'song', 10)).toHaveLength(10);
   });
 });
