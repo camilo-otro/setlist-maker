@@ -7,7 +7,8 @@ import type { Plugin } from 'vite';
  * The web app's service worker (#42), so it opens and works offline once installed:
  * - The app's files are cached when the worker installs, and served from the cache first.
  * - Page loads try the network, and fall back to the cached app when offline.
- * - Anything else (Supabase, other sites) passes straight through; data syncs on its own.
+ * - Anything else (Supabase, other sites, the viewer at /viewer/, the old /app/ address) passes
+ *   straight through; data syncs on its own.
  * - A new version waits until every window of the app is closed, so an open session never mixes
  *   old and new files.
  */
@@ -17,6 +18,8 @@ const CACHE = ${JSON.stringify(`setlist-app-${version}`)};
 const FILES = ${JSON.stringify(files)};
 const scope = new URL(self.registration.scope);
 const INDEX = new URL('index.html', scope).href;
+// Other parts of the site, under the app's scope but not the app's.
+const ELSEWHERE = ['viewer/', 'app/'].map((path) => new URL(path, scope).pathname);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -40,6 +43,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) return;
+  if (ELSEWHERE.some((path) => url.pathname.startsWith(path))) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

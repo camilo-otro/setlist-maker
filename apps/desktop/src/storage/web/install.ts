@@ -3,7 +3,7 @@
  * build/serviceWorker.ts) and asking the browser to keep its data. Web build only.
  */
 
-/** Registers the service worker next to the app (`/app/sw.js`), in production builds. */
+/** Registers the service worker next to the app (`/sw.js`), in production builds. */
 export function registerServiceWorker(): void {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
   window.addEventListener('load', () => {

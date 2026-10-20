@@ -22,7 +22,7 @@ export function Invitation({
   token,
   link,
   load,
-  appUrl = '/app/',
+  appUrl = '/',
 }: {
   token: string;
   link: string;

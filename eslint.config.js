@@ -15,6 +15,11 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   {
+    // site/: files served as they are, like the retired service worker at app/sw.js.
+    files: ['site/**/*.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
     // Node scripts run by GitHub Actions (actions/github-script loads them with require).
     files: ['.github/scripts/**/*.js'],
     languageOptions: { sourceType: 'commonjs', globals: globals.node },
