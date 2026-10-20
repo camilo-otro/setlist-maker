@@ -3,14 +3,17 @@ import {
   formatDuration,
   missingNeeds,
   searchSongs,
+  sortByHistory,
   sortSongs,
   tagCounts,
+  type HistorySort,
   type SetBlock,
   type Song,
 } from '@setlist/core';
 import { Check, GripVertical, Plus, Search } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { SongTags } from '../components/SongTags';
+import { historyHint, type SongHistory } from './songHistory';
 
 const SHOWN = 100;
 
@@ -18,13 +21,16 @@ function LibrarySong({
   song,
   inSetlist,
   missing,
+  history,
   onAdd,
 }: {
   song: Song;
   inSetlist: boolean;
   missing: readonly string[];
+  history: SongHistory | undefined;
   onAdd: () => void;
 }) {
+  const hint = history ? historyHint(song.id, history) : null;
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: `library:${song.id}`,
     data: { type: 'library', songId: song.id, title: song.title },
@@ -51,6 +57,15 @@ function LibrarySong({
             .filter(Boolean)
             .join(' · ')}
         </span>
+        {hint && (
+          <span className="library-song__history">
+            <span className="muted">{hint.text}</span>
+            {hint.stale && <span className="history-mark">Not played in a while</span>}
+            {hint.hereLastTime && (
+              <span className="history-mark history-mark--here">Played here last time</span>
+            )}
+          </span>
+        )}
         <SongTags tags={song.tags} missing={missing} className="library-song__tags" />
       </span>
       {inSetlist && (
@@ -82,6 +97,7 @@ export function LibraryPanel({
   blocks,
   usedSongIds,
   missing = [],
+  history,
   targetId,
   onTargetChange,
   onAdd,
@@ -92,6 +108,8 @@ export function LibraryPanel({
   usedSongIds: ReadonlySet<string>;
   /** The gig's missing tags. */
   missing?: readonly string[];
+  /** The band's history, for hints and sorting (#33). */
+  history?: SongHistory;
   /** The set Add buttons add to. */
   targetId: string | undefined;
   onTargetChange: (blockId: string) => void;
@@ -102,6 +120,7 @@ export function LibraryPanel({
   const [query, setQuery] = useState('');
   const [tags, setTags] = useState<readonly string[]>([]);
   const [showMissing, setShowMissing] = useState(false);
+  const [sort, setSort] = useState<'title' | HistorySort>('title');
   const searchRef = useRef<HTMLInputElement>(null);
 
   function added() {
@@ -131,8 +150,9 @@ export function LibraryPanel({
       const own = song.tags.map((tag) => tag.toLowerCase());
       return wanted.every((tag) => own.includes(tag));
     });
-    return sortSongs(searchSongs(shown, query), 'title');
-  }, [playable, query, tags, showMissing, missing]);
+    const byTitle = sortSongs(searchSongs(shown, query), 'title');
+    return sort === 'title' || !history ? byTitle : sortByHistory(byTitle, history.stats, sort);
+  }, [playable, query, tags, showMissing, missing, sort, history]);
 
   const toggleTag = (tag: string) =>
     setTags((current) =>
@@ -189,6 +209,21 @@ export function LibraryPanel({
           {missing.join(', ')}
         </label>
       )}
+      {history && (
+        <label className="library-panel__target">
+          <span className="muted">Sort</span>
+          <select
+            className="sm-input"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as 'title' | HistorySort)}
+          >
+            <option value="title">Title</option>
+            <option value="most-played">Most played</option>
+            <option value="least-played">Least played</option>
+            <option value="longest-ago">Longest since played</option>
+          </select>
+        </label>
+      )}
       {blocks.length > 1 && (
         <label className="library-panel__target">
           <span className="muted">Add to</span>
@@ -217,6 +252,7 @@ export function LibraryPanel({
             song={song}
             inSetlist={usedSongIds.has(song.id)}
             missing={missing}
+            history={history}
             onAdd={() => {
               if (!targetId) return;
               onAdd(song.id, targetId);

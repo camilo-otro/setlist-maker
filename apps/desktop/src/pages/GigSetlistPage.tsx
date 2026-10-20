@@ -4,6 +4,8 @@ import {
   formatDuration,
   localDateString,
   missingCounts,
+  playedHereLastTime,
+  songStatistics,
   setDuration,
   setlistWarnings,
   type EntryWarning,
@@ -46,6 +48,8 @@ export function GigSetlistPage() {
   const { state, reload } = useGigSetlist(gigId);
   const songs = useBandRows('songs');
   const venues = useBandRows('venues');
+  const performances = useBandRows('performances');
+  const gigs = useBandRows('gigs');
   const history = useHistory(reload);
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
@@ -60,6 +64,15 @@ export function GigSetlistPage() {
   const data = state.status === 'ready' ? state.data : null;
   const allEntries = useMemo(() => data?.blocks.flatMap((b) => b.entries) ?? [], [data]);
   const missing = useMemo(() => data?.gig.missingTags ?? [], [data]);
+  // The band's history, for hints while picking songs (#33).
+  const songHistory = useMemo(() => {
+    if (!data || !performances.rows || !gigs.rows) return undefined;
+    return {
+      stats: songStatistics(performances.rows, gigs.rows),
+      hereLastTime: playedHereLastTime(data.gig, gigs.rows, performances.rows),
+      today: localDateString(),
+    };
+  }, [data, performances.rows, gigs.rows]);
   const warnings = useMemo(
     () => setlistWarnings(allEntries, songsById, missing),
     [allEntries, songsById, missing],
@@ -221,6 +234,7 @@ export function GigSetlistPage() {
         songsById={songsById}
         warnings={warnings}
         missing={missing}
+        history={songHistory}
         changes={changes}
         run={history.run}
       />
@@ -240,7 +254,11 @@ export function GigSetlistPage() {
           blocks={blocks}
           songsById={songsById}
           onClose={() => setMarkingPlayed(false)}
-          onChanged={reload}
+          onChanged={() => {
+            reload();
+            performances.reload();
+            gigs.reload();
+          }}
         />
       )}
       {editingGig && (

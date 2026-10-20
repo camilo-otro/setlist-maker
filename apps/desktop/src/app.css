@@ -1922,3 +1922,27 @@ body {
 .gig-form__hint {
   font-size: 0.75rem;
 }
+
+/* History hints in the setlist builder (#33) */
+.library-song__history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  font-size: 0.75rem;
+}
+
+.history-mark {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--sm-hover);
+  color: var(--sm-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.history-mark--here {
+  background: var(--sm-accent-soft);
+  color: var(--sm-accent-text);
+}

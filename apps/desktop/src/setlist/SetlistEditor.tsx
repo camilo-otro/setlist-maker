@@ -24,6 +24,7 @@ import { AT_END, type SetlistChanges } from './changes';
 import { EntryDialog, type EntryValues } from './EntryDialog';
 import { entryTitle } from './EntryRow';
 import { LibraryPanel } from './LibraryPanel';
+import type { SongHistory } from './songHistory';
 import { SetBlockCard } from './SetBlockCard';
 import type { BlockWithEntries } from './useGigSetlist';
 import type { Change } from './useHistory';
@@ -85,6 +86,7 @@ export function SetlistEditor({
   songsById,
   warnings,
   missing = [],
+  history,
   changes,
   run,
   readOnly = false,
@@ -96,6 +98,8 @@ export function SetlistEditor({
   warnings: ReadonlyMap<string, readonly EntryWarning[]>;
   /** Tags the band can't cover at this gig (#88): flagged in the sets, hideable in the library. */
   missing?: readonly string[];
+  /** The band's history, for hints in the library panel (#33). */
+  history?: SongHistory;
   changes: SetlistChanges;
   run: (change: Change) => Promise<void>;
   /** For viewers: shows the setlist without any way to change it. */
@@ -281,6 +285,7 @@ export function SetlistEditor({
             blocks={blocks.map(({ block }) => block)}
             usedSongIds={usedSongIds}
             missing={missing}
+            history={history}
             targetId={targetBlockId}
             onTargetChange={(id) => setChosen({ id, at: new Date().toISOString() })}
             onAdd={addSong}

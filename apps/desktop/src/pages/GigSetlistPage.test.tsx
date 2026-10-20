@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { createGig, createMemoryRepository } from '@setlist/storage';
+import { localDateString } from '@setlist/core';
+import { createGig, createMemoryRepository, markGigPlayed } from '@setlist/storage';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -12,7 +13,8 @@ import { GigsPage } from './GigsPage';
 afterEach(cleanup);
 
 /** Opens a gig's setlist page, with three songs in the library. */
-async function setup() {
+/** `history`: songs (by title) played at an earlier gig at the same venue, ten days ago. */
+async function setup({ history = [] as string[] } = {}) {
   const repository = createMemoryRepository();
   const workspace: Workspace = { repository, band: await ensureBand(repository), persistent: true };
   const bandId = workspace.band.id;
@@ -36,6 +38,26 @@ async function setup() {
     },
     { bandId, title: 'Untimed', artist: 'Someone' },
   ]);
+  if (history.length > 0) {
+    const ago = new Date();
+    ago.setDate(ago.getDate() - 10);
+    const { gig: earlier } = await createGig(repository, {
+      bandId,
+      venueId: venue.id,
+      title: 'Last time at the Cavern',
+      date: localDateString(ago),
+    });
+    const all = await repository.songs.list();
+    await markGigPlayed(repository, earlier.id, [
+      {
+        setName: 'Set 1',
+        songs: history.map((title) => ({
+          songId: all.find((x) => x.title === title)!.id,
+          key: null,
+        })),
+      },
+    ]);
+  }
   const user = userEvent.setup();
   render(
     <WorkspaceContextProvider workspace={workspace}>
@@ -152,6 +174,25 @@ describe('GigSetlistPage', () => {
     expect(library().queryByRole('button', { name: 'Add Basurita' })).toBeNull();
   });
 
+  it("shows each song's history in the library, and sorts by it", async () => {
+    const { user } = await setup({ history: ['Here Without You'] });
+    const row = (title: string) =>
+      within(
+        library()
+          .getByRole('button', { name: `Add ${title}` })
+          .closest('li')!,
+      );
+    expect(row('Here Without You').getByText('1× this month · 1× this quarter')).toBeTruthy();
+    expect(row('Here Without You').getByText('Played here last time')).toBeTruthy();
+    expect(row('Basurita').getByText('Never played')).toBeTruthy();
+
+    await user.selectOptions(library().getByRole('combobox', { name: 'Sort' }), 'Most played');
+    const titles = [...document.querySelectorAll('.library-song__title')].map(
+      (el) => el.textContent,
+    );
+    expect(titles[0]).toBe('Here Without You');
+  });
+
   it('adds songs from the library and adds up the running time', async () => {
     const { user } = await setup();
     await user.click(library().getByRole('button', { name: 'Add Basurita' }));
@@ -179,7 +220,7 @@ describe('GigSetlistPage', () => {
     await user.click(screen.getByRole('button', { name: 'Add set' }));
     await screen.findByRole('heading', { name: 'Set 2' });
 
-    await user.selectOptions(library().getByRole('combobox'), 'Set 2');
+    await user.selectOptions(library().getByRole('combobox', { name: 'Add to' }), 'Set 2');
     await user.click(library().getByRole('button', { name: 'Add Basurita' }));
     await waitFor(() => expect(songsIn('Set 2')).toEqual(['Basurita']));
     expect(songsIn('Set 1')).toEqual([]);
@@ -202,15 +243,16 @@ describe('GigSetlistPage', () => {
     const { user } = await setup();
     await user.click(screen.getByRole('button', { name: 'Add set' }));
     await screen.findByRole('heading', { name: 'Set 2' });
-    expect(library().getByRole<HTMLSelectElement>('combobox').selectedOptions[0]!.text).toBe(
-      'Set 2',
-    );
+    expect(
+      library().getByRole<HTMLSelectElement>('combobox', { name: 'Add to' }).selectedOptions[0]!
+        .text,
+    ).toBe('Set 2');
 
     await user.click(library().getByRole('button', { name: 'Add Basurita' }));
     await waitFor(() => expect(songsIn('Set 2')).toEqual(['Basurita']));
 
     // Picking a set wins until something else changes.
-    await user.selectOptions(library().getByRole('combobox'), 'Set 1');
+    await user.selectOptions(library().getByRole('combobox', { name: 'Add to' }), 'Set 1');
     await user.click(library().getByRole('button', { name: 'Add Untimed' }));
     await waitFor(() => expect(songsIn('Set 1')).toEqual(['Untimed']));
 
