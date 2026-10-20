@@ -29,11 +29,11 @@ describe('AppRoutes', () => {
     ['/gigs', 'Gigs', 'Loading gigs'],
     ['/venues', 'Venues', 'Loading venues'],
     ['/templates', 'Templates', 'No templates yet'],
-    ['/stats', 'Stats', 'Nothing to show yet'],
-  ])('%s shows its page with an empty state', (path, title, empty) => {
+    ['/stats', 'Stats', 'Loading stats'],
+  ])('%s shows its page', (path, title, first) => {
     const html = render(path);
     expect(html).toContain(`<h1 class="sm-page-header__title">${title}</h1>`);
-    expect(html).toContain(empty);
+    expect(html).toContain(first);
   });
 
   it('lists every section in the sidebar and marks the current one', () => {

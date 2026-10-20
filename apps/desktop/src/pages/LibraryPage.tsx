@@ -2,6 +2,7 @@ import {
   countActiveFilters,
   DEFAULT_SONG_FILTERS,
   filterSongs,
+  performancesOf,
   searchSongs,
   sortSongs,
   type Song,
@@ -12,12 +13,13 @@ import { EmptyState, PageHeader } from '@setlist/ui';
 import { FileUp, Library, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ImportDialog } from '../library/ImportDialog';
-import { SongDetail } from '../library/SongDetail';
+import { SongDetail, type HistoryEntry } from '../library/SongDetail';
 import { SongDialog } from '../library/SongDialog';
 import { SongFiltersPanel } from '../library/SongFiltersPanel';
 import { SongTable, type SongSort } from '../library/SongTable';
 import { useSongs } from '../library/useSongs';
 import { useMembership } from '../sharing/MembershipProvider';
+import { useBandRows } from '../storage/useBandRows';
 
 /** `undefined` when no dialog is open, `null` while adding, or the song being edited. */
 type Editing = Song | null | undefined;
@@ -32,6 +34,9 @@ export function LibraryPage() {
   const [editing, setEditing] = useState<Editing>(undefined);
   const { canEdit } = useMembership();
   const [importing, setImporting] = useState(false);
+  const performances = useBandRows('performances');
+  const gigs = useBandRows('gigs');
+  const venues = useBandRows('venues');
 
   const visible = useMemo(
     () =>
@@ -41,6 +46,20 @@ export function LibraryPage() {
   // Looked up in every song, so the panel stays open if a filter hides the selected one.
   const selected = songs?.find((song) => song.id === selectedId);
   const activeFilters = countActiveFilters(filters);
+  // The selected song's history (#30), with each performance's gig and venue.
+  const history = useMemo((): HistoryEntry[] | undefined => {
+    if (!selectedId || !performances.rows || !gigs.rows || !venues.rows) return undefined;
+    const gigsById = new Map(gigs.rows.map((gig) => [gig.id, gig]));
+    const venueNames = new Map(venues.rows.map((venue) => [venue.id, venue.name]));
+    return performancesOf(selectedId, performances.rows).map((performance) => {
+      const gig = gigsById.get(performance.gigId);
+      return {
+        performance,
+        gig,
+        venueName: gig?.venueId ? venueNames.get(gig.venueId) : undefined,
+      };
+    });
+  }, [selectedId, performances.rows, gigs.rows, venues.rows]);
 
   const toggleSort = (key: SongSortKey) =>
     setSort((current) => ({
@@ -146,6 +165,7 @@ export function LibraryPage() {
           <SongDetail
             key={selected.id}
             song={selected}
+            history={history}
             onEdit={canEdit ? () => setEditing(selected) : undefined}
             onClose={() => setSelectedId(undefined)}
           />

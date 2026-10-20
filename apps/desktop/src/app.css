@@ -611,6 +611,59 @@ body {
   margin-top: 2px;
 }
 
+.song-detail__section .song-timeline__summary {
+  margin-bottom: 10px;
+}
+
+.song-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--sm-border);
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.song-timeline__item {
+  position: relative;
+}
+
+/* A dot on the line for each performance. */
+.song-timeline__item::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: -19px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sm-accent);
+}
+
+.song-timeline__when {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.song-timeline__rating {
+  display: inline-flex;
+  color: var(--sm-accent-text);
+}
+
+.song-timeline__rating svg {
+  fill: currentColor;
+}
+
+.song-detail__section .song-timeline__notes {
+  margin-top: 4px;
+  white-space: pre-wrap;
+}
+
 .song-detail__dates {
   margin: 0;
   font-size: 0.8125rem;
@@ -2076,4 +2129,194 @@ body {
   .start-from {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Stats (#31) */
+:root {
+  /* The chart bar: the accent in light mode, a step darker in dark mode so bars don't glare. */
+  --stats-bar: var(--sm-accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --stats-bar: #8b5cf6;
+  }
+}
+
+:root[data-theme='dark'] {
+  --stats-bar: #8b5cf6;
+}
+
+.stats-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.stats-tile {
+  padding: 14px 16px;
+  border: 1px solid var(--sm-border);
+  border-radius: 12px;
+  background: var(--sm-surface);
+}
+
+.stats-tile dt,
+.stats-card__title {
+  margin: 0 0 6px;
+  color: var(--sm-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.stats-tile dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.stats-tile dd .muted {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.stats-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--sm-border);
+  border-radius: 12px;
+  background: var(--sm-surface);
+}
+
+.stats-card--wide {
+  grid-column: 1 / -1;
+}
+
+.stats-card__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.stats-card__control select {
+  width: auto;
+}
+
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.stats-list li {
+  display: flex;
+  gap: 8px;
+}
+
+.stats-list__rank {
+  flex-shrink: 0;
+  width: 1.5em;
+  color: var(--sm-text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-list__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-list__value {
+  flex-shrink: 0;
+  color: var(--sm-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-split {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.stats-split dt {
+  font-weight: 600;
+}
+
+.stats-split dd {
+  margin: 2px 0 0;
+}
+
+.month-chart {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 2px;
+  height: 160px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.month-chart__month {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  min-width: 0;
+}
+
+.month-chart__month:hover .month-chart__bar {
+  filter: brightness(1.15);
+}
+
+.month-chart__value {
+  line-height: 1.4;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.month-chart__track {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  /* Room for the value above the tallest bar; bar heights are a share of the rest. */
+  padding-top: 1.4em;
+  border-bottom: 1px solid var(--sm-border);
+}
+
+.month-chart__bar {
+  width: min(28px, 70%);
+  border-radius: 4px 4px 0 0;
+  background: var(--stats-bar);
+}
+
+.month-chart__label {
+  color: var(--sm-text-muted);
+  font-size: 0.6875rem;
 }

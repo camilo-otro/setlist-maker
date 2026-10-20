@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   daysSinceLastPlayed,
+  gigsPerMonth,
+  gigsSinceLastPlayed,
+  originalsAndCovers,
+  performancesOf,
   playedHereLastTime,
   songStatistics,
   sortByHistory,
@@ -106,5 +110,66 @@ describe('sortByHistory', () => {
 
   it('sorts by longest since played, never-played first', () => {
     expect(ids(sortByHistory(songs, stats, 'longest-ago'))).toEqual(['never', 'c', 'a', 'b']);
+  });
+});
+
+describe('performancesOf', () => {
+  it('lists one song’s performances, most recent first', () => {
+    const removed = { ...performances[0]!, deletedAt: TODAY };
+    expect(performancesOf('a', [removed, ...performances]).map((p) => p.gigId)).toEqual([
+      'g3',
+      'g2',
+      'g1',
+    ]);
+  });
+});
+
+describe('gigsSinceLastPlayed', () => {
+  it('counts played gigs since each song was last played', () => {
+    const stats = songStatistics(performances, gigs);
+    const cancelled = {
+      id: 'g4',
+      date: '2026-10-15',
+      status: 'cancelled' as const,
+      deletedAt: null,
+    };
+    const since = gigsSinceLastPlayed(['a', 'c', 'never'], stats, [...gigs, cancelled]);
+    expect(Object.fromEntries(since)).toEqual({ a: 0, c: 2, never: 3 });
+  });
+});
+
+describe('gigsPerMonth', () => {
+  it('counts played gigs per month, including empty months and across years', () => {
+    const months = gigsPerMonth(
+      [...gigs, { id: 'g0', date: '2025-12-31', status: 'played', deletedAt: null }],
+      TODAY,
+      12,
+    );
+    expect(months).toHaveLength(12);
+    expect(months[0]).toEqual({ month: '2025-11', gigs: 0 });
+    expect(months[1]).toEqual({ month: '2025-12', gigs: 1 });
+    expect(months.filter((m) => m.gigs > 0).map((m) => m.month)).toEqual([
+      '2025-12',
+      '2026-07',
+      '2026-09',
+      '2026-10',
+    ]);
+    expect(months.at(-1)).toEqual({ month: '2026-10', gigs: 1 });
+  });
+});
+
+describe('originalsAndCovers', () => {
+  it('counts songs in the repertoire and plays of each kind', () => {
+    const stats = songStatistics(performances, gigs);
+    const songs = [
+      { id: 'a', isOriginal: true, status: 'active' as const, deletedAt: null },
+      { id: 'b', isOriginal: false, status: 'active' as const, deletedAt: null },
+      { id: 'c', isOriginal: false, status: 'retired' as const, deletedAt: null },
+      { id: 'd', isOriginal: true, status: 'learning' as const, deletedAt: null },
+    ];
+    expect(originalsAndCovers(songs, stats)).toEqual({
+      originals: { songs: 2, plays: 3 },
+      covers: { songs: 1, plays: 5 },
+    });
   });
 });
