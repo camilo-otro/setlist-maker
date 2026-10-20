@@ -102,7 +102,7 @@ describe('Add song from the catalog', () => {
     const link = await dialog.findByRole('link', { name: 'Open Basurita in Spotify' });
     expect(link.getAttribute('href')).toBe('https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC');
     expect(link.textContent).toContain('Open Spotify');
-    expect(dialog.getByText('Song details from Spotify')).toBeTruthy();
+    expect(dialog.getByRole('img', { name: 'Spotify' })).toBeTruthy();
     expect(dialog.getByText(/1280 Almas · 1999 · 3:45/)).toBeTruthy();
 
     await user.click(dialog.getByRole('button', { name: /Basurita/ }));

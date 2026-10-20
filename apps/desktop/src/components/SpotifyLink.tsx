@@ -1,6 +1,8 @@
 import { spotifyTrackUrl } from '@setlist/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { ExternalLink } from 'lucide-react';
+import spotifyLogo from '../assets/brand/spotify-logo.svg';
+import type { CSSProperties } from 'react';
 import { currentPlatform } from '../storage/workspace';
 
 /**
@@ -28,7 +30,21 @@ export function SpotifyLink({ spotifyId, title }: { spotifyId: string; title: st
   );
 }
 
-/** Credits Spotify under results that came from it. */
+/**
+ * Credits Spotify under results that came from it, with its full logo as its rules require. The
+ * logo file is white; it's drawn as a mask so it shows black on light screens and white on dark
+ * ones, Spotify's two one-colour versions.
+ */
 export function SpotifyAttribution() {
-  return <p className="spotify-attribution">Song details from Spotify</p>;
+  return (
+    <p className="spotify-attribution">
+      Song details from
+      <span
+        className="spotify-attribution__logo"
+        role="img"
+        aria-label="Spotify"
+        style={{ '--spotify-logo': `url("${spotifyLogo}")` } as CSSProperties}
+      />
+    </p>
+  );
 }

@@ -1438,9 +1438,37 @@ body {
 }
 
 .spotify-attribution {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   color: var(--sm-text-muted);
   font-size: 0.75rem;
-  text-align: right;
+}
+
+/*
+ * Spotify's full logo: at least 70 px wide, in black or white only, with clear space around it
+ * (its brand rules). The file's own white is replaced by the mask's colour.
+ */
+.spotify-attribution__logo {
+  --spotify-logo-colour: #000;
+  flex: none;
+  width: 80px;
+  height: 22px;
+  margin: 6px 0 6px 4px;
+  background: var(--spotify-logo-colour);
+  -webkit-mask: var(--spotify-logo) center / contain no-repeat;
+  mask: var(--spotify-logo) center / contain no-repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .spotify-attribution__logo {
+    --spotify-logo-colour: #fff;
+  }
+}
+
+:root[data-theme='dark'] .spotify-attribution__logo {
+  --spotify-logo-colour: #fff;
 }
 
 .catalog-link {
