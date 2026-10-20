@@ -1,8 +1,7 @@
 import type { Gig, Song, Venue } from '@setlist/core';
-import { invoke } from '@tauri-apps/api/core';
 import { Check, Download, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
-import { currentPlatform } from '../storage/workspace';
+import { saveFile } from './saveFile';
 import { canShareSheet } from './shareSheet';
 import {
   activeImageTheme,
@@ -75,20 +74,7 @@ export function ShareImage({
       return 'Image copied';
     });
 
-  const save = () =>
-    run(async () => {
-      const blob = await picture();
-      if (currentPlatform() === 'desktop') {
-        const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
-        await invoke<string>('save_download', { name, bytes });
-        return 'Saved to Downloads';
-      }
-      const url = URL.createObjectURL(blob);
-      const link = Object.assign(document.createElement('a'), { href: url, download: name });
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return 'Saved';
-    });
+  const save = () => run(async () => saveFile(name, await picture()));
 
   const failed = status.kind === 'failed';
   const label = (idle: string) =>

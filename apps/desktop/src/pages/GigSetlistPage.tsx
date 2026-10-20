@@ -14,6 +14,7 @@ import { GigDialog } from '../gigs/GigDialog';
 import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
 import { setlistChanges } from '../setlist/changes';
 import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
+import { PrintSetlist } from '../setlist/PrintSetlist';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ShareImage } from '../setlist/ShareImage';
 import { useGigSetlist } from '../setlist/useGigSetlist';
@@ -167,6 +168,7 @@ export function GigSetlistPage() {
             sharing={sharing}
           />
           <ShareImage gig={gig} venue={venue} blocks={blocks} songsById={songsById} />
+          <PrintSetlist bandName={band.name} gig={gig} blocks={blocks} songsById={songsById} />
         </div>
       </header>
 
