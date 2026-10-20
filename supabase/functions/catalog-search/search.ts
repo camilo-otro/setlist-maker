@@ -123,18 +123,43 @@ export function trackFromSpotify(track: SpotifyTrack, now: Date): TrackRow | nul
   };
 }
 
-/** Catalog matches first, then Spotify's, leaving out recordings the catalog already has. */
+/** A song's title and artists, normalised: two results with the same one are the same song. */
+const songKey = (track: TrackRow) => normaliseQuery(`${track.title} | ${track.artists.join(', ')}`);
+
+/**
+ * True when every word of the query is in the track's title, artists or album, as the catalog's
+ * own search requires. Spotify matches more loosely (a number in the query can match anything).
+ */
+export function matchesQuery(track: TrackRow, query: string): boolean {
+  const text = normaliseQuery(`${track.title} ${track.artists.join(' ')} ${track.album ?? ''}`);
+  return query.split(' ').every((word) => text.includes(word));
+}
+
+/**
+ * Catalog matches first, then Spotify's, keeping one result per song: the same recording (Spotify
+ * ID or ISRC) or the same title and artists. Of Spotify's results, only those that contain every
+ * word of the query are kept, unless none do: then a typo still finds something.
+ */
 export function mergeResults(
   catalog: readonly TrackRow[],
   spotify: readonly TrackRow[],
+  query: string,
   max = MAX_RESULTS,
 ): TrackRow[] {
-  const spotifyIds = new Set(catalog.map((t) => t.spotify_id).filter(Boolean));
-  const isrcs = new Set(catalog.map((t) => t.isrc).filter(Boolean));
-  const extra = spotify.filter(
-    (t) => !(t.spotify_id && spotifyIds.has(t.spotify_id)) && !(t.isrc && isrcs.has(t.isrc)),
-  );
-  return [...catalog, ...extra].slice(0, max);
+  const close = spotify.filter((track) => matchesQuery(track, query));
+  const seen = new Set<string>();
+  const results: TrackRow[] = [];
+  for (const track of [...catalog, ...(close.length > 0 ? close : spotify)]) {
+    const keys = [
+      track.spotify_id && `spotify:${track.spotify_id}`,
+      track.isrc && `isrc:${track.isrc}`,
+      `song:${songKey(track)}`,
+    ].filter((key): key is string => Boolean(key));
+    if (keys.some((key) => seen.has(key))) continue;
+    keys.forEach((key) => seen.add(key));
+    results.push(track);
+  }
+  return results.slice(0, max);
 }
 
 /** Who's calling, as a hash of their address: enough to budget by, without keeping addresses. */
@@ -287,7 +312,7 @@ export function createSearchHandler(config: SearchConfig): (request: Request) =>
         return reply(200, { results: catalog, spotify: 'skipped' });
       }
       const { tracks, spotify } = await fromSpotify(request, query);
-      return reply(200, { results: mergeResults(catalog, tracks), spotify });
+      return reply(200, { results: mergeResults(catalog, tracks, query), spotify });
     } catch (error) {
       log(`catalog-search failed: ${String(error)}`);
       return reply(502, { error: 'Search is unavailable right now' });
