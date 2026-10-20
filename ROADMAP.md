@@ -144,7 +144,7 @@ Monorepo, tooling, CI, core schemas (including sharing entities), repository int
 
 ### Phase 1 — Song library (MVP part 1)
 
-**Status:** mostly done. Left: matching imported rows to search results (#13), tags in the setlist builder (#88).
+**Status:** mostly done. Left: matching imported rows to search results (#13).
 
 Shared song catalog seeded from the existing Supabase project, Spotify search through an Edge Function, adding songs from search with manual entry as a fallback, CRUD for songs, search/filter/sort, tags, status (active/learning/retired), CSV import that matches rows to the catalog.
 **Exit:** the band's full repertoire is in the app, mostly added by search.
@@ -158,7 +158,7 @@ Venues, gigs, upcoming/past views, setlist editor with multiple set blocks, **dr
 
 ### Phase 3 — Cloning and templates
 
-**Status:** not started.
+**Status:** started: a gig's setlist can start from a past gig or a template (#23, #24). Left: saving and managing templates (#25) and "cloned from" lineage (#26).
 
 Clone any setlist (from a past gig, another upcoming gig, or a template) into a new gig, save as template, "cloned from" lineage, with options to drop retired songs and refresh keys.
 **Exit:** a new gig's setlist starts from a previous one in a couple of clicks.
@@ -172,7 +172,7 @@ Band data schema in Supabase with row-level security, our sync protocol (outbox,
 
 ### Phase 5 — History and insights
 
-**Status:** started: marking a gig as played records its performances (#27).
+**Status:** started: marking a gig as played records its performances (#27), and song statistics and hints in the builder are done (#29, #33). Left: the stats dashboard (#31), song history timeline (#30), post-gig ratings (#32) and importing past gigs (#28).
 
 "Mark gig as played" snapshots performances, per-song history timeline, stats dashboard (most and least played, staleness), rating songs after a gig, and highlights in the builder (for example "played at this venue last time").
 **Exit:** you can answer "what haven't we played in a while?" instantly.
