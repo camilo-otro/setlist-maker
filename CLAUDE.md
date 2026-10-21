@@ -36,4 +36,5 @@ A band's song library, gigs and setlists: desktop first (Tauri), the same app on
 - **Real data:** never run tests or the app against the hosted Supabase project. Use the local stack (`pnpm exec supabase start`).
 - **Secrets:** they never go in the repo, `config.toml` or chat. The owner sets them in GitHub, Supabase or Netlify. The publishable key is public by design.
 - **`misc/`:** the owner's own files. It's git-ignored; keep it out of commits.
+- **Language:** everything users see is Colombian Spanish, with tú, using the glossary in ADR 0004. Dates, times and numbers come from `packages/core/src/format.ts` (`es-CO`, 12-hour times), never the device's locale. Code, comments, commits and docs stay in English.
 - **Spotify data:** follow ADR 0003. Results are cached for 24 hours, not kept; artwork isn't stored; Spotify's logo and "Open Spotify" links appear wherever its data does.

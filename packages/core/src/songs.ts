@@ -1,4 +1,5 @@
 import type { Song, SongStatus } from './schemas/song';
+import { collator } from './format';
 
 const NOTES = [
   'C',
@@ -24,9 +25,9 @@ const NOTES = [
 export const MUSICAL_KEYS: readonly string[] = [...NOTES, ...NOTES.map((note) => `${note}m`)];
 
 export const SONG_STATUS_LABELS: Record<SongStatus, string> = {
-  active: 'Active',
-  learning: 'Learning',
-  retired: 'Retired',
+  active: 'Activa',
+  learning: 'En práctica',
+  retired: 'Archivada',
 };
 
 /** Seconds as `m:ss`, e.g. 200 → "3:20". Durations of an hour or more show as `h:mm:ss`. */
@@ -77,7 +78,6 @@ export type SortDirection = 'asc' | 'desc';
 
 const STATUS_ORDER: Record<SongStatus, number> = { active: 0, learning: 1, retired: 2 };
 const KEY_ORDER = new Map(MUSICAL_KEYS.map((key, i) => [key, i]));
-const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
 function sortValue(song: Song, key: SongSortKey): string | number | null {
   switch (key) {

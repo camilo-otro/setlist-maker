@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+// Validation messages people see (e.g. in CSV import) are in Spanish, like the rest of the app
+// (ADR 0004). Set once here, where every schema starts.
+z.config(z.locales.es());
+
 /** IDs of rows we create: UUID v7, so they sort by creation time. */
 export const IdSchema = z.uuid({ version: 'v7' });
 
@@ -73,5 +77,5 @@ export const TagsSchema = z
   .array(text(40))
   .max(30)
   .refine((tags) => new Set(tags.map((tag) => tag.toLowerCase())).size === tags.length, {
-    message: 'Tags must be unique',
+    message: 'Las etiquetas no se pueden repetir',
   });

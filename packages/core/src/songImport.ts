@@ -5,30 +5,72 @@ import { normalizeForSearch, parseDuration } from './songs';
 export const SONG_IMPORT_FIELDS = [
   {
     field: 'title',
-    label: 'Title',
-    aliases: ['title', 'song', 'song title', 'song name', 'name', 'track', 'track name'],
+    label: 'Título',
+    aliases: [
+      'title',
+      'song',
+      'song title',
+      'song name',
+      'name',
+      'track',
+      'track name',
+      'título',
+      'titulo',
+      'canción',
+      'cancion',
+      'nombre',
+    ],
   },
   {
     field: 'artist',
-    label: 'Artist',
-    aliases: ['artist', 'artist name', 'band', 'performer', 'by', 'original artist'],
+    label: 'Artista',
+    aliases: [
+      'artist',
+      'artist name',
+      'band',
+      'performer',
+      'by',
+      'original artist',
+      'artista',
+      'banda',
+      'intérprete',
+      'interprete',
+    ],
   },
-  { field: 'key', label: 'Key', aliases: ['key', 'song key'] },
+  { field: 'key', label: 'Tono', aliases: ['key', 'song key', 'tono', 'tonalidad'] },
   { field: 'tempoBpm', label: 'Tempo (BPM)', aliases: ['bpm', 'tempo'] },
-  { field: 'duration', label: 'Length', aliases: ['duration', 'length', 'time', 'runtime'] },
-  { field: 'tuning', label: 'Tuning', aliases: ['tuning'] },
-  { field: 'tags', label: 'Tags', aliases: ['tags', 'tag', 'labels'] },
-  { field: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments', 'comment'] },
-  { field: 'status', label: 'Status', aliases: ['status'] },
+  {
+    field: 'duration',
+    label: 'Duración',
+    aliases: ['duration', 'length', 'time', 'runtime', 'duración', 'duracion', 'tiempo'],
+  },
+  { field: 'tuning', label: 'Afinación', aliases: ['tuning', 'afinación', 'afinacion'] },
+  { field: 'tags', label: 'Etiquetas', aliases: ['tags', 'tag', 'labels', 'etiquetas'] },
+  {
+    field: 'notes',
+    label: 'Notas',
+    aliases: ['notes', 'note', 'comments', 'comment', 'notas', 'nota', 'comentarios'],
+  },
+  { field: 'status', label: 'Estado', aliases: ['status', 'estado'] },
   {
     field: 'isOriginal',
     label: 'Original',
-    aliases: ['original', 'is original', 'own song', 'ours'],
+    aliases: ['original', 'is original', 'own song', 'ours', 'propia', 'es original'],
   },
   {
     field: 'spotify',
-    label: 'Spotify link',
-    aliases: ['spotify', 'spotify link', 'spotify url', 'spotify id', 'ref link', 'link', 'url'],
+    label: 'Enlace de Spotify',
+    aliases: [
+      'spotify',
+      'spotify link',
+      'spotify url',
+      'spotify id',
+      'ref link',
+      'link',
+      'url',
+      'enlace',
+      'enlace de spotify',
+    ],
   },
 ] as const;
 
@@ -94,7 +136,7 @@ export function readKey(text: string): Parsed<string | null> {
   const clean = text.trim().replace(/♯/g, '#').replace(/♭/g, 'b');
   if (clean === '') return { value: null };
   const match = /^([a-g])\s*([#b]?)\s*(m|min|minor|maj|major)?$/i.exec(clean);
-  if (!match) return { error: `Key "${text.trim()}" isn't a key like C, F#m or Bb` };
+  if (!match) return { error: `El tono "${text.trim()}" no es un tono como C, F#m o Bb` };
   const [, letter, accidental, quality = ''] = match;
   const minor = /^m(in(or)?)?$/i.test(quality) && quality !== 'M';
   return { value: `${letter!.toUpperCase()}${accidental}${minor ? 'm' : ''}` };
@@ -103,7 +145,7 @@ export function readKey(text: string): Parsed<string | null> {
 function readTempo(text: string): Parsed<number | null> {
   const clean = text.trim();
   if (clean === '') return { value: null };
-  if (!/^\d+(\.\d+)?$/.test(clean)) return { error: `Tempo "${clean}" isn't a number` };
+  if (!/^\d+(\.\d+)?$/.test(clean)) return { error: `El tempo "${clean}" no es un número` };
   return { value: Math.round(Number(clean)) };
 }
 
@@ -112,7 +154,7 @@ export function readImportDuration(text: string): Parsed<number | null> {
   const clean = text.trim();
   if (/^\d+\.\d+$/.test(clean)) return { value: Math.round(Number(clean) * 60) };
   const seconds = parseDuration(clean);
-  if (seconds === undefined) return { error: `Length "${clean}" isn't like 3:20` };
+  if (seconds === undefined) return { error: `La duración "${clean}" no es como 3:20` };
   return { value: seconds };
 }
 
@@ -139,20 +181,31 @@ const STATUS_WORDS: Record<string, SongStatus> = {
   retired: 'retired',
   archived: 'retired',
   inactive: 'retired',
+  activa: 'active',
+  activo: 'active',
+  'en práctica': 'learning',
+  'en practica': 'learning',
+  aprendiendo: 'learning',
+  nueva: 'learning',
+  archivada: 'retired',
+  archivado: 'retired',
+  inactiva: 'retired',
 };
 
 function readStatus(text: string): Parsed<SongStatus> {
   const status = STATUS_WORDS[text.trim().toLowerCase()];
   return status
     ? { value: status }
-    : { error: `Status "${text.trim()}" isn't active, learning or retired` };
+    : { error: `El estado "${text.trim()}" no es activa, en práctica ni archivada` };
 }
 
 function readYesNo(text: string): Parsed<boolean> {
   const clean = text.trim().toLowerCase();
-  if (['yes', 'y', 'true', '1', 'x', 'original'].includes(clean)) return { value: true };
+  if (['yes', 'y', 'true', '1', 'x', 'original', 'sí', 'si', 's', 'propia'].includes(clean)) {
+    return { value: true };
+  }
   if (['no', 'n', 'false', '0', '', 'cover'].includes(clean)) return { value: false };
-  return { error: `Original "${text.trim()}" isn't yes or no` };
+  return { error: `Original "${text.trim()}" no es sí ni no` };
 }
 
 /** A Spotify track ID from a link (`open.spotify.com/track/…`), a URI (`spotify:track:…`) or the bare ID. */
@@ -163,7 +216,7 @@ export function readSpotifyId(text: string): Parsed<string | null> {
     /(?:spotify:track:|open\.spotify\.com\/(?:intl-[a-z-]+\/)?track\/)([0-9A-Za-z]{22})/.exec(
       clean,
     ) ?? /^([0-9A-Za-z]{22})$/.exec(clean);
-  return match ? { value: match[1]! } : { error: `"${clean}" isn't a Spotify track link` };
+  return match ? { value: match[1]! } : { error: `"${clean}" no es un enlace de Spotify` };
 }
 
 const NewSongSchema = SongSchema.omit({
@@ -201,7 +254,7 @@ export function checkImportRows(
   mapping: SongImportMapping,
   existing: readonly Pick<Song, 'title' | 'artist'>[],
 ): ImportRow[] {
-  const known = new Map(existing.map((song) => [duplicateKey(song), 'your library']));
+  const known = new Map(existing.map((song) => [duplicateKey(song), 'tu repertorio']));
 
   return rows.map((row, index) => {
     const line = index + 2;
@@ -232,7 +285,7 @@ export function checkImportRows(
       spotifyId: take(readSpotifyId(cell('spotify')), null),
     };
 
-    if (!candidate.title) messages.push('No title');
+    if (!candidate.title) messages.push('No tiene título');
     if (messages.length === 0) {
       const parsed = NewSongSchema.safeParse(candidate);
       if (!parsed.success) {
@@ -247,9 +300,9 @@ export function checkImportRows(
     const key = duplicateKey(candidate);
     const seenIn = known.get(key);
     if (seenIn) {
-      return { line, status: 'duplicate', song: candidate, messages: [`Already in ${seenIn}`] };
+      return { line, status: 'duplicate', song: candidate, messages: [`Ya está en ${seenIn}`] };
     }
-    known.set(key, `line ${line}`);
+    known.set(key, `la línea ${line}`);
     return { line, status: 'ready', song: candidate, messages: [] };
   });
 }

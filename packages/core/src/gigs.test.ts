@@ -19,15 +19,18 @@ describe('daysBetween', () => {
 
 describe('countdownLabel', () => {
   it.each([
-    [0, 'Today'],
-    [1, 'Tomorrow'],
-    [-1, 'Yesterday'],
-    [6, 'In 6 days'],
-    [13, 'In 13 days'],
-    [21, 'In 3 weeks'],
-    [90, 'In 3 months'],
-    [800, 'In 2 years'],
-    [-10, '10 days ago'],
+    [0, 'Hoy'],
+    [1, 'Mañana'],
+    [-1, 'Ayer'],
+    [6, 'En 6 días'],
+    [13, 'En 13 días'],
+    [21, 'En 3 semanas'],
+    [30, 'En 4 semanas'],
+    [60, 'En 2 meses'],
+    [90, 'En 3 meses'],
+    [800, 'En 2 años'],
+    [-10, 'Hace 10 días'],
+    [-400, 'Hace 13 meses'],
   ])('%i days → %s', (days, label) => {
     expect(countdownLabel(days)).toBe(label);
   });

@@ -17,22 +17,24 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((utcDay(to) - utcDay(from)) / 86_400_000);
 }
 
-/** "Today", "Tomorrow", "In 5 days", "In 3 weeks", "In 4 months", or past equivalents. */
+/** "Hoy", "Mañana", "En 5 días", "En 3 semanas", "En 4 meses", or past ones ("Hace 2 días"). */
 export function countdownLabel(days: number): string {
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Tomorrow';
-  if (days === -1) return 'Yesterday';
+  if (days === 0) return 'Hoy';
+  if (days === 1) return 'Mañana';
+  if (days === -1) return 'Ayer';
   const abs = Math.abs(days);
   const amount =
     abs < 14
-      ? `${abs} days`
+      ? `${abs} días`
       : abs < 60
-        ? `${Math.round(abs / 7)} weeks`
+        ? plural(Math.round(abs / 7), 'semana', 'semanas')
         : abs < 730
-          ? `${Math.round(abs / 30.44)} months`
-          : `${Math.round(abs / 365.25)} years`;
-  return days > 0 ? `In ${amount}` : `${amount} ago`;
+          ? plural(Math.round(abs / 30.44), 'mes', 'meses')
+          : plural(Math.round(abs / 365.25), 'año', 'años');
+  return days > 0 ? `En ${amount}` : `Hace ${amount}`;
 }
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /**
  * Upcoming gigs (today or later and not yet played), soonest first, and past gigs (earlier dates

@@ -109,11 +109,11 @@ describe('checkImportRows', () => {
     const [row] = checkImportRows([['', '', 'fast', 'H', '', 'maybe', 'perhaps']], mapping, []);
     expect(row!.status).toBe('invalid');
     expect(row!.messages).toEqual([
-      'Key "H" isn\'t a key like C, F#m or Bb',
-      'Tempo "fast" isn\'t a number',
-      'Status "maybe" isn\'t active, learning or retired',
-      'Original "perhaps" isn\'t yes or no',
-      'No title',
+      'El tono "H" no es un tono como C, F#m o Bb',
+      'El tempo "fast" no es un número',
+      'El estado "maybe" no es activa, en práctica ni archivada',
+      'Original "perhaps" no es sí ni no',
+      'No tiene título',
     ]);
   });
 
@@ -136,8 +136,8 @@ describe('checkImportRows', () => {
     );
     expect(rows.map((row) => [row.status, row.messages])).toEqual([
       ['ready', []],
-      ['duplicate', ['Already in line 2']],
-      ['duplicate', ['Already in your library']],
+      ['duplicate', ['Ya está en la línea 2']],
+      ['duplicate', ['Ya está en tu repertorio']],
       ['ready', []],
     ]);
     expect(countImportRows(rows)).toEqual({ ready: 2, duplicate: 2, invalid: 0 });

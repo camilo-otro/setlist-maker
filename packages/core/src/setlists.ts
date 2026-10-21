@@ -26,11 +26,11 @@ export function setDuration(
 export type EntryWarning = 'duplicate' | 'retired' | 'no-length' | 'missing-song' | 'needs-missing';
 
 export const ENTRY_WARNING_LABELS: Record<EntryWarning, string> = {
-  duplicate: 'Played more than once in this setlist',
-  retired: 'Archived song',
-  'no-length': 'No length set, so the running time is incomplete',
-  'missing-song': 'This song was deleted from the library',
-  'needs-missing': 'Needs something this gig is missing',
+  duplicate: 'Está más de una vez en este setlist',
+  retired: 'Canción archivada',
+  'no-length': 'No tiene duración, así que la duración total está incompleta',
+  'missing-song': 'Esta canción se borró del repertorio',
+  'needs-missing': 'Necesita algo que le falta a este toque',
 };
 
 /** Which of `missing` (a gig's missing tags) the song needs, compared ignoring case. */
