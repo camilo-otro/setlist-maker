@@ -384,6 +384,8 @@ body {
   border-radius: 12px;
   background: var(--sm-surface);
   box-shadow: 0 20px 50px rgb(0 0 0 / 30%);
+  /* Dialogs opened from a row of buttons (e.g. the gig header's) mustn't inherit its nowrap. */
+  white-space: normal;
 }
 
 .modal__title {
@@ -2368,4 +2370,16 @@ body {
 
 .stars__star--on svg {
   fill: currentColor;
+}
+
+/* A gig's Spotify playlist (ADR 0003) */
+.spotify-playlist__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  font-weight: 600;
 }

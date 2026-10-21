@@ -21,6 +21,7 @@ import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { PrintSetlist } from '../setlist/PrintSetlist';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ShareImage } from '../setlist/ShareImage';
+import { SpotifyPlaylist } from '../setlist/SpotifyPlaylist';
 import { StartFromDialog } from '../setlist/StartFromDialog';
 import { useGigSetlist } from '../setlist/useGigSetlist';
 import { useMembership } from '../sharing/MembershipProvider';
@@ -200,6 +201,14 @@ export function GigSetlistPage() {
               )}
             </>
           )}
+          <SpotifyPlaylist
+            bandId={band.id}
+            gig={gig}
+            blocks={blocks}
+            songsById={songsById}
+            sharing={sharing}
+            canEdit={canEdit}
+          />
           <CopyForWhatsApp
             gig={gig}
             venue={venue}

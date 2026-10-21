@@ -10,14 +10,22 @@ import { currentPlatform } from '../storage/workspace';
  * 0003). The desktop app hands it to the system, which opens the Spotify app or the browser.
  */
 export function SpotifyLink({ spotifyId, title }: { spotifyId: string; title: string }) {
-  const href = spotifyTrackUrl(spotifyId);
+  return <OpenSpotify href={spotifyTrackUrl(spotifyId)} label={`Open ${title} in Spotify`} />;
+}
+
+/** "Open Spotify" for a gig's playlist (ADR 0003). */
+export function SpotifyPlaylistLink({ url }: { url: string }) {
+  return <OpenSpotify href={url} label="Open the playlist in Spotify" />;
+}
+
+function OpenSpotify({ href, label }: { href: string; label: string }) {
   return (
     <a
       className="spotify-link"
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`Open ${title} in Spotify`}
+      aria-label={label}
       onClick={(event) => {
         if (currentPlatform() !== 'desktop') return;
         event.preventDefault();
@@ -31,14 +39,14 @@ export function SpotifyLink({ spotifyId, title }: { spotifyId: string; title: st
 }
 
 /**
- * Credits Spotify under results that came from it, with its full logo as its rules require. The
- * logo file is white; it's drawn as a mask so it shows black on light screens and white on dark
- * ones, Spotify's two one-colour versions.
+ * Credits Spotify wherever its data or service shows, with its full logo as its rules require.
+ * The logo file is white; it's drawn as a mask so it shows black on light screens and white on
+ * dark ones, Spotify's two one-colour versions.
  */
-export function SpotifyAttribution() {
+export function SpotifyAttribution({ label = 'Song details from' }: { label?: string }) {
   return (
     <p className="spotify-attribution">
-      Song details from
+      {label}
       <span
         className="spotify-attribution__logo"
         role="img"

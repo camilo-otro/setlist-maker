@@ -192,7 +192,7 @@ When the catalog finds little, the `catalog-search` Edge Function (`supabase/fun
 
 ### Playlist account
 
-Exporting setlists as playlists (in progress) uses one Spotify account of the app's own, a free account that holds every band's public playlists ([ADR 0003](docs/adr/0003-spotify.md), playlist amendment). Bands never sign in to Spotify. The app owner signs the account in once, and its refresh token is kept in Supabase Vault.
+Exporting setlists as playlists (the **Spotify playlist** button on a gig) uses one Spotify account of the app's own, a free account that holds every band's public playlists ([ADR 0003](docs/adr/0003-spotify.md), playlist amendment). Bands never sign in to Spotify. The app owner signs the account in once, and its refresh token is kept in Supabase Vault.
 
 1. In Setlist Maker's Spotify app in the dashboard, add `http://127.0.0.1:8976/callback` as a redirect URI, and add the playlist account's email under User Management.
 2. Set `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SUPABASE_DB_URL` (the database that should keep the token) in your own terminal, or in a `.env` file at the repo's root, which git ignores. Then run `pnpm spotify:connect`. Sign in as the playlist account, not your own.

@@ -19,6 +19,8 @@ import {
   type PushResult,
   type Repository,
   type ShareLinks,
+  createSpotifyPlaylists,
+  type SpotifyPlaylists,
   type SignInCleanup,
 } from '@setlist/storage';
 
@@ -41,6 +43,8 @@ export interface Sharing {
   listen(onChange: () => void): () => void;
   /** Owners' invites for this band. */
   invites: Invites;
+  /** Gigs as playlists in the app's Spotify account (ADR 0003). */
+  playlists: SpotifyPlaylists;
   /** What an invite link offers, before joining. */
   previewInvite(token: string): Promise<InvitePreview | null>;
   /** Joins the band an invite is for, and downloads it. */
@@ -86,6 +90,7 @@ export function createSharing({
     pull: () => puller.pull(bandId),
     listen: (onChange) => signal.listen(bandId, onChange),
     invites: createInvites({ identity, url, key, viewerUrl }),
+    playlists: createSpotifyPlaylists({ identity, url, key }),
     previewInvite: (token) => previewInvite({ url, key }, token),
     joinBand: (token, displayName) =>
       joinBand({ repository, identity, url, key, token, displayName }),

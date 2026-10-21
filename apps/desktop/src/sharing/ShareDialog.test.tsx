@@ -33,6 +33,7 @@ function fakeSharing({ signedIn = false, failShare = 0 } = {}) {
     push: async () => ({ sent: 0, rejected: [] }),
     pull: async () => ({ applied: 0, skipped: 0 }),
     invites: {} as Sharing['invites'],
+    playlists: {} as Sharing['playlists'],
     previewInvite: async () => null,
     joinBand: async () => ({ bandId: '', role: 'editor' as const }),
     finishSignIn: async () => ({ bandIds: [], retired: 0 }),
