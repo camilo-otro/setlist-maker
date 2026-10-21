@@ -6,7 +6,8 @@
  *   pnpm spotify:connect --check           also try creating, filling and removing a test playlist
  *   pnpm spotify:connect --library-scope   also ask for `user-library-modify`, if removing needs it
  *
- * Set these in your own terminal first, never in a file:
+ * Set these in your own terminal, or in a `.env` file at the repo's root (git ignores it; never
+ * put them in a committed file). Values set in the terminal win over the file's.
  *   SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET   the Spotify app's (the same as the function secrets)
  *   SUPABASE_DB_URL                            the database to store the token in, e.g. the local
  *                                              stack's postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -38,12 +39,20 @@ const scopes = args.includes('--library-scope')
   ? [...PLAYLIST_SCOPES, LIBRARY_SCOPE]
   : PLAYLIST_SCOPES;
 
+// pnpm runs scripts from the repo's root, where the `.env` file is. It doesn't have to exist.
+try {
+  process.loadEnvFile('.env');
+} catch (error) {
+  if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+}
+
 const clientId = process.env.SPOTIFY_CLIENT_ID;
 const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 const dbUrl = process.env.SUPABASE_DB_URL;
 if (!clientId || !clientSecret || !dbUrl) {
   console.error(
-    'Set SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SUPABASE_DB_URL first (see the top of this file).',
+    'Set SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SUPABASE_DB_URL first, in the terminal or in ' +
+      '.env at the repo’s root (see the top of this file).',
   );
   process.exit(1);
 }
