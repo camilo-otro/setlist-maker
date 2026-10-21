@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19, amended 2026-10-21 for playlist export
-- **Issue:** #54 (shapes #57 and #58)
+- **Issue:** #54 (shapes #57 and #58); playlist export #98
 
 ## Context
 
@@ -91,11 +91,11 @@ The existing `catalog_tracks.source = 'spotify'` value is no longer used for lon
 - **One app-wide account, signed in by the app owner.** A script the app owner runs in their own terminal (like the catalog seed) does the sign-in through a local `127.0.0.1` address and stores the refresh token in Vault. So the app has no web page for connecting an account, and nothing a stranger could reach. The same script signs the account in again if Spotify ever drops it.
 - **Who can export:** owners and editors of a band. Viewers can't, and nor can a band that was never shared, because the server can't tell who is asking.
 - **Public playlists.** Spotify's support pages say nobody can open a private playlist, not even with its link. Share links made in the Spotify app work for 7 days, and the API can't make them. Public playlists open from a plain link. Asking only for `playlist-modify-public` also keeps the access we hold as small as it can be (Policy I.1.i).
-- **Every band's playlists share one profile.** Public playlists show on the account's profile, so anyone looking there sees them all. To keep that harmless:
+- **Every band's playlists share one account.** Public playlists normally show on the account's profile, so anyone looking there would see them all. To keep that harmless:
   - **Neutral names:** a playlist is named after the gig (its title and date), with the description "Made with Setlist Maker". The band's name isn't in it.
   - **Bands can remove theirs:** a **Remove from Spotify** button next to the link deletes the playlist from the account. A band that wants its own private copy saves the songs into a playlist of its own in Spotify first.
   - **Removing works at once:** the check above found a removed playlist gone straight away.
-  - **Still to check:** whether the account can keep new public playlists off its profile with a setting, which would make the profile empty while links still work. The app only promises this if the check confirms it.
+  - **The profile lists none of them:** the account's Spotify setting "People can see the playlists you've added to your profile" is off (since 2026-10-21). The playlists stay public, so their links still open. Whoever manages the account should leave the setting off. The app doesn't mention the profile, only that anyone with a playlist's link can open it.
 - **One playlist per gig.** Exporting again replaces the playlist's songs and updates its name, so edits to the setlist don't make duplicates. If the playlist was deleted in Spotify, the next export makes a new one.
 - **Songs without a Spotify ID** (originals, songs typed in or imported) are left out, and the app lists them before exporting.
 - **The client sends the setlist.** The export sends the song IDs in order, so it works with changes that haven't synced yet. The server checks the caller's role in the band, not the setlist itself.

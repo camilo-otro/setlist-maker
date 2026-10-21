@@ -430,6 +430,12 @@ issues:
     body: |
       High-contrast full-screen view with the current and next song. Keyboard or pedal (arrow keys) to advance.
 
+  - title: "Export a gig's setlist as a Spotify playlist"
+    milestone: "Phase 6 — Output & stage use"
+    labels: ["type:feature", "area:backend", "area:ui"]
+    body: |
+      A gig's songs with Spotify links as a public playlist in the app's own Spotify account, created, updated or removed from the gig page. See ADR 0003. Done in #97.
+
   - title: "JSON backup and restore"
     milestone: "Phase 6 — Output & stage use"
     labels: ["type:feature", "area:core", "area:storage", "priority:high"]

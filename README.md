@@ -197,6 +197,7 @@ Exporting setlists as playlists (the **Spotify playlist** button on a gig) uses 
 1. In Setlist Maker's Spotify app in the dashboard, add `http://127.0.0.1:8976/callback` as a redirect URI, and add the playlist account's email under User Management.
 2. Set `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SUPABASE_DB_URL` (the database that should keep the token) in your own terminal, or in a `.env` file at the repo's root, which git ignores. Then run `pnpm spotify:connect`. Sign in as the playlist account, not your own.
 3. `--check` also creates, fills and removes a test playlist, and reports each step.
+4. In Spotify, signed in as the playlist account, turn off **People can see the playlists you've added to your profile** (in its privacy settings). The playlists stay public, so their links still open, but the profile doesn't list every band's gigs.
 
 Run it again if Spotify ever stops accepting the token.
 

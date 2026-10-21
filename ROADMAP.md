@@ -179,9 +179,9 @@ Band data schema in Supabase with row-level security, our sync protocol (outbox,
 
 ### Phase 6 — Output and stage use
 
-**Status:** printing (#34) and sharing to chats (#83, #84) are done; backup and export are left.
+**Status:** printing (#34), sharing to chats (#83, #84) and Spotify playlists (#98) are done; backup and export are left.
 
-Print/PDF setlists (large font, one page per set), sharing a setlist to chats as text or a picture, JSON backup/restore, export to CSV. Stage mode was dropped: bands print their setlists.
+Print/PDF setlists (large font, one page per set), sharing a setlist to chats as text or a picture, a gig's setlist as a Spotify playlist, JSON backup/restore, export to CSV. Stage mode was dropped: bands print their setlists.
 **Exit:** you can print the setlist used on stage.
 
 ### Phase 7 — Release and distribution

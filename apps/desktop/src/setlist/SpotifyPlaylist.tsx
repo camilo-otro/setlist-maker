@@ -170,8 +170,8 @@ function PlaylistDialog({
       ) : (
         <>
           <p className="muted">
-            The playlist is public: anyone with its link can open it, and it shows on the Setlist
-            Maker account&apos;s Spotify profile. Its name is the gig&apos;s title and date.
+            The playlist is public: anyone with its link can open it. Its name is the gig&apos;s
+            title and date, and it&apos;s kept in Setlist Maker&apos;s own Spotify account.
           </p>
           {playlist && (
             <p className="spotify-playlist__link">
