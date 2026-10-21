@@ -11,14 +11,15 @@
     "dev:desktop": "pnpm --filter @setlist/desktop dev",
     "dev:viewer": "pnpm --filter @setlist/viewer dev",
     "build": "pnpm -r build",
-    "test": "pnpm -r test && vitest run supabase/functions",
-    "typecheck": "pnpm -r typecheck && tsc -p supabase/seed/tsconfig.json && tsc -p supabase/functions/tsconfig.json",
+    "test": "pnpm -r test && vitest run supabase/functions supabase/scripts",
+    "typecheck": "pnpm -r typecheck && tsc -p supabase/seed/tsconfig.json && tsc -p supabase/functions/tsconfig.json && tsc -p supabase/scripts/tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "check:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
-    "seed:catalog": "tsx supabase/seed/seed-catalog.ts"
+    "seed:catalog": "tsx supabase/seed/seed-catalog.ts",
+    "spotify:connect": "tsx supabase/scripts/spotify-connect.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

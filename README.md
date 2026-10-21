@@ -189,3 +189,13 @@ When the catalog finds little, the `catalog-search` Edge Function (`supabase/fun
   The Spotify app's owner must keep Spotify Premium, or Spotify stops answering.
 - **Deploys:** the Supabase workflow deploys the function on every push to `main`, after the migrations.
 - **Locally:** run `pnpm exec supabase functions serve catalog-search`. Without the secrets it answers from the catalog alone. The logic is tested in Node with `vitest run supabase/functions`.
+
+### Playlist account
+
+Exporting setlists as playlists (in progress) uses one Spotify account of the app's own, a free account that holds every band's public playlists ([ADR 0003](docs/adr/0003-spotify.md), playlist amendment). Bands never sign in to Spotify. The app owner signs the account in once, and its refresh token is kept in Supabase Vault.
+
+1. In the Spotify app's dashboard, add `http://127.0.0.1:8976/callback` as a redirect URI, and add the playlist account's email to the app's users.
+2. In your own terminal, set `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SUPABASE_DB_URL` (the database that should keep the token), then run `pnpm spotify:connect`. Sign in as the playlist account, not your own.
+3. `--check` also creates, fills and removes a test playlist, and reports each step. `--library-scope` asks for `user-library-modify` too, in case removing a playlist needs it.
+
+Run it again if Spotify ever stops accepting the token.
