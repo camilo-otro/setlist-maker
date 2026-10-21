@@ -84,4 +84,6 @@ jobs:
 
       # Spotify's client ID and secret are function secrets, set once by hand (README, "Spotify").
       - name: Deploy Edge Functions
-        run: pnpm exec supabase functions deploy catalog-search --project-ref "$SUPABASE_PROJECT_ID" --use-api
+        run: |
+          pnpm exec supabase functions deploy catalog-search --project-ref "$SUPABASE_PROJECT_ID" --use-api
+          pnpm exec supabase functions deploy spotify-playlist --project-ref "$SUPABASE_PROJECT_ID" --use-api

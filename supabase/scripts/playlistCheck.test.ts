@@ -17,6 +17,7 @@ function fakeApi(fail: Partial<Record<keyof SpotifyAccountApi, SpotifyError>> = 
     searchTracks: () => run('searchTracks', () => songs),
     createPlaylist: () =>
       run('createPlaylist', () => ({ id: 'p1', url: 'https://open.spotify.com/playlist/p1' })),
+    updateDetails: () => run('updateDetails', () => undefined),
     replaceItems: () => run('replaceItems', () => undefined),
     playlist: () =>
       run('playlist', () => {

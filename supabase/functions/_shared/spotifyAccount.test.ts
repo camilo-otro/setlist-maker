@@ -60,6 +60,7 @@ describe('tokens', () => {
       accessToken: 'access',
       refreshToken: 'refresh',
       scopes: ['playlist-modify-public'],
+      expiresIn: 3600,
     });
     const { url, init } = requests[0]!;
     expect(url).toBe('https://accounts.spotify.com/api/token');
@@ -113,6 +114,23 @@ describe('spotifyAccountApi', () => {
     expect((requests[0]!.init.headers as Record<string, string>).Authorization).toBe(
       'Bearer access',
     );
+  });
+
+  it('renames a playlist', async () => {
+    const { impl, requests } = fakeFetch(new Response(null, { status: 200 }));
+    await spotifyAccountApi(impl, 'access').updateDetails(
+      'p1',
+      'Saturday',
+      'Made with Setlist Maker',
+    );
+    expect([requests[0]!.init.method, requests[0]!.url]).toEqual([
+      'PUT',
+      'https://api.spotify.com/v1/playlists/p1',
+    ]);
+    expect(JSON.parse(requests[0]!.init.body as string)).toEqual({
+      name: 'Saturday',
+      description: 'Made with Setlist Maker',
+    });
   });
 
   it('reads a playlist’s songs and removes it through the library', async () => {

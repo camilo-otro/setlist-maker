@@ -53,6 +53,8 @@ export interface Tokens {
   refreshToken: string | null;
   /** The scopes Spotify actually granted. */
   scopes: string[];
+  /** Seconds until the access token expires. */
+  expiresIn: number;
 }
 
 async function failure(response: Response): Promise<SpotifyError> {
@@ -86,11 +88,13 @@ async function requestTokens(
     access_token: string;
     refresh_token?: string;
     scope?: string;
+    expires_in?: number;
   };
   return {
     accessToken: json.access_token,
     refreshToken: json.refresh_token ?? null,
     scopes: (json.scope ?? '').split(' ').filter(Boolean),
+    expiresIn: json.expires_in ?? 3600,
   };
 }
 
@@ -171,6 +175,11 @@ export function spotifyAccountApi(fetchImpl: typeof fetch, accessToken: string) 
         { name, description, public: true },
       );
       return { id: playlist.id, url: playlist.external_urls.spotify };
+    },
+
+    /** Renames the playlist and sets its description. */
+    async updateDetails(playlistId: string, name: string, description: string): Promise<void> {
+      await call('PUT', `/playlists/${encodeURIComponent(playlistId)}`, { name, description });
     },
 
     /** Replaces the playlist's songs (up to 100) with these, in order. */
