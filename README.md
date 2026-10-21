@@ -186,6 +186,24 @@ When the catalog finds little, the `catalog-search` Edge Function (`supabase/fun
   ```sh
   npx supabase secrets set --project-ref <project id> SPOTIFY_CLIENT_ID=… SPOTIFY_CLIENT_SECRET=…
   ```
-  The Spotify app's owner must keep Spotify Premium, or Spotify stops answering.
+  They're from Setlist Maker's own Spotify app, the same one the playlist account signs in to. Don't reuse another app's: signing in to the Rock the House app failed (ADR 0003). The Spotify app's owner must keep Spotify Premium, or Spotify stops answering.
 - **Deploys:** the Supabase workflow deploys the function on every push to `main`, after the migrations.
 - **Locally:** run `pnpm exec supabase functions serve catalog-search`. Without the secrets it answers from the catalog alone. The logic is tested in Node with `vitest run supabase/functions`.
+
+### Playlist account
+
+Exporting setlists as playlists (the **Spotify playlist** button on a gig) uses one Spotify account of the app's own, a free account that holds every band's public playlists ([ADR 0003](docs/adr/0003-spotify.md), playlist amendment). Bands never sign in to Spotify. The app owner signs the account in once, and its refresh token is kept in Supabase Vault.
+
+1. In Setlist Maker's Spotify app in the dashboard, add `http://127.0.0.1:8976/callback` as a redirect URI, and add the playlist account's email under User Management.
+2. Set `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SUPABASE_DB_URL` (the database that should keep the token) in your own terminal, or in a `.env` file at the repo's root, which git ignores. Then run `pnpm spotify:connect`. Sign in as the playlist account, not your own.
+3. `--check` also creates, fills and removes a test playlist, and reports each step.
+
+Run it again if Spotify ever stops accepting the token.
+
+The `spotify-playlist` Edge Function (`supabase/functions/spotify-playlist`) does the exporting. A signed-in band member POSTs JSON with their own token:
+
+- `{ action: 'get', bandId, gigId }` returns `{ playlist: { id, url } | null }`. Any member can ask.
+- `{ action: 'export', bandId, gigId, name, trackIds }` creates the gig's public playlist, or updates the one it has, with up to 100 Spotify track IDs in order. Owners and editors only, 20 exports per band per hour.
+- `{ action: 'remove', bandId, gigId }` deletes it from Spotify. Owners and editors only.
+
+It answers `401` without a member's token, `403` for people outside the band (or viewers changing things), `429` over the budget, and `503` with `not-connected` when the playlist account isn't signed in. It uses the same `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` secrets as search, which must be Setlist Maker's own app, since the account's token belongs to it. Locally: `pnpm exec supabase functions serve spotify-playlist --env-file <file with the two>`.

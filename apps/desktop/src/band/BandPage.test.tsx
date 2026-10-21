@@ -71,6 +71,7 @@ async function setup(
     share: async () => {},
     push: async () => ({ sent: 0, rejected: [] }),
     pull: async () => ({ applied: 0, skipped: 0 }),
+    playlists: { get: async () => null } as unknown as Sharing['playlists'],
     invites: {
       pending: async () => [],
       create: async () => ({}) as InviteInfo,

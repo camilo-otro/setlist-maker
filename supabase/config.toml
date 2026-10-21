@@ -429,3 +429,8 @@ enabled = true
 # ask for one; it only serves public catalog data, and limits Spotify searches per caller.
 [functions.catalog-search]
 verify_jwt = false
+
+# Gigs as Spotify playlists (ADR 0003). The function checks the caller itself: their token goes to
+# band_role(), so the gateway doesn't need to verify it too.
+[functions.spotify-playlist]
+verify_jwt = false
