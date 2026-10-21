@@ -8,11 +8,10 @@ const ACCOUNTS = 'https://accounts.spotify.com';
 const API = 'https://api.spotify.com/v1';
 
 /**
- * What the app asks the account for: changing its public playlists, and nothing else. Removing a
- * playlist may need `user-library-modify` too; the sign-in script's check finds out.
+ * What the app asks the account for: changing its public playlists, and nothing else. That's
+ * enough to create, fill and remove them (checked with the sign-in script's --check).
  */
 export const PLAYLIST_SCOPES = ['playlist-modify-public'];
-export const LIBRARY_SCOPE = 'user-library-modify';
 
 export interface SpotifyCredentials {
   clientId: string;

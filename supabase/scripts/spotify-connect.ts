@@ -4,7 +4,6 @@
  *
  *   pnpm spotify:connect                   sign in and store the token
  *   pnpm spotify:connect --check           also try creating, filling and removing a test playlist
- *   pnpm spotify:connect --library-scope   also ask for `user-library-modify`, if removing needs it
  *
  * Set these in your own terminal, or in a `.env` file at the repo's root (git ignores it; never
  * put them in a committed file). Values set in the terminal win over the file's.
@@ -23,7 +22,6 @@ import postgres from 'postgres';
 import {
   authorizeUrl,
   exchangeCode,
-  LIBRARY_SCOPE,
   PLAYLIST_SCOPES,
   spotifyAccountApi,
 } from '../functions/_shared/spotifyAccount.ts';
@@ -35,9 +33,6 @@ const WAIT_MINUTES = 5;
 
 const args = process.argv.slice(2);
 const check = args.includes('--check');
-const scopes = args.includes('--library-scope')
-  ? [...PLAYLIST_SCOPES, LIBRARY_SCOPE]
-  : PLAYLIST_SCOPES;
 
 // pnpm runs scripts from the repo's root, where the `.env` file is. It doesn't have to exist.
 try {
@@ -114,7 +109,12 @@ function waitForCode(state: string): Promise<string> {
 
 async function main() {
   const state = randomBytes(16).toString('hex');
-  const url = authorizeUrl({ clientId: clientId!, redirectUri: REDIRECT_URI, state, scopes });
+  const url = authorizeUrl({
+    clientId: clientId!,
+    redirectUri: REDIRECT_URI,
+    state,
+    scopes: PLAYLIST_SCOPES,
+  });
   const code = waitForCode(state);
   console.log(
     'Sign in on Spotify with the app’s playlist account, not your own. If the page shows your own ' +

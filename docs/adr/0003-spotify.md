@@ -10,7 +10,11 @@ We want "Add song" to search Spotify. Picking a result should fill in the title,
 
 **Amendment (2026-10-21):** we also want to export a gig's setlist as a Spotify playlist. Creating a playlist needs a Spotify user, because the app's own token can't own one. So the app has **one Spotify account of its own**, a free account separate from the app owner's Premium one. The app owner signs it in once, and every band's playlists are created in it. Bands never sign in to Spotify, and nobody has to approve them in Spotify's dashboard.
 
-We first considered one account per band. We dropped it: each would take one of the app's 5 sign-in places (below), so a 6th band could never export, and the app owner would have to add every band's account in Spotify's dashboard by hand. The sections below mark what changed with **(playlists)**.
+We first considered one account per band. We dropped it: each would take one of the app's 5 sign-in places (below), so a 6th band could never export, and the app owner would have to add every band's account in Spotify's dashboard by hand.
+
+**Checked on 2026-10-21** with `pnpm spotify:connect --check`: signed in as a free account on the dedicated Setlist Maker app, with only `playlist-modify-public`, it created a public playlist, filled it, read it back and removed it. The playlist opened from its link in a private window, where nobody was signed in to Spotify. After removing it, it was gone.
+
+The sections below mark what changed with **(playlists)**.
 
 This was reviewed against the following documents:
 
@@ -29,9 +33,10 @@ This was reviewed against the following documents:
 - **Up to 5 users may sign in with Spotify.** Band members never sign in, so this limit doesn't apply to them.
   - Search uses the **client credentials** flow, a token for the app itself, with no user involved.
   - Spotify's guide doesn't say outright that client credentials fall outside the 5-user cap. We rely on that reading, and if it turns out wrong, search breaks for anyone past the fifth user.
-  - **(playlists)** The app's playlist account does sign in, and takes one of the 5 places, however many bands use it. The Spotify app is shared with Rock the House, so the places are shared too.
+  - **(playlists)** The app's playlist account does sign in, and takes one of the 5 places, however many bands use it.
   - **(playlists)** That account must be added to the app's user list in Spotify's dashboard first. Otherwise Spotify lets it sign in but refuses its requests with `403`.
-  - **(playlists)** Only the app owner needs Premium, so the playlist account can be a free one. Spotify's docs don't say outright that a free account can create playlists through the API, so this is checked with a real sign-in before anything is built on it. If it fails, the app owner's own account holds the playlists instead.
+  - **(playlists)** Only the app owner needs Premium, so the playlist account is a free one. Spotify's docs don't say outright that a free account can create playlists through the API; the check above confirmed it can.
+- **(playlists) Setlist Maker has its own Spotify app.** It first shared the Rock the House app, which had only ever used client credentials. Signing in to that app failed every time with `server_error` once the user agreed, for free and Premium accounts alike, and Spotify gave no reason. A new app, allowed since July 2026 (up to 25 per developer), signed in at once. It also gives Setlist Maker its own 5 sign-in places, and its own name on Spotify's consent screen. Quotas are per developer, so both apps share one quota.
 - **Quotas are per developer account (July 2026).** Over the quota, Spotify answers `429` with `QUOTA_EXCEEDED`, and we fall back to catalog-only results.
   - Rule IV.2.d.ii bars calls "not strictly required". So: search only after the user stops typing, require at least 2 characters, and serve repeat searches from our cache.
 - **Extended quota is out of reach.** Third-party reports put the bar at about 250k monthly users for an organisation, and Spotify doesn't publish one. We design to stay in development mode.
@@ -47,8 +52,8 @@ This was reviewed against the following documents:
 - **(playlists)** Since February 2026, an account can only create playlists for itself, and the playlist's songs are called `items`:
   - `POST /me/playlists` creates one (replacing `POST /users/{id}/playlists`).
   - `PUT /playlists/{id}/items` replaces its songs in one go, up to 100, which covers any setlist. `POST /playlists/{id}/items` adds more if ever needed.
-  - `DELETE /me/library` with the playlist's URI removes a playlist from the account, which is what "delete" means in Spotify (it replaced unfollowing a playlist).
-- **(playlists)** Signing in uses the **authorization code** flow, with the client secret already held for search. We ask only for `playlist-modify-public` (see Playlists below), plus whatever `DELETE /me/library` turns out to need for a playlist.
+  - `DELETE /me/library` with the playlist's URI removes a playlist from the account, which is what "delete" means in Spotify (it replaced unfollowing a playlist). It works with `playlist-modify-public` alone.
+- **(playlists)** Signing in uses the **authorization code** flow, with the client secret already held for search. We ask only for `playlist-modify-public` (see Playlists below).
   - Refresh tokens may be replaced on any refresh. Keep the new one when Spotify sends it.
   - Refresh tokens can stop working (`invalid_grant`). Then exports stop until the app owner signs the account in again.
 
@@ -89,7 +94,8 @@ The existing `catalog_tracks.source = 'spotify'` value is no longer used for lon
 - **Every band's playlists share one profile.** Public playlists show on the account's profile, so anyone looking there sees them all. To keep that harmless:
   - **Neutral names:** a playlist is named after the gig (its title and date), with the description "Made with Setlist Maker". The band's name isn't in it.
   - **Bands can remove theirs:** a **Remove from Spotify** button next to the link deletes the playlist from the account. A band that wants its own private copy saves the songs into a playlist of its own in Spotify first.
-  - **To check while building:** whether a deleted playlist's link stops working at once, since Spotify keeps deleted playlists restorable for a while. And whether the account can keep new public playlists off its profile with a setting, which would make the profile empty while links still work. The app only promises what the check confirms.
+  - **Removing works at once:** the check above found a removed playlist gone straight away.
+  - **Still to check:** whether the account can keep new public playlists off its profile with a setting, which would make the profile empty while links still work. The app only promises this if the check confirms it.
 - **One playlist per gig.** Exporting again replaces the playlist's songs and updates its name, so edits to the setlist don't make duplicates. If the playlist was deleted in Spotify, the next export makes a new one.
 - **Songs without a Spotify ID** (originals, songs typed in or imported) are left out, and the app lists them before exporting.
 - **The client sends the setlist.** The export sends the song IDs in order, so it works with changes that haven't synced yet. The server checks the caller's role in the band, not the setlist itself.
@@ -106,7 +112,7 @@ The existing `catalog_tracks.source = 'spotify'` value is no longer used for lon
 
 ## Decision
 
-- Register one development-mode app, owned by the band admin, who has Premium.
+- Register one development-mode app, owned by the band admin, who has Premium. **(playlists)** Setlist Maker's own app, not the one shared with Rock the House (see Access).
 - Search Spotify only from the `catalog-search` Edge Function, using client credentials.
 - Cache Spotify results for 24 hours, and keep only Spotify IDs and ISRCs, plus the fields the band confirms, on its songs.
 - Show the Spotify logo and an "Open Spotify" link wherever Spotify data appears.
