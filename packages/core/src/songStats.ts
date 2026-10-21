@@ -1,6 +1,7 @@
 import { daysBetween } from './gigs';
 import type { Gig } from './schemas/gig';
 import type { Performance } from './schemas/performance';
+import type { Song } from './schemas/song';
 
 /**
  * What the band's history says about each song (#29): pure functions over the performances
@@ -135,4 +136,78 @@ export function sortByHistory<T extends { id: string }>(
     if (sort === 'least-played') return times(a) - times(b);
     return last(a).localeCompare(last(b));
   });
+}
+
+/** One song's performances, most recent first, for its history timeline (#30). */
+export function performancesOf<T extends PerformanceLike>(
+  songId: string,
+  performances: readonly T[],
+): T[] {
+  return performances
+    .filter((p) => p.songId === songId && !p.deletedAt)
+    .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
+}
+
+type PlayedGigLike = Pick<Gig, 'id' | 'date' | 'status' | 'deletedAt'>;
+
+/** Gigs marked as played, leaving out deleted ones. */
+export function playedGigs<T extends PlayedGigLike>(gigs: readonly T[]): T[] {
+  return gigs.filter((gig) => gig.status === 'played' && !gig.deletedAt);
+}
+
+/**
+ * How many played gigs there have been since each song was last played, for "not played in N
+ * gigs" (#31). A song never played counts every played gig. Another gig on the day it was last
+ * played doesn't count, since performances only know their date.
+ */
+export function gigsSinceLastPlayed(
+  songIds: readonly string[],
+  stats: ReadonlyMap<string, SongStats>,
+  gigs: readonly PlayedGigLike[],
+): Map<string, number> {
+  const dates = playedGigs(gigs).map((gig) => gig.date);
+  return new Map(
+    songIds.map((id) => {
+      const last = stats.get(id)?.lastPlayed ?? '';
+      return [id, dates.filter((date) => date > last).length];
+    }),
+  );
+}
+
+/** Played gigs in each of the `months` calendar months up to and including today's, oldest first. */
+export function gigsPerMonth(
+  gigs: readonly PlayedGigLike[],
+  today: string,
+  months = 12,
+): { month: string; gigs: number }[] {
+  const counts = new Map<string, number>();
+  for (const gig of playedGigs(gigs)) {
+    const month = gig.date.slice(0, 7);
+    counts.set(month, (counts.get(month) ?? 0) + 1);
+  }
+  const [year, month] = today.split('-').map(Number);
+  return Array.from({ length: months }, (_, i) => {
+    // Months counted from year 0, so stepping back wraps the year.
+    const index = year! * 12 + month! - 1 - (months - 1 - i);
+    const key = `${String(Math.floor(index / 12)).padStart(4, '0')}-${String((index % 12) + 1).padStart(2, '0')}`;
+    return { month: key, gigs: counts.get(key) ?? 0 };
+  });
+}
+
+/**
+ * Originals against covers (#31): how many of each are in the repertoire (songs not archived) and
+ * how many times each kind has been played.
+ */
+export function originalsAndCovers(
+  songs: readonly Pick<Song, 'id' | 'isOriginal' | 'status' | 'deletedAt'>[],
+  stats: ReadonlyMap<string, SongStats>,
+): Record<'originals' | 'covers', { songs: number; plays: number }> {
+  const result = { originals: { songs: 0, plays: 0 }, covers: { songs: 0, plays: 0 } };
+  for (const song of songs) {
+    if (song.deletedAt) continue;
+    const kind = song.isOriginal ? result.originals : result.covers;
+    if (song.status !== 'retired') kind.songs += 1;
+    kind.plays += stats.get(song.id)?.timesPlayed ?? 0;
+  }
+  return result;
 }

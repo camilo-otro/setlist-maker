@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryRepository } from '../memory';
-import { createGig, markGigPlayed, unmarkGigPlayed } from './gigs';
+import { createGig, markGigPlayed, ratePerformances, unmarkGigPlayed } from './gigs';
 
 async function setup() {
   const repository = createMemoryRepository();
@@ -110,5 +110,73 @@ describe('markGigPlayed', () => {
     await unmarkGigPlayed(repository, gig.id);
     expect((await repository.gigs.get(gig.id))!.status).toBe('upcoming');
     expect(await repository.performances.list({ gigId: gig.id })).toEqual([]);
+  });
+
+  it('keeps ratings and notes when marked again', async () => {
+    const { repository, gig, a, b } = await gigWithSongs();
+    const both = (songs: string[]) => [
+      { setName: 'Set 1', songs: songs.map((songId) => ({ songId, key: null })) },
+    ];
+    const [first, , second] = await markGigPlayed(repository, gig.id, both([a.id, b.id, a.id]));
+    await ratePerformances(repository, [
+      { performanceId: first!.id, rating: 5, notes: 'Great opener' },
+      { performanceId: second!.id, rating: 2, notes: null },
+    ]);
+
+    // b dropped and a moved: each play of a keeps its own rating, in order.
+    const again = await markGigPlayed(repository, gig.id, both([a.id, a.id]));
+    expect(again.map((p) => [p.positionInSet, p.rating, p.notes])).toEqual([
+      [1, 5, 'Great opener'],
+      [2, 2, null],
+    ]);
+  });
+});
+
+describe('ratePerformances', () => {
+  it('saves and clears ratings and notes', async () => {
+    const { repository, bandId } = await setup();
+    const { gig } = await createGig(repository, { bandId, title: 'Friday', date: '2026-10-23' });
+    const [song] = await repository.songs.createMany([{ bandId, title: 'Basurita' }]);
+    const [played] = await markGigPlayed(repository, gig.id, [
+      { setName: 'Set 1', songs: [{ songId: song!.id, key: null }] },
+    ]);
+    await ratePerformances(repository, [
+      { performanceId: played!.id, rating: 4, notes: 'Too fast' },
+    ]);
+    expect(await repository.performances.get(played!.id)).toMatchObject({
+      rating: 4,
+      notes: 'Too fast',
+    });
+
+    await ratePerformances(repository, [{ performanceId: played!.id, rating: null, notes: null }]);
+    expect(await repository.performances.get(played!.id)).toMatchObject({
+      rating: null,
+      notes: null,
+    });
+  });
+
+  it('saves nothing when one rating is invalid', async () => {
+    const { repository, bandId } = await setup();
+    const { gig } = await createGig(repository, { bandId, title: 'Friday', date: '2026-10-23' });
+    const [x, y] = await repository.songs.createMany([
+      { bandId, title: 'One' },
+      { bandId, title: 'Two' },
+    ]);
+    const [p1, p2] = await markGigPlayed(repository, gig.id, [
+      {
+        setName: 'Set 1',
+        songs: [
+          { songId: x!.id, key: null },
+          { songId: y!.id, key: null },
+        ],
+      },
+    ]);
+    await expect(
+      ratePerformances(repository, [
+        { performanceId: p1!.id, rating: 3, notes: null },
+        { performanceId: p2!.id, rating: 9, notes: null },
+      ]),
+    ).rejects.toThrow();
+    expect((await repository.performances.get(p1!.id))!.rating).toBeNull();
   });
 });

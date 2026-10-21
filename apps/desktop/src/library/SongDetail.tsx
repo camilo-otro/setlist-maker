@@ -1,9 +1,28 @@
-import { formatDuration, SONG_STATUS_LABELS, type Song } from '@setlist/core';
-import { History, Pencil, X } from 'lucide-react';
+import {
+  formatDuration,
+  SONG_STATUS_LABELS,
+  type Gig,
+  type Performance,
+  type Song,
+} from '@setlist/core';
+import { History, Pencil, Star, X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 import { SpotifyLink } from '../components/SpotifyLink';
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+/** A `YYYY-MM-DD` date as a local date, so it isn't shifted a day by the time zone. */
+const localDate = (date: string) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y!, m! - 1, d!);
+};
+
+/** One time the song was played, with its gig and venue if they still exist. */
+export interface HistoryEntry {
+  performance: Performance;
+  gig?: Gig;
+  venueName?: string;
+}
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -17,10 +36,13 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 /** Everything about one song, beside the table. Editing happens in the song dialog. */
 export function SongDetail({
   song,
+  history,
   onEdit,
   onClose,
 }: {
   song: Song;
+  /** Most recent first; undefined while loading. */
+  history?: HistoryEntry[];
   /** Leave out for viewers, who can't edit. */
   onEdit?: () => void;
   onClose: () => void;
@@ -93,10 +115,16 @@ export function SongDetail({
 
       <section className="song-detail__section song-detail__history" aria-label="History">
         <h3>History</h3>
-        <p className="muted">
-          <History size={16} aria-hidden="true" />
-          Once you mark gigs as played, this shows when and where you played this song.
-        </p>
+        {history && history.length > 0 ? (
+          <SongTimeline song={song} history={history} />
+        ) : (
+          <p className="muted">
+            <History size={16} aria-hidden="true" />
+            {history
+              ? 'Not played yet. Once you mark gigs as played, this shows when and where you played this song.'
+              : 'Loading history…'}
+          </p>
+        )}
       </section>
 
       <p className="song-detail__dates muted">
@@ -105,5 +133,47 @@ export function SongDetail({
           ` · Edited ${dateFormat.format(new Date(song.updatedAt))}`}
       </p>
     </aside>
+  );
+}
+
+/** Each time the song was played (#30): date, gig and venue, where in the set, rating and notes. */
+function SongTimeline({ song, history }: { song: Song; history: HistoryEntry[] }) {
+  const last = history[0]!.performance.playedAt;
+  const first = history.at(-1)!.performance.playedAt;
+  return (
+    <>
+      <p className="song-timeline__summary">
+        Played {history.length === 1 ? 'once' : `${history.length} times`}
+        {history.length > 1 && `, first on ${dateFormat.format(localDate(first))}`}
+        {`, last on ${dateFormat.format(localDate(last))}`}
+      </p>
+      <ol className="song-timeline">
+        {history.map(({ performance: p, gig, venueName }) => {
+          const date = dateFormat.format(localDate(p.playedAt));
+          return (
+            <li key={p.id} className="song-timeline__item">
+              <div className="song-timeline__when">
+                {gig ? <Link to={`/gigs/${gig.id}`}>{date}</Link> : date}
+                {p.rating !== null && (
+                  <span className="song-timeline__rating" aria-label={`Rated ${p.rating} of 5`}>
+                    {Array.from({ length: p.rating }, (_, i) => (
+                      <Star key={i} size={12} aria-hidden="true" />
+                    ))}
+                  </span>
+                )}
+              </div>
+              <div className="song-timeline__where">
+                {[gig?.title ?? 'Deleted gig', venueName].filter(Boolean).join(' · ')}
+              </div>
+              <div className="muted">
+                {p.setName}, song {p.positionInSet}
+                {p.keySnapshot && p.keySnapshot !== song.key && ` · in ${p.keySnapshot}`}
+              </div>
+              {p.notes && <p className="song-timeline__notes">{p.notes}</p>}
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }

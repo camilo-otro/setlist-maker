@@ -10,11 +10,12 @@ import {
   setlistWarnings,
   type EntryWarning,
 } from '@setlist/core';
-import { ArrowLeft, CircleCheck, Copy, Pencil, Redo2, Share2, Undo2 } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Copy, Pencil, Redo2, Share2, Star, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { GigDialog } from '../gigs/GigDialog';
 import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
+import { RatePlayedDialog } from '../gigs/RatePlayedDialog';
 import { setlistChanges } from '../setlist/changes';
 import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
 import { PrintSetlist } from '../setlist/PrintSetlist';
@@ -56,6 +57,8 @@ export function GigSetlistPage() {
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
   const [markingPlayed, setMarkingPlayed] = useState(false);
+  /** Rating the songs played (#32): `just-played` straight after marking the gig as played. */
+  const [rating, setRating] = useState<'just-played' | 'later' | null>(null);
   const [startingFrom, setStartingFrom] = useState(false);
   const [startedFrom, setStartedFrom] = useState<{ from: string; dropped: string[] } | null>(null);
   const { canEdit } = useMembership();
@@ -183,6 +186,12 @@ export function GigSetlistPage() {
                   {gig.status === 'played' ? 'What we played' : 'Mark as played'}
                 </button>
               )}
+              {gig.status === 'played' && (
+                <button type="button" className="sm-button" onClick={() => setRating('later')}>
+                  <Star size={14} aria-hidden="true" />
+                  Rate songs
+                </button>
+              )}
               {sharing && (
                 <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
                   <Share2 size={14} aria-hidden="true" />
@@ -285,6 +294,15 @@ export function GigSetlistPage() {
             performances.reload();
             gigs.reload();
           }}
+          onPlayed={() => setRating('just-played')}
+        />
+      )}
+      {rating && (
+        <RatePlayedDialog
+          gig={gig}
+          justPlayed={rating === 'just-played'}
+          onClose={() => setRating(null)}
+          onChanged={() => performances.reload()}
         />
       )}
       {editingGig && (

@@ -16,12 +16,15 @@ export function MarkPlayedDialog({
   songsById,
   onClose,
   onChanged,
+  onPlayed,
 }: {
   gig: Gig;
   blocks: readonly BlockWithEntries[];
   songsById: ReadonlyMap<string, Song>;
   onClose: () => void;
   onChanged: () => void;
+  /** After saving a gig that wasn't marked as played before, e.g. to rate the songs. */
+  onPlayed?: () => void;
 }) {
   const { repository } = useWorkspace();
   const played = gig.status === 'played';
@@ -86,8 +89,8 @@ export function MarkPlayedDialog({
   }
 
   const save = () =>
-    run(() =>
-      markGigPlayed(
+    run(async () => {
+      await markGigPlayed(
         repository,
         gig.id,
         sets.map(({ block, songs }) => ({
@@ -96,8 +99,9 @@ export function MarkPlayedDialog({
             .filter(({ entry }) => !skipped?.has(entry.id))
             .map(({ entry, song }) => ({ songId: song.id, key: entry.keyOverride ?? song.key })),
         })),
-      ),
-    );
+      );
+      if (!played) onPlayed?.();
+    });
 
   const toggle = (entryId: string) =>
     setSkipped((current) => {

@@ -112,6 +112,8 @@ describe('GigSetlistPage', () => {
     await user.click(screen.getByRole('button', { name: 'Mark as played' }));
     await user.click(dialog().getByRole('checkbox', { name: 'Here Without You' }));
     await user.click(dialog().getByRole('button', { name: 'Played 1 song' }));
+    // Asked how it went next; skipped here.
+    await user.click(await screen.findByRole('button', { name: 'Skip' }));
 
     expect(await screen.findByText('Played')).toBeTruthy();
     const played = await workspace.repository.performances.list({ gigId: gig.id });
@@ -132,6 +134,55 @@ describe('GigSetlistPage', () => {
     await user.click(dialog().getByRole('button', { name: 'Not played after all' }));
     expect(await screen.findByRole('button', { name: 'Mark as played' })).toBeTruthy();
     expect(await workspace.repository.performances.list({ gigId: gig.id })).toEqual([]);
+  });
+
+  it('rates the songs after the gig, and keeps the ratings when what was played changes', async () => {
+    const { user, workspace, gig } = await setup();
+    await user.click(library().getByRole('button', { name: 'Add Basurita' }));
+    await user.click(library().getByRole('button', { name: 'Add Here Without You' }));
+    await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You']));
+    await user.click(screen.getByRole('button', { name: 'Mark as played' }));
+    await user.click(dialog().getByRole('button', { name: 'Played 2 songs' }));
+
+    // Straight after: how did it go?
+    await screen.findByRole('heading', { name: 'How did it go?' });
+    const basurita = within(dialog().getByRole('group', { name: 'Rating for Basurita' }));
+    await user.click(basurita.getByRole('button', { name: '4 stars' }));
+    expect(basurita.getByRole('button', { name: '4 stars' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    await user.type(dialog().getByLabelText('Notes for Basurita'), 'Crowd loved it');
+    await user.click(dialog().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    const stored = async () =>
+      (await workspace.repository.performances.list({ gigId: gig.id })).map((p) => [
+        p.songTitleSnapshot,
+        p.rating,
+        p.notes,
+      ]);
+    expect(await stored()).toEqual([
+      ['Basurita', 4, 'Crowd loved it'],
+      ['Here Without You', null, null],
+    ]);
+
+    // Changing what was played keeps Basurita's rating.
+    await user.click(screen.getByRole('button', { name: 'What we played' }));
+    const skip = await screen.findByRole('checkbox', { name: 'Here Without You' });
+    await waitFor(() => expect((skip as HTMLInputElement).checked).toBe(true));
+    await user.click(skip);
+    await user.click(dialog().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(await stored()).toEqual([['Basurita', 4, 'Crowd loved it']]);
+
+    // Rated again later: clicking the rating given clears it.
+    await user.click(screen.getByRole('button', { name: 'Rate songs' }));
+    const again = within(await screen.findByRole('group', { name: 'Rating for Basurita' }));
+    await user.click(again.getByRole('button', { name: '4 stars' }));
+    await user.clear(dialog().getByLabelText('Notes for Basurita'));
+    expect(dialog().getByRole('button', { name: 'Cancel' })).toBeTruthy();
+    await user.click(dialog().getByRole('button', { name: 'Save' }));
+    await waitFor(async () => expect(await stored()).toEqual([['Basurita', null, null]]));
   });
 
   it('flags songs needing what the gig is missing, and can hide them from the library', async () => {

@@ -2,6 +2,7 @@
 import { createMemoryRepository } from '@setlist/storage';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import { WorkspaceContextProvider } from '../storage/WorkspaceProvider';
 import { ensureBand, type Workspace } from '../storage/workspace';
@@ -16,7 +17,9 @@ async function setup(seed?: (workspace: Workspace) => Promise<unknown>) {
   const user = userEvent.setup();
   render(
     <WorkspaceContextProvider workspace={workspace}>
-      <LibraryPage />
+      <MemoryRouter>
+        <LibraryPage />
+      </MemoryRouter>
     </WorkspaceContextProvider>,
   );
   return { user, workspace };
@@ -317,5 +320,65 @@ describe('LibraryPage', () => {
     expect(
       await within(dialog()).findByText('empty.csv has a header row but no songs.'),
     ).toBeTruthy();
+  });
+
+  it('shows when and where a song was played, most recent first', async () => {
+    const { user } = await setup(async ({ repository, band }) => {
+      const bandId = band.id;
+      const song = await repository.songs.create({ bandId, title: 'Wasteland', key: 'Em' });
+      await repository.songs.create({ bandId, title: 'Beautiful' });
+      const cavern = await repository.venues.create({ bandId, name: 'The Cavern' });
+      const spring = await repository.gigs.create({
+        bandId,
+        title: 'Spring show',
+        date: '2026-04-11',
+        venueId: cavern.id,
+        status: 'played',
+      });
+      const fair = await repository.gigs.create({
+        bandId,
+        title: 'Street fair',
+        date: '2026-09-05',
+        status: 'played',
+      });
+      const play = { bandId, songId: song.id, songTitleSnapshot: 'Wasteland' };
+      await repository.performances.create({
+        ...play,
+        gigId: spring.id,
+        playedAt: spring.date,
+        setName: 'Set 1',
+        positionInSet: 3,
+        keySnapshot: 'Em',
+      });
+      await repository.performances.create({
+        ...play,
+        gigId: fair.id,
+        playedAt: fair.date,
+        setName: 'Encore',
+        positionInSet: 1,
+        keySnapshot: 'Dm',
+        rating: 4,
+        notes: 'Crowd sang along',
+      });
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Wasteland' }));
+    const history = within(within(detail('Wasteland')).getByRole('region', { name: 'History' }));
+    expect(await history.findByText(/Played 2 times/)).toBeTruthy();
+    const items = history.getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    // The street fair first: no venue, played a step down, rated and with notes.
+    expect(items[0]!.textContent).toContain('Street fair');
+    expect(items[0]!.textContent).toContain('Encore, song 1 · in Dm');
+    expect(within(items[0]!).getByLabelText('Rated 4 of 5')).toBeTruthy();
+    expect(within(items[0]!).getByText('Crowd sang along')).toBeTruthy();
+    // The spring show: at the Cavern, in the song's own key, so no key is shown.
+    expect(items[1]!.textContent).toContain('Spring show · The Cavern');
+    expect(items[1]!.textContent).toContain('Set 1, song 3');
+    expect(items[1]!.textContent).not.toContain(' in Em');
+    expect(within(items[1]!).getByRole('link').getAttribute('href')).toMatch(/^\/gigs\//);
+
+    await user.click(screen.getByRole('button', { name: 'Beautiful' }));
+    expect(await within(detail('Beautiful')).findByText(/Not played yet/)).toBeTruthy();
   });
 });
