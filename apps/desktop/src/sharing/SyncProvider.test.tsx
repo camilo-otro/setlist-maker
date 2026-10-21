@@ -46,7 +46,7 @@ async function setup() {
       return { applied, skipped: 0 };
     }),
     invites: {} as Sharing['invites'],
-    playlists: {} as Sharing['playlists'],
+    playlists: { get: async () => null } as unknown as Sharing['playlists'],
     previewInvite: async () => null,
     joinBand: async () => ({ bandId: '', role: 'editor' as const }),
     finishSignIn: async () => ({ bandIds: [], retired: 0 }),

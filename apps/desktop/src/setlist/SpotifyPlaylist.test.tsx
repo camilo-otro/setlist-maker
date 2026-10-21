@@ -27,10 +27,18 @@ async function gigWithSpotify() {
   return { ...sample, songsById };
 }
 
-function fakeSharing({ shared = true, existing = null as typeof PLAYLIST | null } = {}) {
+function fakeSharing({
+  shared = true,
+  existing = null as typeof PLAYLIST | null,
+  failLookup = false,
+} = {}) {
   let current = existing;
   const playlists = {
-    get: vi.fn(async () => current),
+    // A failing lookup throws straight away, not in a promise, like a broken client would.
+    get: vi.fn((): Promise<typeof PLAYLIST | null> => {
+      if (failLookup) throw new TypeError('offline');
+      return Promise.resolve(current);
+    }),
     export: vi.fn(async () => {
       const created = !current;
       current = PLAYLIST;
@@ -130,6 +138,13 @@ describe('SpotifyPlaylist', () => {
     const { playlists } = await setup({ canEdit: false });
     await waitFor(() => expect(playlists.get).toHaveBeenCalled());
     expect(screen.queryByRole('button', { name: 'Spotify playlist' })).toBeNull();
+  });
+
+  it('still offers the button when looking up the playlist fails', async () => {
+    const { user, playlists } = await setup({ failLookup: true });
+    await waitFor(() => expect(playlists.get).toHaveBeenCalled());
+    await user.click(await screen.findByRole('button', { name: 'Spotify playlist' }));
+    expect(dialog().getByRole('button', { name: 'Create playlist' })).toBeTruthy();
   });
 
   it('asks to share the band first', async () => {

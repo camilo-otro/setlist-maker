@@ -50,12 +50,16 @@ export function SpotifyPlaylist({
   useEffect(() => {
     if (!sharing) return;
     let current = true;
-    void sharing.isShared().then(async (isShared) => {
+    // Any failure leaves the gig without a known playlist; the dialog can still create one.
+    void (async () => {
+      const isShared = await sharing.isShared();
       if (!current) return;
       setShared(isShared);
       if (!isShared) return;
-      const found = await sharing.playlists.get(bandId, gig.id).catch(() => null);
+      const found = await sharing.playlists.get(bandId, gig.id);
       if (current) setPlaylist(found);
+    })().catch(() => {
+      if (current) setPlaylist(null);
     });
     return () => {
       current = false;
