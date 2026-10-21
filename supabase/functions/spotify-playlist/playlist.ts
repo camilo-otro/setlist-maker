@@ -34,7 +34,7 @@ export const BUDGET = { calls: 20, windowSeconds: 3600 };
 export const MAX_TRACKS = 100;
 export const MAX_NAME = 100;
 /** Neutral on purpose: every band's playlists share the account's profile. */
-export const DESCRIPTION = 'Made with Setlist Maker';
+export const DESCRIPTION = 'Hecha con Setlist Maker';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

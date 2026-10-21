@@ -17,9 +17,9 @@ type Step =
 function failureMessage(error: unknown): string {
   if (error instanceof AppOutdatedError) return error.message;
   if (error instanceof BandTakenError) {
-    return 'This band is already shared from another account, so it can’t be shared from here.';
+    return 'Esta banda ya se comparte desde otra cuenta, así que no se puede compartir desde aquí.';
   }
-  return 'Couldn’t reach the server. Check your internet connection and try again.';
+  return 'No se pudo conectar con el servidor. Revisa tu conexión a internet e inténtalo de nuevo.';
 }
 
 /**
@@ -111,12 +111,12 @@ export function ShareDialog({
   }
 
   return (
-    <Modal title={`Share ${gigTitle}`} onClose={onClose} busy={step.kind === 'uploading'}>
+    <Modal title={`Compartir ${gigTitle}`} onClose={onClose} busy={step.kind === 'uploading'}>
       <div className="share-dialog">
-        {step.kind === 'checking' && <p className="muted">Getting the link…</p>}
+        {step.kind === 'checking' && <p className="muted">Obteniendo el enlace…</p>}
         {step.kind === 'uploading' && (
           <p className="muted" role="status">
-            Uploading your band so the link can show this setlist…
+            Subiendo tu banda para que el enlace pueda mostrar este setlist…
           </p>
         )}
         {step.kind === 'failed' && (
@@ -126,14 +126,14 @@ export function ShareDialog({
             </p>
             <div className="modal__actions">
               <button type="button" className="sm-button" onClick={onClose}>
-                Close
+                Cerrar
               </button>
               <button
                 type="button"
                 className="sm-button sm-button--primary"
                 onClick={() => void prepare()}
               >
-                Try again
+                Intentar de nuevo
               </button>
             </div>
           </>
@@ -141,15 +141,15 @@ export function ShareDialog({
         {step.kind === 'ready' && (
           <>
             <p>
-              Anyone with this link can see the setlist, without an account. It updates as you make
-              changes.
+              Cualquiera con este enlace puede ver el setlist, sin crear una cuenta. Se actualiza a
+              medida que haces cambios.
             </p>
             <div className="share-dialog__link">
               <input
                 id="share-link"
                 className="sm-input"
                 readOnly
-                aria-label="Share link"
+                aria-label="Enlace para compartir"
                 value={step.link.url}
                 onFocus={(e) => e.target.select()}
               />
@@ -163,26 +163,26 @@ export function ShareDialog({
                 ) : (
                   <Copy size={16} aria-hidden="true" />
                 )}
-                {copied ? 'Copied' : 'Copy link'}
+                {copied ? 'Copiado' : 'Copiar enlace'}
               </button>
             </div>
             {step.confirmOff ? (
               <div className="share-dialog__confirm" role="alert">
-                <p>People with this link will no longer see the setlist.</p>
+                <p>Quienes tengan este enlace ya no podrán ver el setlist.</p>
                 <div className="modal__actions">
                   <button
                     type="button"
                     className="sm-button"
                     onClick={() => setStep({ ...step, confirmOff: false })}
                   >
-                    Keep the link
+                    Conservar el enlace
                   </button>
                   <button
                     type="button"
                     className="sm-button sm-button--danger"
                     onClick={() => void turnOff(step.link)}
                   >
-                    Turn off link
+                    Desactivar enlace
                   </button>
                 </div>
               </div>
@@ -193,10 +193,10 @@ export function ShareDialog({
                   className="sm-button"
                   onClick={() => setStep({ ...step, confirmOff: true })}
                 >
-                  Turn off link
+                  Desactivar enlace
                 </button>
                 <button type="button" className="sm-button" onClick={onClose}>
-                  Done
+                  Listo
                 </button>
               </div>
             )}
@@ -204,17 +204,17 @@ export function ShareDialog({
         )}
         {step.kind === 'off' && (
           <>
-            <p>The link is off. Anyone opening it now sees that it doesn’t work.</p>
+            <p>El enlace está desactivado. Quien lo abra ahora verá que ya no funciona.</p>
             <div className="modal__actions">
               <button type="button" className="sm-button" onClick={onClose}>
-                Done
+                Listo
               </button>
               <button
                 type="button"
                 className="sm-button sm-button--primary"
                 onClick={() => void prepare()}
               >
-                Create a new link
+                Crear un enlace nuevo
               </button>
             </div>
           </>

@@ -30,13 +30,12 @@ describe('layoutSetlistPdf', () => {
       ...(await sampleGig()),
       bandName: 'The Rock House',
       measure,
-      locale: 'en-GB',
     });
     // The encore has no songs yet, so it gets no page.
     expect(pages).toHaveLength(1);
     const [band, subtitle, ...songs] = pages[0]!.items;
     expect(band).toMatchObject({ text: 'The Rock House', bold: true, align: 'center' });
-    expect(subtitle!.text).toMatch(/^Set 1 · Rock Party at the Pub · 7 Nov 2026$/);
+    expect(subtitle!.text).toMatch(/^Set 1 · Rock Party at the Pub · 7 de nov de 2026$/);
     // The deleted song, the break and the note aren't printed.
     expect(songs.map((item) => item.text)).toEqual(['Basurita', 'Here Without You', 'Untimed']);
     expect(songs.every((item) => item.align === 'center' && item.x === PAGE.width / 2)).toBe(true);
@@ -77,7 +76,7 @@ describe('layoutSetlistPdf', () => {
   it('carries a very long set on to another page', async () => {
     const pages = layoutSetlistPdf({ ...(await setOf(40)), bandName: 'Band', measure });
     expect(pages.length).toBe(2);
-    expect(pages[1]!.items[1]!.text).toMatch(/^Set 1 \(continued\)/);
+    expect(pages[1]!.items[1]!.text).toMatch(/^Set 1 \(continuación\)/);
     const count = (page: (typeof pages)[number]) =>
       page.items.filter((item) => item.text.startsWith('Song ')).length;
     expect(count(pages[0]!) + count(pages[1]!)).toBe(40);
@@ -91,7 +90,7 @@ describe('makeSetlistPdf', () => {
     const doc = await PDFDocument.load(bytes);
     expect(doc.getPageCount()).toBe(1);
     expect(doc.getPage(0).getSize()).toEqual({ width: 612, height: 792 });
-    expect(doc.getTitle()).toBe('Rock Party at the Pub setlist');
+    expect(doc.getTitle()).toBe('Setlist de Rock Party at the Pub');
   });
 
   it('names the file after the gig', () => {

@@ -54,26 +54,27 @@ function WebInstallHint() {
   };
 
   return (
-    <aside className="install-hint" aria-label="Install the app">
+    <aside className="install-hint" aria-label="Instalar la app">
       {advice === 'ios' ? (
         <p>
-          Add Setlist Maker to your Home Screen: tap <Share size={14} aria-label="Share" /> Share,
-          then <strong>Add to Home Screen</strong>. It opens like an app, works offline and keeps
-          your data safe.
+          Agrega Setlist Maker a tu pantalla de inicio: toca{' '}
+          <Share size={14} aria-label="Compartir" /> Compartir y luego{' '}
+          <strong>Agregar a inicio</strong>. Se abre como una app, funciona sin conexión y guarda
+          tus datos de forma segura.
         </p>
       ) : (
         <>
-          <p>Install Setlist Maker to open it like an app and use it offline.</p>
+          <p>Instala Setlist Maker para abrirlo como una app y usarlo sin conexión.</p>
           <button
             type="button"
             className="sm-button sm-button--primary"
             onClick={() => void promptInstall().then((installed) => installed && dismiss())}
           >
-            Install
+            Instalar
           </button>
         </>
       )}
-      <button type="button" className="icon-button" aria-label="Not now" onClick={dismiss}>
+      <button type="button" className="icon-button" aria-label="Ahora no" onClick={dismiss}>
         <X size={16} aria-hidden="true" />
       </button>
     </aside>

@@ -1,4 +1,7 @@
 import {
+  collator,
+  formatDate,
+  formatMonth,
   gigsPerMonth,
   gigsSinceLastPlayed,
   localDateString,
@@ -19,15 +22,7 @@ const TOP = 10;
 /** The choices for "not played in the last N gigs". */
 const GIG_COUNTS = [3, 5, 10, 20];
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'short' });
-const monthYearFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
-/** A `YYYY-MM-DD` date (or `YYYY-MM`) as a local date, so it isn't shifted by the time zone. */
-const localDate = (date: string) => {
-  const [y, m, d = 1] = date.split('-').map(Number);
-  return new Date(y!, m! - 1, d);
-};
-const times = (n: number) => (n === 1 ? 'once' : `${n} times`);
+const times = (n: number) => (n === 1 ? '1 vez' : `${n} veces`);
 const percent = (part: number, whole: number) =>
   whole === 0 ? '0%' : `${Math.round((part / whole) * 100)}%`;
 
@@ -65,7 +60,7 @@ function GigsPerMonth({ months }: { months: { month: string; gigs: number }[] })
   return (
     <ol className="month-chart">
       {months.map(({ month, gigs }) => {
-        const label = `${monthYearFormat.format(localDate(month))}: ${gigs} ${gigs === 1 ? 'gig' : 'gigs'}`;
+        const label = `${formatMonth(month, 'long')}: ${gigs} ${gigs === 1 ? 'toque' : 'toques'}`;
         return (
           <li key={month} className="month-chart__month" title={label}>
             <span className="visually-hidden">{label}</span>
@@ -77,7 +72,7 @@ function GigsPerMonth({ months }: { months: { month: string; gigs: number }[] })
               />
             </span>
             <span className="month-chart__label" aria-hidden="true">
-              {monthFormat.format(localDate(month))}
+              {formatMonth(month)}
             </span>
           </li>
         );
@@ -104,7 +99,7 @@ export function StatsPage() {
   const played = useMemo(() => playedGigs(gigs.rows ?? []), [gigs.rows]);
   // Alphabetical first, so ties in the lists below read in order.
   const allSongs = useMemo(
-    () => [...(songs.rows ?? [])].sort((a, b) => a.title.localeCompare(b.title)),
+    () => [...(songs.rows ?? [])].sort((a, b) => collator.compare(a.title, b.title)),
     [songs.rows],
   );
   // Archived and still-being-learned songs aren't expected in a set, so they're left out of
@@ -124,9 +119,9 @@ export function StatsPage() {
   if (error) {
     return (
       <>
-        <PageHeader title="Stats" />
+        <PageHeader title="Estadísticas" />
         <p className="sm-field__error" role="alert">
-          Couldn&apos;t load stats: {String(error)}
+          No se pudieron cargar las estadísticas: {String(error)}
         </p>
       </>
     );
@@ -134,18 +129,18 @@ export function StatsPage() {
   if (!songs.rows || !gigs.rows || !performances.rows) {
     return (
       <>
-        <PageHeader title="Stats" />
-        <p className="muted">Loading stats…</p>
+        <PageHeader title="Estadísticas" />
+        <p className="muted">Cargando estadísticas…</p>
       </>
     );
   }
   if (played.length === 0) {
     return (
       <>
-        <PageHeader title="Stats" />
-        <EmptyState icon={<ChartColumn size={24} />} title="Nothing to show yet">
-          Stats appear once you&apos;ve marked gigs as played: most and least played songs, and what
-          you haven&apos;t played in a while.
+        <PageHeader title="Estadísticas" />
+        <EmptyState icon={<ChartColumn size={24} />} title="Aún no hay nada que mostrar">
+          Las estadísticas aparecen cuando marcas toques como tocados: las canciones más y menos
+          tocadas, y las que hace rato no tocan.
         </EmptyState>
       </>
     );
@@ -171,48 +166,48 @@ export function StatsPage() {
 
   return (
     <>
-      <PageHeader title="Stats" />
+      <PageHeader title="Estadísticas" />
       <dl className="stats-tiles">
         <div className="stats-tile">
-          <dt>Gigs played</dt>
+          <dt>Toques realizados</dt>
           <dd>{played.length}</dd>
         </div>
         <div className="stats-tile">
-          <dt>Songs played</dt>
+          <dt>Canciones tocadas</dt>
           <dd>
-            {songsPlayed} <span className="muted">of {allSongs.length}</span>
+            {songsPlayed} <span className="muted">de {allSongs.length}</span>
           </dd>
         </div>
         <div className="stats-tile">
-          <dt>Last gig</dt>
-          <dd>{dateFormat.format(localDate(lastGig.date))}</dd>
+          <dt>Último toque</dt>
+          <dd>{formatDate(lastGig.date)}</dd>
         </div>
       </dl>
 
       <div className="stats-grid">
-        <Card title="Most played">
+        <Card title="Más tocadas">
           <SongList songs={mostPlayed} detail={(song) => times(timesPlayed(song))} />
         </Card>
 
-        <Card title="Least played">
+        <Card title="Menos tocadas">
           {leastPlayed.length > 0 ? (
             <SongList
               songs={leastPlayed}
               detail={(song) => {
                 const s = stats.get(song.id);
                 return s
-                  ? `${times(s.timesPlayed)}, last ${dateFormat.format(localDate(s.lastPlayed))}`
-                  : 'Never played';
+                  ? `${times(s.timesPlayed)}, última: ${formatDate(s.lastPlayed)}`
+                  : 'Nunca se ha tocado';
               }}
             />
           ) : (
-            <p className="muted">No active songs in the library.</p>
+            <p className="muted">No hay canciones activas en el repertorio.</p>
           )}
         </Card>
 
-        <Card title="Not played lately">
+        <Card title="Sin tocar últimamente">
           <label className="stats-card__control">
-            Not played in the last
+            Sin tocar en los últimos
             <select
               className="sm-input"
               value={gigCount}
@@ -220,7 +215,7 @@ export function StatsPage() {
             >
               {GIG_COUNTS.map((n) => (
                 <option key={n} value={n}>
-                  {n} gigs
+                  {n} toques
                 </option>
               ))}
             </select>
@@ -230,34 +225,36 @@ export function StatsPage() {
               songs={leftOut}
               detail={(song) =>
                 stats.has(song.id)
-                  ? `${since.get(song.id)} ${since.get(song.id) === 1 ? 'gig' : 'gigs'}`
-                  : 'Never played'
+                  ? `${since.get(song.id)} ${since.get(song.id) === 1 ? 'toque' : 'toques'}`
+                  : 'Nunca se ha tocado'
               }
             />
           ) : (
-            <p className="muted">Every active song was played in the last {gigCount} gigs.</p>
+            <p className="muted">
+              Todas las canciones activas se tocaron en los últimos {gigCount} toques.
+            </p>
           )}
         </Card>
 
-        <Card title="Originals and covers">
+        <Card title="Originales y covers">
           <dl className="stats-split">
             {(['originals', 'covers'] as const).map((kind) => (
               <div key={kind}>
-                <dt>{kind === 'originals' ? 'Originals' : 'Covers'}</dt>
+                <dt>{kind === 'originals' ? 'Originales' : 'Covers'}</dt>
                 <dd>
-                  {kinds[kind].songs} {kinds[kind].songs === 1 ? 'song' : 'songs'} (
-                  {percent(kinds[kind].songs, repertoire)} of the repertoire)
+                  {kinds[kind].songs} {kinds[kind].songs === 1 ? 'canción' : 'canciones'} (
+                  {percent(kinds[kind].songs, repertoire)} del repertorio)
                 </dd>
                 <dd className="muted">
-                  Played {times(kinds[kind].plays)} ({percent(kinds[kind].plays, totalPlays)} of
-                  plays)
+                  Tocadas {times(kinds[kind].plays)} ({percent(kinds[kind].plays, totalPlays)} del
+                  total)
                 </dd>
               </div>
             ))}
           </dl>
         </Card>
 
-        <Card title="Gigs per month" wide>
+        <Card title="Toques por mes" wide>
           <GigsPerMonth months={gigsPerMonth(gigs.rows, today)} />
         </Card>
       </div>

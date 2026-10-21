@@ -35,22 +35,22 @@ export function AccountSection({
 
   if (!state) return null;
   return (
-    <section className="account-section" aria-label="Your account">
-      <h2 className="account-section__title">Your account</h2>
+    <section className="account-section" aria-label="Tu cuenta">
+      <h2 className="account-section__title">Tu cuenta</h2>
       {state.email ? (
         <p>
-          Signed in as <strong>{state.email}</strong>. To use your bands on another device, open
-          Setlist Maker there and choose <strong>Sign in with email</strong>.
+          Iniciaste sesión como <strong>{state.email}</strong>. Para usar tus bandas en otro
+          dispositivo, abre Setlist Maker allí y elige <strong>Iniciar sesión con correo</strong>.
         </p>
       ) : state.signedIn ? (
         <p>
-          Your sign-in only works on this device. Add your email to use your bands on your other
-          devices, and to keep them if you lose this one.
+          Tu sesión solo funciona en este dispositivo. Agrega tu correo para usar tus bandas en tus
+          otros dispositivos y no perderlas si pierdes este.
         </p>
       ) : (
         <p>
-          Already using Setlist Maker on another device? Sign in with your email to get your bands
-          here.
+          ¿Ya usas Setlist Maker en otro dispositivo? Inicia sesión con tu correo para traer tus
+          bandas aquí.
         </p>
       )}
       {!state.email && (
@@ -62,12 +62,12 @@ export function AccountSection({
               onClick={() => setDialog('add')}
             >
               <AtSign size={14} aria-hidden="true" />
-              Add your email
+              Agregar tu correo
             </button>
           )}
           <button type="button" className="sm-button" onClick={() => setDialog('sign-in')}>
             <LogIn size={14} aria-hidden="true" />
-            Sign in with email
+            Iniciar sesión con correo
           </button>
         </div>
       )}

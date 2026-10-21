@@ -2,31 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { sampleGig as sample } from './sampleGig';
 import { whatsappText } from './whatsappText';
 
-// The date is written in the reader's locale, so the expectation is built the same way.
-const DATE = new Date(2026, 10, 7).toLocaleDateString('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
+// Dates are always Colombian Spanish, whatever the device's language.
+const DATE = 'sábado, 7 de noviembre de 2026';
 
 describe('whatsappText', () => {
   it('lays out the gig for a WhatsApp chat', async () => {
     const { gig, venue, blocks, songsById } = await sample();
-    expect(whatsappText({ gig, venue, blocks, songsById, locale: 'en-GB' })).toBe(
+    expect(whatsappText({ gig, venue, blocks, songsById })).toBe(
       [
         '*Rock Party at the Pub*',
-        `${DATE} · 21:30 · The Pub, Bogotá`,
+        `${DATE} · 9:30 p. m. · The Pub, Bogotá`,
         '',
         '*Set 1* (7:43)',
         '1. Basurita · A →',
         '2. Here Without You · C',
-        '— Break · 15 min —',
+        '— Descanso · 15 min —',
         '_Thank the venue_',
         '3. Untimed',
         '',
         '*Encore*',
-        '_No songs yet_',
+        '_Aún sin canciones_',
       ].join('\n'),
     );
   });
@@ -39,9 +34,10 @@ describe('whatsappText', () => {
       blocks,
       songsById,
       link: 'https://setlist.rockthehouse.app/#abc',
-      locale: 'en-GB',
     });
-    expect(text.split('\n').slice(0, 3)).toEqual(['*Rock Party at the Pub*', DATE, '_Cancelled_']);
-    expect(text.endsWith('\n\nLive setlist: https://setlist.rockthehouse.app/#abc')).toBe(true);
+    expect(text.split('\n').slice(0, 3)).toEqual(['*Rock Party at the Pub*', DATE, '_Cancelado_']);
+    expect(text.endsWith('\n\nSetlist actualizado: https://setlist.rockthehouse.app/#abc')).toBe(
+      true,
+    );
   });
 });

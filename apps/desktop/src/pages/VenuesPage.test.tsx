@@ -36,10 +36,10 @@ describe('VenuesPage', () => {
       ['The Cavern', 'Liverpool'],
       ['Arena', ''],
     ]) {
-      await user.click(await screen.findByRole('button', { name: 'Add venue' }));
-      await user.type(dialog().getByLabelText('Name'), name!);
-      if (city) await user.type(dialog().getByLabelText('City'), city);
-      await user.click(dialog().getByRole('button', { name: 'Add venue' }));
+      await user.click(await screen.findByRole('button', { name: 'Agregar lugar' }));
+      await user.type(dialog().getByLabelText('Nombre'), name!);
+      if (city) await user.type(dialog().getByLabelText('Ciudad'), city);
+      await user.click(dialog().getByRole('button', { name: 'Agregar lugar' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     }
     await screen.findByRole('table');
@@ -49,9 +49,9 @@ describe('VenuesPage', () => {
 
   it('requires a name', async () => {
     const { user, workspace } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'Add venue' }));
-    await user.click(dialog().getByRole('button', { name: 'Add venue' }));
-    expect(await dialog().findByText('Give the venue a name')).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: 'Agregar lugar' }));
+    await user.click(dialog().getByRole('button', { name: 'Agregar lugar' }));
+    expect(await dialog().findByText('Ponle un nombre al lugar')).toBeTruthy();
     expect(await workspace.repository.venues.list()).toEqual([]);
   });
 
@@ -71,13 +71,13 @@ describe('VenuesPage', () => {
     expect(within(usedRow).getByText('1')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Used' }));
-    await user.click(dialog().getByRole('button', { name: 'Delete' }));
-    expect(await dialog().findByText(/1 gig uses this venue/)).toBeTruthy();
-    await user.click(dialog().getByRole('button', { name: 'Cancel' }));
+    await user.click(dialog().getByRole('button', { name: 'Eliminar' }));
+    expect(await dialog().findByText(/1 toque usa este lugar/)).toBeTruthy();
+    await user.click(dialog().getByRole('button', { name: 'Cancelar' }));
 
     await user.click(screen.getByRole('button', { name: 'Unused' }));
-    await user.click(dialog().getByRole('button', { name: 'Delete' }));
-    await user.click(await dialog().findByRole('button', { name: 'Delete venue' }));
+    await user.click(dialog().getByRole('button', { name: 'Eliminar' }));
+    await user.click(await dialog().findByRole('button', { name: 'Eliminar lugar' }));
     await waitFor(() => expect(names()).toEqual(['Used']));
     expect(await workspace.repository.venues.list()).toHaveLength(1);
   });

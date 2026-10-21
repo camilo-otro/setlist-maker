@@ -1,7 +1,12 @@
 import {
   countdownLabel,
   daysBetween,
+  formatDate,
+  formatMonth,
+  formatTime,
+  formatWeekday,
   groupByYear,
+  localDate,
   localDateString,
   splitGigs,
   type Gig,
@@ -17,13 +22,6 @@ import { useMembership } from '../sharing/MembershipProvider';
 
 type Tab = 'upcoming' | 'past';
 
-const weekday = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
-const month = new Intl.DateTimeFormat(undefined, { month: 'short' });
-const toDate = (date: string) => {
-  const [y, m, d] = date.split('-').map(Number);
-  return new Date(y!, m! - 1, d!);
-};
-
 function GigRow({
   gig,
   venue,
@@ -35,10 +33,10 @@ function GigRow({
   today: string;
   onOpen: () => void;
 }) {
-  const date = toDate(gig.date);
+  const date = localDate(gig.date);
   const times = [
-    gig.loadInTime && `Load-in ${gig.loadInTime}`,
-    gig.startTime && `Start ${gig.startTime}`,
+    gig.loadInTime && `Montaje ${formatTime(gig.loadInTime)}`,
+    gig.startTime && `Inicio ${formatTime(gig.startTime)}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -52,14 +50,14 @@ function GigRow({
         onClick={onOpen}
       >
         <span className="gig-row__date" aria-hidden="true">
-          <span className="gig-row__weekday">{weekday.format(date)}</span>
+          <span className="gig-row__weekday">{formatWeekday(date)}</span>
           <span className="gig-row__day">{date.getDate()}</span>
-          <span className="gig-row__month">{month.format(date)}</span>
+          <span className="gig-row__month">{formatMonth(date)}</span>
         </span>
         <span className="gig-row__main">
           <span className="gig-row__title">{gig.title}</span>
           <span className="gig-row__meta">
-            <span className="visually-hidden">{gig.date}, </span>
+            <span className="visually-hidden">{formatDate(gig.date)}, </span>
             {venue && (
               <span>
                 <MapPin size={14} aria-hidden="true" />
@@ -75,7 +73,7 @@ function GigRow({
           </span>
         </span>
         {gig.status === 'cancelled' ? (
-          <span className="status status--retired">Cancelled</span>
+          <span className="status status--retired">Cancelado</span>
         ) : (
           days >= 0 && <span className="status status--active">{countdownLabel(days)}</span>
         )}
@@ -110,7 +108,7 @@ export function GigsPage() {
       onClick={() => setCreating(true)}
     >
       <Plus size={16} aria-hidden="true" />
-      New gig
+      Nuevo toque
     </button>
   );
   const row = (gig: Gig) => (
@@ -127,16 +125,17 @@ export function GigsPage() {
   if (gigs.error) {
     content = (
       <p className="sm-field__error" role="alert">
-        Couldn&apos;t load gigs: {String(gigs.error)}
+        No se pudieron cargar los toques: {String(gigs.error)}
       </p>
     );
   } else if (gigs.rows === null) {
-    content = <p className="muted">Loading gigs…</p>;
+    content = <p className="muted">Cargando toques…</p>;
   } else if (gigs.rows.length === 0) {
     content = (
       <>
-        <EmptyState icon={<CalendarDays size={24} />} title="No gigs planned">
-          Create a gig to start building its setlist. Each new gig starts with an empty first set.
+        <EmptyState icon={<CalendarDays size={24} />} title="No hay toques planeados">
+          Crea un toque para empezar a armar su setlist. Cada toque nuevo empieza con un primer set
+          vacío.
         </EmptyState>
         {canEdit && <div className="library-empty-action">{newButton}</div>}
       </>
@@ -144,11 +143,11 @@ export function GigsPage() {
   } else {
     content = (
       <>
-        <div className="tabs" role="tablist" aria-label="Gigs">
+        <div className="tabs" role="tablist" aria-label="Toques">
           {(
             [
-              ['upcoming', 'Upcoming', upcoming.length],
-              ['past', 'Past', past.length],
+              ['upcoming', 'Próximos', upcoming.length],
+              ['past', 'Pasados', past.length],
             ] as const
           ).map(([value, label, count]) => (
             <button
@@ -170,7 +169,9 @@ export function GigsPage() {
             upcoming.length > 0 ? (
               <ul className="gig-list">{upcoming.map(row)}</ul>
             ) : (
-              <p className="muted">No upcoming gigs. Create one to start planning its setlist.</p>
+              <p className="muted">
+                No hay toques próximos. Crea uno para empezar a planear su setlist.
+              </p>
             )
           ) : past.length > 0 ? (
             groupByYear(past).map(({ year, gigs: inYear }) => (
@@ -182,7 +183,7 @@ export function GigsPage() {
               </section>
             ))
           ) : (
-            <p className="muted">No past gigs yet.</p>
+            <p className="muted">Aún no hay toques pasados.</p>
           )}
         </div>
       </>
@@ -192,7 +193,7 @@ export function GigsPage() {
   return (
     <>
       <PageHeader
-        title="Gigs"
+        title="Toques"
         actions={canEdit && gigs.rows && gigs.rows.length > 0 ? newButton : undefined}
       />
       {content}

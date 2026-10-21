@@ -29,14 +29,16 @@ const sidebar = () => within(screen.getByRole('complementary'));
 describe('renaming the band', () => {
   it('renames it from the sidebar, saving it and showing it straight away', async () => {
     const { repository, workspace, user } = await setup();
-    await user.click(sidebar().getByRole('button', { name: 'Band: My band. Rename' }));
-    const name = screen.getByLabelText('Name');
+    await user.click(
+      sidebar().getByRole('button', { name: `Banda: ${workspace.band.name}. Cambiar nombre` }),
+    );
+    const name = screen.getByLabelText('Nombre');
     await user.clear(name);
     await user.type(name, '  The Rock House  ');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     expect(
-      await sidebar().findByRole('button', { name: 'Band: The Rock House. Rename' }),
+      await sidebar().findByRole('button', { name: 'Banda: The Rock House. Cambiar nombre' }),
     ).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect((await repository.bands.get(workspace.band.id))!.name).toBe('The Rock House');
@@ -44,22 +46,24 @@ describe('renaming the band', () => {
 
   it('needs a name, and Cancel changes nothing', async () => {
     const { repository, workspace, user } = await setup();
-    await user.click(sidebar().getByRole('button', { name: /Rename/ }));
-    await user.clear(screen.getByLabelText('Name'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(screen.getByText('Give the band a name')).toBeTruthy();
+    await user.click(sidebar().getByRole('button', { name: /Cambiar nombre/ }));
+    await user.clear(screen.getByLabelText('Nombre'));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(screen.getByText('Ponle un nombre a la banda')).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(sidebar().getByRole('button', { name: 'Band: My band. Rename' })).toBeTruthy();
-    expect((await repository.bands.get(workspace.band.id))!.name).toBe('My band');
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(
+      sidebar().getByRole('button', { name: `Banda: ${workspace.band.name}. Cambiar nombre` }),
+    ).toBeTruthy();
+    expect((await repository.bands.get(workspace.band.id))!.name).toBe(workspace.band.name);
   });
 
   it('queues the new name for upload when the band is shared', async () => {
     const { repository, workspace, user } = await setup({ shared: true });
-    await user.click(sidebar().getByRole('button', { name: /Rename/ }));
-    await user.clear(screen.getByLabelText('Name'));
-    await user.type(screen.getByLabelText('Name'), 'The Rock House');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(sidebar().getByRole('button', { name: /Cambiar nombre/ }));
+    await user.clear(screen.getByLabelText('Nombre'));
+    await user.type(screen.getByLabelText('Nombre'), 'The Rock House');
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(async () =>
       expect(await repository.outbox.pending(10)).toMatchObject([

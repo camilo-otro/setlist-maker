@@ -1,23 +1,28 @@
+import { formatClock } from '@setlist/core';
 import type { SyncStatus } from '@setlist/storage';
 import { useSync } from '../sharing/SyncProvider';
 
 function describe(status: SyncStatus): { label: string; tone: 'ok' | 'busy' | 'warn' } {
-  const waiting = status.pending === 1 ? '1 change waiting' : `${status.pending} changes waiting`;
+  const waiting =
+    status.pending === 1 ? '1 cambio pendiente' : `${status.pending} cambios pendientes`;
   switch (status.state) {
     case 'synced':
-      return { label: status.pending > 0 ? `Saved · ${waiting}` : 'Synced', tone: 'ok' };
+      return { label: status.pending > 0 ? `Guardado · ${waiting}` : 'Sincronizado', tone: 'ok' };
     case 'syncing':
-      return { label: 'Syncing…', tone: 'busy' };
+      return { label: 'Sincronizando…', tone: 'busy' };
     case 'offline':
-      return { label: status.pending > 0 ? `Offline · ${waiting}` : 'Offline', tone: 'warn' };
+      return {
+        label: status.pending > 0 ? `Sin conexión · ${waiting}` : 'Sin conexión',
+        tone: 'warn',
+      };
     case 'stopped':
       return {
         label:
           status.reason === 'outdated'
-            ? 'Update the app to keep syncing'
+            ? 'Actualiza la app para seguir sincronizando'
             : status.reason === 'removed'
-              ? "You're no longer in this band: changes aren't syncing"
-              : "Signed out: changes aren't syncing",
+              ? 'Ya no estás en esta banda: los cambios no se sincronizan'
+              : 'Sesión cerrada: los cambios no se sincronizan',
         tone: 'warn',
       };
   }
@@ -29,8 +34,8 @@ export function SyncStatusLine() {
   if (!sync?.shared) return null;
   const { label, tone } = describe(sync.status);
   const last = sync.status.lastSyncedAt
-    ? `Last synced ${new Date(sync.status.lastSyncedAt).toLocaleTimeString()}`
-    : 'Not synced yet';
+    ? `Última sincronización: ${formatClock(new Date(sync.status.lastSyncedAt))}`
+    : 'Aún no se ha sincronizado';
   return (
     <p className={`sync-status sync-status--${tone}`} role="status" title={last}>
       <span className="sync-status__dot" aria-hidden="true" />

@@ -31,51 +31,70 @@ We weighed offering English and Spanish. That means moving every string into tra
 
 Use these words everywhere, so a thing has one name.
 
-| English              | Spanish                                  | Notes                                                        |
-| -------------------- | ---------------------------------------- | ------------------------------------------------------------ |
-| Library              | Repertorio                               | The band's songs                                             |
-| Song                 | Canción                                  |                                                              |
-| Gig                  | Toque                                    | How Colombian bands say it ("tenemos toque el viernes")      |
-| Upcoming / Past      | Próximos / Pasados                       | Toques                                                       |
-| Venue                | Lugar                                    |                                                              |
-| Setlist              | Setlist                                  | "el setlist"                                                 |
-| Set                  | Set                                      | "Set 1", "el set"                                            |
-| Encore               | Encore                                   |                                                              |
-| Break                | Descanso                                 |                                                              |
-| Note (setlist entry) | Nota                                     |                                                              |
-| Segue                | Enlace                                   | "Enlaza con la siguiente"                                    |
-| Template             | Plantilla                                |                                                              |
-| Band                 | Banda                                    |                                                              |
-| Key                  | Tono                                     | Not "tonalidad"                                              |
-| Tempo (BPM)          | Tempo (BPM)                              |                                                              |
-| Length               | Duración                                 |                                                              |
-| Tuning               | Afinación                                |                                                              |
-| Tags                 | Etiquetas                                |                                                              |
-| Notes (free text)    | Notas                                    |                                                              |
-| Original             | Original                                 |                                                              |
-| Active               | Activa                                   | Song status                                                  |
-| Learning             | En práctica                              | Song status                                                  |
-| Retired / archived   | Archivada                                | Song status                                                  |
-| Load-in / Start      | Montaje / Inicio                         | Gig times                                                    |
-| Mark as played       | Marcar como tocado                       | "Tocado" for a played gig                                    |
-| Cancelled            | Cancelado                                |                                                              |
-| Running time         | Duración total                           |                                                              |
-| Rate / rating        | Calificar / calificación                 | "Calificar canciones"                                        |
-| Stats                | Estadísticas                             |                                                              |
-| Share / share link   | Compartir / enlace para compartir        |                                                              |
-| Invite               | Invitar / invitación                     |                                                              |
-| Owner/editor/viewer  | Administrador / Editor / Solo lectura    | Member roles                                                 |
-| Member               | Integrante                               | A band member                                                |
-| Sign-in code         | Código de acceso                         | Emails and account securing                                  |
-| Sync                 | Sincronizar / sincronización             |                                                              |
-| Undo / Redo          | Deshacer / Rehacer                       |                                                              |
-| Print                | Imprimir                                 |                                                              |
-| Copy for WhatsApp    | Copiar para WhatsApp                     |                                                              |
-| Spotify playlist     | Playlist de Spotify                      | "la playlist"; the description says "Hecha con Setlist Maker" |
+| English                 | Spanish                               | Notes                                                         |
+| ----------------------- | ------------------------------------- | ------------------------------------------------------------- |
+| Library                 | Repertorio                            | The band's songs                                              |
+| Song                    | Canción                               |                                                               |
+| Gig                     | Toque                                 | How Colombian bands say it ("tenemos toque el viernes")       |
+| Upcoming / Past         | Próximos / Pasados                    | Toques                                                        |
+| Venue                   | Lugar                                 |                                                               |
+| Setlist                 | Setlist                               | "el setlist"                                                  |
+| Set                     | Set                                   | "Set 1", "el set"                                             |
+| Encore                  | Encore                                |                                                               |
+| Break                   | Descanso                              |                                                               |
+| Note (setlist entry)    | Nota                                  |                                                               |
+| Segue                   | Enlace                                | "Enlaza con la siguiente"                                     |
+| Template                | Plantilla                             |                                                               |
+| Band                    | Banda                                 |                                                               |
+| Key                     | Tono                                  | Not "tonalidad"                                               |
+| Tempo (BPM)             | Tempo (BPM)                           |                                                               |
+| Length                  | Duración                              |                                                               |
+| Tuning                  | Afinación                             |                                                               |
+| Tags                    | Etiquetas                             |                                                               |
+| Notes (free text)       | Notas                                 |                                                               |
+| Original                | Original                              |                                                               |
+| Active                  | Activa                                | Song status                                                   |
+| Learning                | En práctica                           | Song status                                                   |
+| Retired / archived      | Archivada                             | Song status                                                   |
+| Load-in / Start         | Montaje / Inicio                      | Gig times                                                     |
+| Mark as played          | Marcar como tocado                    | "Tocado" for a played gig                                     |
+| Cancelled               | Cancelado                             |                                                               |
+| Running time            | Duración total                        |                                                               |
+| Rate / rating           | Calificar / calificación              | "Calificar canciones"                                         |
+| Stats                   | Estadísticas                          |                                                               |
+| Share / share link      | Compartir / enlace para compartir     |                                                               |
+| Invite                  | Invitar / invitación                  |                                                               |
+| Owner/editor/viewer     | Administrador / Editor / Solo lectura | Member roles                                                  |
+| Member                  | Integrante                            | A band member                                                 |
+| Sign-in code            | Código de acceso                      | Emails and account securing                                   |
+| Sync                    | Sincronizar / sincronización          |                                                               |
+| Undo / Redo             | Deshacer / Rehacer                    |                                                               |
+| Print                   | Imprimir                              |                                                               |
+| Copy for WhatsApp       | Copiar para WhatsApp                  |                                                               |
+| Spotify playlist        | Playlist de Spotify                   | "la playlist"; the description says "Hecha con Setlist Maker" |
+| Title / Artist / Status | Título / Artista / Estado             | Song fields                                                   |
+| Our own song / covers   | Canción propia / covers               | Filters: Todas / Propias / Covers                             |
+| Not set                 | Sin definir                           | "Sin artista", "Sin etiquetas", "Sin notas"                   |
+| History (a song's)      | Historial                             | "Tocada 2 veces, la primera el …, la última el …"             |
+| Never played            | Nunca se ha tocado                    | "Hace rato no se toca", "Se tocó aquí la última vez"          |
+| What we played          | Lo que tocamos                        | Mark-as-played dialog; "Al final no se tocó"                  |
+| How did it go?          | ¿Cómo les fue?                        | Rating after a gig                                            |
+| Start from…             | Empezar desde…                        | Starting a setlist from another one                           |
+| Target length           | Duración objetivo                     | A set's                                                       |
+| Missing at this gig     | Falta en este toque                   | "Faltan: piano", "1 necesita piano"                           |
+| Edit / Save / Done      | Editar / Guardar / Listo              | Also Cancelar, Eliminar, Quitar (an entry, a member)          |
+| Turn off (a link)       | Desactivar                            | Share links and invites                                       |
+| Email                   | Correo                                | "Iniciar sesión con correo"                                   |
+| Sign in / Your account  | Iniciar sesión / Tu cuenta            |                                                               |
+| Join a band             | Unirse a una banda                    | Viewer: "Únete a X"                                           |
+| Invite link             | Enlace de invitación                  | "Invitaciones pendientes"                                     |
+| Offline                 | Sin conexión                          | Sync line: Sincronizado, Sincronizando…, N cambios pendientes |
+| Computer                | Computador                            | Colombian, not "ordenador"                                    |
+| Couldn't connect        | No se pudo conectar con el servidor   | "Revisa tu conexión a internet e inténtalo de nuevo."         |
 
 ## Consequences
 
 - One pass translates everything, and tests that find elements by their text change with it.
 - New features are written in Spanish from the start, using this glossary. Copy reviews check the glossary and tú.
-- Supabase's auth emails come from `supabase/templates`, so they're translated there, and deploy like the rest.
+- Supabase's sign-in emails are translated in `supabase/templates` and `config.toml`, which the local stack uses. The hosted project's copies were pasted into its dashboard by hand (README, "Accounts"), so they're pasted again after this change.
 - **To revisit:** if a band that doesn't speak Spanish starts using the app. Adding English then means moving strings into translation files and adding a language setting.

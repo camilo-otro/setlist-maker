@@ -54,14 +54,14 @@ export function CopyForWhatsApp({
       type="button"
       className="sm-button"
       onClick={() => void share()}
-      title={failed ? "Couldn't copy the setlist" : 'Copy the setlist as text for WhatsApp'}
+      title={failed ? 'No se pudo copiar el setlist' : 'Copia el setlist como texto para WhatsApp'}
     >
       {done ? (
         <Check size={14} aria-hidden="true" />
       ) : (
         <MessageCircle size={14} aria-hidden="true" />
       )}
-      {done ? 'Copied' : failed ? 'Try again' : 'Copy for WhatsApp'}
+      {done ? 'Copiado' : failed ? 'Intenta de nuevo' : 'Copiar para WhatsApp'}
     </button>
   );
 }

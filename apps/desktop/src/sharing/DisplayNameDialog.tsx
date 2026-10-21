@@ -25,7 +25,7 @@ export function DisplayNameDialog({
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!name.trim()) {
-      setError('Enter the name your bandmates know you by');
+      setError('Escribe el nombre con el que te conocen en la banda');
       return;
     }
     setError(undefined);
@@ -33,19 +33,19 @@ export function DisplayNameDialog({
     try {
       onReady(await identity.ensure(name));
     } catch {
-      setError("Couldn't connect. Check your internet connection and try again.");
+      setError('No se pudo conectar. Revisa tu conexión a internet e inténtalo de nuevo.');
       setBusy(false);
     }
   }
 
   return (
-    <Modal title="What should your bandmates call you?" onClose={onClose} busy={busy}>
+    <Modal title="¿Cómo te llaman en la banda?" onClose={onClose} busy={busy}>
       <form className="form-grid" onSubmit={save} noValidate>
         <p className="muted form-grid__wide">
-          Shown next to your changes and in the band&apos;s member list. No account or password
-          needed.
+          Aparece junto a tus cambios y en la lista de integrantes de la banda. No necesitas cuenta
+          ni contraseña.
         </p>
-        <Field id="display-name" label="Your name" error={error} wide>
+        <Field id="display-name" label="Tu nombre" error={error} wide>
           <input
             {...inputProps('display-name', error)}
             autoFocus
@@ -57,10 +57,10 @@ export function DisplayNameDialog({
         </Field>
         <div className="modal__actions form-grid__wide">
           <button type="button" className="sm-button" onClick={onClose} disabled={busy}>
-            Cancel
+            Cancelar
           </button>
           <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-            {busy ? 'Connecting…' : 'Continue'}
+            {busy ? 'Conectando…' : 'Continuar'}
           </button>
         </div>
       </form>

@@ -18,9 +18,9 @@ export function SongTags({
     <span className={`song-tags ${className}`.trim()}>
       {tags.map((tag) =>
         needs.has(tag.toLowerCase()) ? (
-          <span key={tag} className="tag tag--missing" title="Missing at this gig">
+          <span key={tag} className="tag tag--missing" title="Falta en este toque">
             {tag}
-            <span className="visually-hidden"> (missing at this gig)</span>
+            <span className="visually-hidden"> (falta en este toque)</span>
           </span>
         ) : (
           <span key={tag} className="tag">

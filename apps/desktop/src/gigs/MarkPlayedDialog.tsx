@@ -111,18 +111,19 @@ export function MarkPlayedDialog({
     });
 
   return (
-    <Modal title={played ? 'What we played' : 'Mark as played'} busy={busy} onClose={onClose}>
+    <Modal title={played ? 'Lo que tocamos' : 'Marcar como tocado'} busy={busy} onClose={onClose}>
       <p className="muted">
-        Untick any song you skipped. Played one that isn&apos;t here? Add it to the setlist first.
+        Desmarca las canciones que no tocaron. ¿Tocaron una que no está aquí? Agrégala primero al
+        setlist.
       </p>
       {skipped === null ? (
-        <p className="muted">Loading…</p>
+        <p className="muted">Cargando…</p>
       ) : (
         <div className="played-list">
           {sets.map(({ block, songs }) => (
             <fieldset key={block.id} className="played-list__set">
               <legend>{block.name}</legend>
-              {songs.length === 0 && <p className="muted">No songs</p>}
+              {songs.length === 0 && <p className="muted">Sin canciones</p>}
               {songs.map(({ entry, song }) => (
                 <label key={entry.id} className="played-list__song">
                   <input
@@ -139,7 +140,7 @@ export function MarkPlayedDialog({
       )}
       {failure && (
         <p className="sm-field__error" role="alert">
-          Couldn&apos;t save: {failure}
+          No se pudo guardar: {failure}
         </p>
       )}
       <div className="modal__actions">
@@ -151,12 +152,12 @@ export function MarkPlayedDialog({
               disabled={busy}
               onClick={() => void run(() => unmarkGigPlayed(repository, gig.id))}
             >
-              Not played after all
+              Al final no se tocó
             </button>
           </div>
         )}
         <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button
           type="button"
@@ -164,7 +165,7 @@ export function MarkPlayedDialog({
           disabled={busy || skipped === null}
           onClick={() => void save()}
         >
-          {played ? 'Save' : `Played ${count} ${count === 1 ? 'song' : 'songs'}`}
+          {played ? 'Guardar' : `Tocamos ${count} ${count === 1 ? 'canción' : 'canciones'}`}
         </button>
       </div>
     </Modal>

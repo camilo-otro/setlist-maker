@@ -1,12 +1,10 @@
-import type { Venue } from '@setlist/core';
+import { collator, type Venue } from '@setlist/core';
 import { EmptyState, PageHeader } from '@setlist/ui';
 import { MapPin, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useBandRows } from '../storage/useBandRows';
 import { VenueDialog } from '../venues/VenueDialog';
 import { useMembership } from '../sharing/MembershipProvider';
-
-const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
 export function VenuesPage() {
   const venues = useBandRows('venues');
@@ -30,7 +28,7 @@ export function VenuesPage() {
   const addButton = (
     <button type="button" className="sm-button sm-button--primary" onClick={() => setEditing(null)}>
       <Plus size={16} aria-hidden="true" />
-      Add venue
+      Agregar lugar
     </button>
   );
 
@@ -38,17 +36,17 @@ export function VenuesPage() {
   if (venues.error) {
     content = (
       <p className="sm-field__error" role="alert">
-        Couldn&apos;t load venues: {String(venues.error)}
+        No se pudieron cargar los lugares: {String(venues.error)}
       </p>
     );
   } else if (venues.rows === null) {
-    content = <p className="muted">Loading venues…</p>;
+    content = <p className="muted">Cargando lugares…</p>;
   } else if (venues.rows.length === 0) {
     content = (
       <>
-        <EmptyState icon={<MapPin size={24} />} title="No venues yet">
-          Save the places you play, with notes like the load-in door or who to call. You can also
-          add a venue while creating a gig.
+        <EmptyState icon={<MapPin size={24} />} title="Aún no hay lugares">
+          Guarda los lugares donde tocas, con notas como la puerta del montaje o a quién llamar.
+          También puedes agregar un lugar mientras creas un toque.
         </EmptyState>
         {canEdit && <div className="library-empty-action">{addButton}</div>}
       </>
@@ -58,11 +56,11 @@ export function VenuesPage() {
       <table className="song-table">
         <thead>
           <tr>
-            <th scope="col">Name</th>
-            <th scope="col">City</th>
-            <th scope="col">Address</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Ciudad</th>
+            <th scope="col">Dirección</th>
             <th scope="col" className="song-table__numeric">
-              Gigs
+              Toques
             </th>
           </tr>
         </thead>
@@ -95,7 +93,7 @@ export function VenuesPage() {
   return (
     <>
       <PageHeader
-        title="Venues"
+        title="Lugares"
         actions={canEdit && venues.rows && venues.rows.length > 0 ? addButton : undefined}
       />
       {content}

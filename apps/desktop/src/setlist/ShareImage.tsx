@@ -71,14 +71,14 @@ export function ShareImage({
   const copy = () =>
     run(async () => {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': picture() })]);
-      return 'Image copied';
+      return 'Imagen copiada';
     });
 
   const save = () => run(async () => saveFile(name, await picture()));
 
   const failed = status.kind === 'failed';
   const label = (idle: string) =>
-    status.kind === 'done' ? status.message : failed ? 'Try again' : idle;
+    status.kind === 'done' ? status.message : failed ? 'Intenta de nuevo' : idle;
   const icon =
     status.kind === 'done' ? (
       <Check size={14} aria-hidden="true" />
@@ -92,10 +92,10 @@ export function ShareImage({
         type="button"
         className="sm-button"
         onClick={() => void share()}
-        title={failed ? "Couldn't share the image" : 'Share the setlist as a picture'}
+        title={failed ? 'No se pudo compartir la imagen' : 'Comparte el setlist como imagen'}
       >
         {icon}
-        {label('Share image')}
+        {label('Compartir imagen')}
       </button>
     );
   }
@@ -108,18 +108,20 @@ export function ShareImage({
           className="sm-button"
           onClick={() => void copy()}
           title={
-            failed ? "Couldn't copy the image" : 'Copy the setlist as a picture, to paste in a chat'
+            failed
+              ? 'No se pudo copiar la imagen'
+              : 'Copia el setlist como imagen, para pegarlo en un chat'
           }
         >
           {icon}
-          {label('Copy image')}
+          {label('Copiar imagen')}
         </button>
       )}
       <button
         type="button"
         className="icon-button"
-        aria-label={canCopy ? 'Save image' : label('Save image')}
-        title={`Save the setlist as a picture (${name})`}
+        aria-label={canCopy ? 'Guardar imagen' : label('Guardar imagen')}
+        title={`Guarda el setlist como imagen (${name})`}
         onClick={() => void save()}
       >
         {!canCopy && status.kind === 'done' ? (

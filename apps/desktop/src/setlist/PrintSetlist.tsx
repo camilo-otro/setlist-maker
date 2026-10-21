@@ -57,8 +57,8 @@ export function PrintSetlist({
       onClick={() => void print()}
       title={
         status.kind === 'failed'
-          ? "Couldn't make the PDF"
-          : 'A PDF of the setlist to print: the band name and song titles, a page per set'
+          ? 'No se pudo crear el PDF'
+          : 'Un PDF del setlist para imprimir: el nombre de la banda y las canciones, una página por set'
       }
     >
       {status.kind === 'done' ? (
@@ -69,10 +69,10 @@ export function PrintSetlist({
       {status.kind === 'done'
         ? status.message
         : status.kind === 'failed'
-          ? 'Try again'
+          ? 'Intenta de nuevo'
           : status.kind === 'busy'
-            ? 'Making PDF…'
-            : 'Print'}
+            ? 'Creando PDF…'
+            : 'Imprimir'}
     </button>
   );
 }

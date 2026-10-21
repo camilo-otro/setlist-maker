@@ -83,12 +83,15 @@ export function keysInUse(songs: readonly Pick<Song, 'key'>[]): string[] {
   return MUSICAL_KEYS.filter((key) => used.has(key));
 }
 
-/** Instrument tags offered when tagging a song (#88). Tags stay free text. */
+/**
+ * Instrument tags offered when tagging a song (#88), in Spanish (ADR 0004). Tags stay free text,
+ * so tags a band already uses in English keep working.
+ */
 export const SUGGESTED_TAGS: readonly string[] = [
   'piano',
-  'keys',
-  '5-string',
-  'acoustic',
-  'tambourine',
+  'teclado',
+  '5 cuerdas',
+  'acústica',
+  'pandereta',
   'capo',
 ];

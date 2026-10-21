@@ -114,8 +114,8 @@ Locally, codes land in the test mailbox at http://127.0.0.1:54324 (Mailpit), and
    - Sender email `setlist@rockthehouse.app`, sender name `Setlist Maker`
    - Host `smtp.resend.com`, port `465`, username `resend`, password: the Resend API key
 5. **Supabase dashboard → Authentication → Emails → Templates:**
-   - **Magic Link:** subject `Your Setlist Maker sign-in code`, body: the contents of `supabase/templates/sign_in_code.html`.
-   - **Change Email Address:** subject `Your Setlist Maker code`, body: the contents of `supabase/templates/add_email_code.html`.
+   - **Magic Link:** subject `Tu código de acceso a Setlist Maker`, body: the contents of `supabase/templates/sign_in_code.html`.
+   - **Change Email Address:** subject `Tu código de Setlist Maker`, body: the contents of `supabase/templates/add_email_code.html`.
 
    Both show `{{ .Token }}`, the code.
 

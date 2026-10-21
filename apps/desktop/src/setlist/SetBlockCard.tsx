@@ -74,7 +74,7 @@ export function SetBlockCard({
           type="button"
           ref={setActivatorNodeRef}
           className="drag-handle"
-          aria-label={`Move ${block.name}`}
+          aria-label={`Mover ${block.name}`}
           {...attributes}
           {...listeners}
         >
@@ -87,20 +87,20 @@ export function SetBlockCard({
           className={
             target !== null && time.totalSec > target ? 'set__time set__time--over' : 'set__time'
           }
-          aria-label={`Running time ${formatDuration(time.totalSec)}${target !== null ? ` of ${formatDuration(target)}` : ''}`}
+          aria-label={`Duración total ${formatDuration(time.totalSec)}${target !== null ? ` de ${formatDuration(target)}` : ''}`}
         >
           {formatDuration(time.totalSec)}
           {target !== null && <span className="muted"> / {formatDuration(target)}</span>}
         </span>
         <span className="muted set__count">
-          {time.songs} {time.songs === 1 ? 'song' : 'songs'}
-          {time.missingLengths > 0 && ` · ${time.missingLengths} without length`}
+          {time.songs} {time.songs === 1 ? 'canción' : 'canciones'}
+          {time.missingLengths > 0 && ` · ${time.missingLengths} sin duración`}
         </span>
         <span className="set__actions">
           <button
             type="button"
             className="icon-button"
-            aria-label={`Edit ${block.name}`}
+            aria-label={`Editar ${block.name}`}
             onClick={onEditBlock}
           >
             <Pencil size={14} aria-hidden="true" />
@@ -108,7 +108,7 @@ export function SetBlockCard({
           <button
             type="button"
             className="icon-button"
-            aria-label={`Delete ${block.name}`}
+            aria-label={`Eliminar ${block.name}`}
             onClick={onRemoveBlock}
           >
             <Trash2 size={14} aria-hidden="true" />
@@ -119,7 +119,7 @@ export function SetBlockCard({
       <ul
         ref={setDropRef}
         className={isOver ? 'set__entries set__entries--over' : 'set__entries'}
-        aria-label={`${block.name} songs`}
+        aria-label={`Canciones de ${block.name}`}
       >
         <SortableContext
           items={entries.map((entry) => entry.id)}
@@ -144,7 +144,7 @@ export function SetBlockCard({
         </SortableContext>
         {entries.length === 0 && (
           <li className="set__empty muted">
-            Drag songs here from the library, or use its Add buttons.
+            Arrastra canciones aquí desde el repertorio, o usa sus botones de Agregar.
           </li>
         )}
       </ul>
@@ -152,15 +152,15 @@ export function SetBlockCard({
       <footer className="set__footer">
         <button type="button" className="sm-button set__add-songs" onClick={onAddSongs}>
           <Plus size={14} aria-hidden="true" />
-          Add songs
+          Agregar canciones
         </button>
         <button type="button" className="sm-button" onClick={onAddBreak}>
           <Coffee size={14} aria-hidden="true" />
-          Add break
+          Agregar descanso
         </button>
         <button type="button" className="sm-button" onClick={onAddNote}>
           <StickyNote size={14} aria-hidden="true" />
-          Add note
+          Agregar nota
         </button>
       </footer>
     </section>

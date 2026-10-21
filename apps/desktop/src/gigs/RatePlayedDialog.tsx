@@ -18,13 +18,13 @@ function Stars({
   onChange: (value: number | null) => void;
 }) {
   return (
-    <div className="stars" role="group" aria-label={`Rating for ${title}`}>
+    <div className="stars" role="group" aria-label={`Calificación de ${title}`}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
           className={value !== null && n <= value ? 'stars__star stars__star--on' : 'stars__star'}
-          aria-label={n === 1 ? '1 star' : `${n} stars`}
+          aria-label={n === 1 ? '1 estrella' : `${n} estrellas`}
           aria-pressed={value === n}
           onClick={() => onChange(value === n ? null : n)}
         >
@@ -105,14 +105,15 @@ export function RatePlayedDialog({
   }
 
   return (
-    <Modal title="How did it go?" busy={busy} onClose={onClose}>
+    <Modal title="¿Cómo les fue?" busy={busy} onClose={onClose}>
       <p className="muted">
-        Rate each song and note anything worth remembering. It shows in the song&apos;s history.
+        Califica cada canción y anota lo que valga la pena recordar. Aparece en el historial de la
+        canción.
       </p>
       {performances === null ? (
-        <p className="muted">Loading…</p>
+        <p className="muted">Cargando…</p>
       ) : performances.length === 0 ? (
-        <p className="muted">No songs were recorded as played at this gig.</p>
+        <p className="muted">No hay canciones registradas como tocadas en este toque.</p>
       ) : (
         <div className="played-list">
           {sets.map(({ name, songs }) => (
@@ -130,8 +131,8 @@ export function RatePlayedDialog({
                     />
                     <input
                       className="sm-input rate-song__notes"
-                      placeholder="Notes"
-                      aria-label={`Notes for ${p.songTitleSnapshot}`}
+                      placeholder="Notas"
+                      aria-label={`Notas de ${p.songTitleSnapshot}`}
                       maxLength={1000}
                       value={notes ?? ''}
                       onChange={(e) => edit(p, { notes: e.target.value })}
@@ -145,12 +146,12 @@ export function RatePlayedDialog({
       )}
       {failure && (
         <p className="sm-field__error" role="alert">
-          Couldn&apos;t save: {failure}
+          No se pudo guardar: {failure}
         </p>
       )}
       <div className="modal__actions">
         <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-          {justPlayed ? 'Skip' : 'Cancel'}
+          {justPlayed ? 'Omitir' : 'Cancelar'}
         </button>
         <button
           type="button"
@@ -158,7 +159,7 @@ export function RatePlayedDialog({
           disabled={busy || !performances?.length}
           onClick={() => void save()}
         >
-          Save
+          Guardar
         </button>
       </div>
     </Modal>

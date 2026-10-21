@@ -107,16 +107,18 @@ const rows = () =>
 describe('Band page', () => {
   it('lists the members, owners first, and marks you', async () => {
     await setup();
-    await waitFor(() => expect(rows()).toEqual(['CamiloYouOwner', 'DaveEditor', 'VeraViewer']));
+    await waitFor(() =>
+      expect(rows()).toEqual(['CamiloTúAdministrador', 'DaveEditor', 'VeraSolo lectura']),
+    );
   });
 
   it("lets an owner change someone's role, queued for upload", async () => {
     const { repository, members, user } = await setup();
     await user.click(await screen.findByRole('button', { name: 'Dave' }));
-    await user.selectOptions(screen.getByLabelText('Role'), 'viewer');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.selectOptions(screen.getByLabelText('Rol'), 'viewer');
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
-    await waitFor(() => expect(rows()).toContain('DaveViewer'));
+    await waitFor(() => expect(rows()).toContain('DaveSolo lectura'));
     expect((await repository.outbox.pending(10)).map((op) => [op.rowId, op.fields.role])).toEqual([
       [members[1]!.id, 'viewer'],
     ]);
@@ -125,11 +127,15 @@ describe('Band page', () => {
   it('hands over ownership: the new owner first, then you step down', async () => {
     const { repository, members, user } = await setup();
     await user.click(await screen.findByRole('button', { name: 'Dave' }));
-    await user.click(screen.getByRole('button', { name: 'Make owner' }));
-    expect(screen.getByRole('alert').textContent).toMatch(/You'll become an editor/);
-    await user.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Make owner' }));
+    await user.click(screen.getByRole('button', { name: 'Hacer administrador' }));
+    expect(screen.getByRole('alert').textContent).toMatch(/pasarás a ser editor/);
+    await user.click(
+      within(screen.getByRole('alert')).getByRole('button', { name: 'Hacer administrador' }),
+    );
 
-    await waitFor(() => expect(rows()).toEqual(['DaveOwner', 'CamiloYouEditor', 'VeraViewer']));
+    await waitFor(() =>
+      expect(rows()).toEqual(['DaveAdministrador', 'CamiloTúEditor', 'VeraSolo lectura']),
+    );
     expect((await repository.outbox.pending(10)).map((op) => [op.rowId, op.fields.role])).toEqual([
       [members[1]!.id, 'owner'],
       [members[0]!.id, 'editor'],
@@ -139,52 +145,56 @@ describe('Band page', () => {
   it('removes a member after confirming', async () => {
     const { user } = await setup();
     await user.click(await screen.findByRole('button', { name: 'Vera' }));
-    await user.click(screen.getByRole('button', { name: 'Remove' }));
-    await user.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Remove' }));
-    await waitFor(() => expect(rows()).toEqual(['CamiloYouOwner', 'DaveEditor']));
+    await user.click(screen.getByRole('button', { name: 'Quitar' }));
+    await user.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Quitar' }));
+    await waitFor(() => expect(rows()).toEqual(['CamiloTúAdministrador', 'DaveEditor']));
   });
 
   it('lets anyone change their own name, and nothing else when not an owner', async () => {
     const { user } = await setup({ myRole: 'editor' });
     expect(await screen.findByRole('button', { name: 'Camilo' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Dave' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Rename band' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cambiar nombre' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Camilo' }));
-    await user.clear(screen.getByLabelText('Your name'));
-    await user.type(screen.getByLabelText('Your name'), 'Cami');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(rows()).toContain('CamiYouEditor'));
+    await user.clear(screen.getByLabelText('Tu nombre'));
+    await user.type(screen.getByLabelText('Tu nombre'), 'Cami');
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(rows()).toContain('CamiTúEditor'));
   });
 
   it('explains that a band that isn’t shared is just you', async () => {
     await setup({ shared: false });
-    expect(await screen.findByText('Just you for now')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Rename band' })).toBeTruthy();
+    expect(await screen.findByText('Por ahora solo estás tú')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cambiar nombre' })).toBeTruthy();
   });
 });
 
 describe('Viewers', () => {
   it('see the library without ways to change it', async () => {
     await setup({ myRole: 'viewer', path: '/library' });
-    await screen.findByRole('heading', { name: 'Library' });
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Add song' })).toBeNull());
-    expect(screen.queryByRole('button', { name: 'Import CSV' })).toBeNull();
+    await screen.findByRole('heading', { name: 'Repertorio' });
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Agregar canción' })).toBeNull(),
+    );
+    expect(screen.queryByRole('button', { name: 'Importar CSV' })).toBeNull();
   });
 
   it('see a setlist without ways to change it', async () => {
     await setup({ myRole: 'viewer', path: '/gigs/:gig' });
     await screen.findByRole('heading', { name: 'Friday' });
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Add set' })).toBeNull());
-    expect(screen.queryByRole('button', { name: 'Edit details' })).toBeNull();
-    expect(screen.queryByRole('complementary', { name: 'Library' })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Agregar set' })).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Editar detalles' })).toBeNull();
+    expect(screen.queryByRole('complementary', { name: 'Repertorio' })).toBeNull();
     expect(document.querySelector('.setlist-editor--readonly')).toBeTruthy();
   });
 
   it('can’t rename the band from the sidebar', async () => {
     await setup({ myRole: 'viewer', path: '/gigs' });
-    await screen.findByRole('heading', { name: 'Gigs' });
-    await waitFor(() => expect(screen.queryByRole('button', { name: /Rename/ })).toBeNull());
+    await screen.findByRole('heading', { name: 'Toques' });
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /Cambiar nombre/ })).toBeNull(),
+    );
   });
 });
 
@@ -209,16 +219,18 @@ describe('Invites', () => {
         invites: { pending: async () => [...pending], create, revoke: async () => {} },
       },
     });
-    await user.click(await screen.findByRole('button', { name: 'Invite' }));
-    await user.selectOptions(screen.getByLabelText('Link works for'), '30');
-    await user.selectOptions(screen.getByLabelText('Can be used'), '5');
-    await user.click(screen.getByRole('button', { name: 'Create link' }));
+    await user.click(await screen.findByRole('button', { name: 'Invitar' }));
+    await user.selectOptions(screen.getByLabelText('El enlace dura'), '30');
+    await user.selectOptions(screen.getByLabelText('Se puede usar'), '5');
+    await user.click(screen.getByRole('button', { name: 'Crear enlace' }));
 
-    expect((await screen.findByLabelText<HTMLInputElement>('Invite link')).value).toBe(INVITE.url);
+    expect((await screen.findByLabelText<HTMLInputElement>('Enlace de invitación')).value).toBe(
+      INVITE.url,
+    );
     expect(create).toHaveBeenCalledWith(band.id, { role: 'editor', days: 30, maxUses: 5 });
-    await user.click(screen.getByRole('button', { name: 'Done' }));
-    const list = within(await screen.findByRole('region', { name: 'Pending invites' }));
-    expect(list.getByText(/Editor · 1 of 5 uses/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Listo' }));
+    const list = within(await screen.findByRole('region', { name: 'Invitaciones pendientes' }));
+    expect(list.getByText(/Editor · 1 de 5 usos · hasta el 26 de oct de 2026/)).toBeTruthy();
   });
 
   it('turns a pending invite off', async () => {
@@ -229,18 +241,18 @@ describe('Invites', () => {
     const { user } = await setup({
       overrides: { invites: { pending: async () => pending, create: async () => INVITE, revoke } },
     });
-    const list = within(await screen.findByRole('region', { name: 'Pending invites' }));
-    await user.click(list.getByRole('button', { name: 'Turn off' }));
+    const list = within(await screen.findByRole('region', { name: 'Invitaciones pendientes' }));
+    await user.click(list.getByRole('button', { name: 'Desactivar' }));
     expect(revoke).toHaveBeenCalledWith('i1');
     await waitFor(() =>
-      expect(screen.queryByRole('region', { name: 'Pending invites' })).toBeNull(),
+      expect(screen.queryByRole('region', { name: 'Invitaciones pendientes' })).toBeNull(),
     );
   });
 
   it("isn't offered to editors", async () => {
     await setup({ myRole: 'editor' });
-    await screen.findByRole('button', { name: 'Join a band' });
-    expect(screen.queryByRole('button', { name: 'Invite' })).toBeNull();
+    await screen.findByRole('button', { name: 'Unirse a una banda' });
+    expect(screen.queryByRole('button', { name: 'Invitar' })).toBeNull();
   });
 });
 
@@ -259,18 +271,18 @@ describe('Joining a band', () => {
       shared: false,
       overrides: { previewInvite: async () => preview, joinBand },
     });
-    await user.click(await screen.findByRole('button', { name: 'Join a band' }));
+    await user.click(await screen.findByRole('button', { name: 'Unirse a una banda' }));
     await user.type(
-      screen.getByLabelText('Invite link'),
+      screen.getByLabelText('Enlace de invitación'),
       'https://setlist.rockthehouse.app/#join=abcdefghijklmnopqrstuvwxyz',
     );
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
-    expect(await screen.findByText(/Juan invited you to join/)).toBeTruthy();
-    expect(screen.getByLabelText<HTMLInputElement>('Your name').value).toBe('Camilo');
-    await user.click(screen.getByRole('button', { name: 'Join The Rock House' }));
+    expect(await screen.findByText(/Juan te invitó a unirte/)).toBeTruthy();
+    expect(screen.getByLabelText<HTMLInputElement>('Tu nombre').value).toBe('Camilo');
+    await user.click(screen.getByRole('button', { name: 'Unirse a The Rock House' }));
     expect(joinBand).toHaveBeenCalledWith('abcdefghijklmnopqrstuvwxyz', 'Camilo');
-    expect(await screen.findByText('Opening the band…')).toBeTruthy();
+    expect(await screen.findByText('Abriendo la banda…')).toBeTruthy();
   });
 
   it('starts from an invite opened on the phone, without pasting', async () => {
@@ -280,9 +292,9 @@ describe('Joining a band', () => {
       path: '/join/abcdefghijklmnopqrstuvwxyz',
       overrides: { previewInvite },
     });
-    expect(await screen.findByText(/Juan invited you to join/)).toBeTruthy();
+    expect(await screen.findByText(/Juan te invitó a unirte/)).toBeTruthy();
     expect(previewInvite).toHaveBeenCalledWith('abcdefghijklmnopqrstuvwxyz');
-    expect(screen.getByRole('button', { name: 'Join The Rock House' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Unirse a The Rock House' })).toBeTruthy();
   });
 
   it('explains links that are wrong, closed or refused', async () => {
@@ -292,25 +304,29 @@ describe('Joining a band', () => {
       overrides: {
         previewInvite: async () => ({ ...preview, status }),
         joinBand: async () => {
-          throw new InviteError('This invite has been used up. Ask for a new one.');
+          throw new InviteError(
+            'Esta invitación ya se usó todas las veces posibles. Pide una nueva.',
+          );
         },
       },
     });
-    await user.click(await screen.findByRole('button', { name: 'Join a band' }));
-    await user.type(screen.getByLabelText('Invite link'), 'not a link');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(screen.getByText('Paste the invite link your bandmate sent you')).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: 'Unirse a una banda' }));
+    await user.type(screen.getByLabelText('Enlace de invitación'), 'not a link');
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByText('Pega el enlace de invitación que te enviaron')).toBeTruthy();
 
-    await user.clear(screen.getByLabelText('Invite link'));
-    await user.type(screen.getByLabelText('Invite link'), 'abcdefghijklmnopqrstuvwxyz');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByText('This invite has expired. Ask for a new one.')).toBeTruthy();
+    await user.clear(screen.getByLabelText('Enlace de invitación'));
+    await user.type(screen.getByLabelText('Enlace de invitación'), 'abcdefghijklmnopqrstuvwxyz');
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByText('Esta invitación ya venció. Pide una nueva.')).toBeTruthy();
 
     status = 'open';
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.click(await screen.findByRole('button', { name: 'Join The Rock House' }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    await user.click(await screen.findByRole('button', { name: 'Unirse a The Rock House' }));
     expect(
-      await screen.findByText('This invite has been used up. Ask for a new one.'),
+      await screen.findByText(
+        'Esta invitación ya se usó todas las veces posibles. Pide una nueva.',
+      ),
     ).toBeTruthy();
   });
 });
@@ -330,7 +346,7 @@ function accountIdentity(start: { email: string | null }) {
       return { confirmed: false };
     },
     confirmEmail: async (to, code) => {
-      if (code !== '123456') throw new EmailCodeError("That code isn't right, or it has expired.");
+      if (code !== '123456') throw new EmailCodeError('Ese código no es correcto o ya venció.');
       calls.push(`confirm ${to}`);
       email = to;
     },
@@ -347,37 +363,37 @@ describe('Your account', () => {
   it('adds an email to this sign-in with a code, and then says who is signed in', async () => {
     const { identity, calls } = accountIdentity({ email: null });
     const { user } = await setup({ overrides: { identity } });
-    const account = within(await screen.findByRole('region', { name: 'Your account' }));
-    expect(account.getByText(/only works on this device/)).toBeTruthy();
+    const account = within(await screen.findByRole('region', { name: 'Tu cuenta' }));
+    expect(account.getByText(/solo funciona en este dispositivo/)).toBeTruthy();
 
-    await user.click(account.getByRole('button', { name: 'Add your email' }));
-    await user.type(screen.getByLabelText('Email'), 'camilo@example.com');
-    await user.click(screen.getByRole('button', { name: 'Send code' }));
-    expect(await screen.findByText(/We sent a 6-digit code to/)).toBeTruthy();
+    await user.click(account.getByRole('button', { name: 'Agregar tu correo' }));
+    await user.type(screen.getByLabelText('Correo'), 'camilo@example.com');
+    await user.click(screen.getByRole('button', { name: 'Enviar código' }));
+    expect(await screen.findByText(/Enviamos un código de 6 dígitos a/)).toBeTruthy();
 
-    await user.type(screen.getByLabelText('Code'), '000000');
-    await user.click(screen.getByRole('button', { name: 'Add email' }));
-    expect(await screen.findByText(/isn't right/)).toBeTruthy();
+    await user.type(screen.getByLabelText('Código'), '000000');
+    await user.click(screen.getByRole('button', { name: 'Agregar correo' }));
+    expect(await screen.findByText(/no es correcto/)).toBeTruthy();
 
-    await user.clear(screen.getByLabelText('Code'));
-    await user.type(screen.getByLabelText('Code'), '123 456');
-    await user.click(screen.getByRole('button', { name: 'Add email' }));
+    await user.clear(screen.getByLabelText('Código'));
+    await user.type(screen.getByLabelText('Código'), '123 456');
+    await user.click(screen.getByRole('button', { name: 'Agregar correo' }));
     expect(await account.findByText('camilo@example.com')).toBeTruthy();
     expect(calls).toEqual(['add camilo@example.com', 'confirm camilo@example.com']);
-    expect(account.queryByRole('button', { name: 'Add your email' })).toBeNull();
+    expect(account.queryByRole('button', { name: 'Agregar tu correo' })).toBeNull();
   });
 
   it('signs this device in with an email, then cleans up and fetches the bands', async () => {
     const { identity, calls } = accountIdentity({ email: null });
     const finishSignIn = vi.fn(async () => ({ bandIds: ['b1'], retired: 1 }));
     const { user } = await setup({ overrides: { identity, finishSignIn } });
-    const account = within(await screen.findByRole('region', { name: 'Your account' }));
+    const account = within(await screen.findByRole('region', { name: 'Tu cuenta' }));
 
-    await user.click(account.getByRole('button', { name: 'Sign in with email' }));
-    await user.type(screen.getByLabelText('Email'), 'camilo@example.com');
-    await user.click(screen.getByRole('button', { name: 'Send code' }));
-    await user.type(await screen.findByLabelText('Code'), '654321');
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await user.click(account.getByRole('button', { name: 'Iniciar sesión con correo' }));
+    await user.type(screen.getByLabelText('Correo'), 'camilo@example.com');
+    await user.click(screen.getByRole('button', { name: 'Enviar código' }));
+    await user.type(await screen.findByLabelText('Código'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }));
 
     await waitFor(() =>
       expect(finishSignIn).toHaveBeenCalledWith({ userId: VERA, accessToken: 'old' }),
@@ -388,10 +404,10 @@ describe('Your account', () => {
   it('checks the email before sending anything', async () => {
     const { identity, calls } = accountIdentity({ email: null });
     const { user } = await setup({ overrides: { identity } });
-    await user.click(await screen.findByRole('button', { name: 'Add your email' }));
-    await user.type(screen.getByLabelText('Email'), 'not an email');
-    await user.click(screen.getByRole('button', { name: 'Send code' }));
-    expect(screen.getByText("That doesn't look like an email address.")).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: 'Agregar tu correo' }));
+    await user.type(screen.getByLabelText('Correo'), 'not an email');
+    await user.click(screen.getByRole('button', { name: 'Enviar código' }));
+    expect(screen.getByText('Eso no parece un correo electrónico.')).toBeTruthy();
     expect(calls).toEqual([]);
   });
 });

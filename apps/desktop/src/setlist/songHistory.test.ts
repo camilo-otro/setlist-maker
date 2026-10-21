@@ -24,7 +24,7 @@ describe('historyHint', () => {
   it('counts plays this month and this quarter', () => {
     const h = history([play('a', '2026-10-10'), play('a', '2026-10-03'), play('a', '2026-08-01')]);
     expect(historyHint('a', h)).toEqual({
-      text: '2× this month · 3× this quarter',
+      text: '2× este mes · 3× este trimestre',
       stale: false,
       hereLastTime: false,
     });
@@ -32,13 +32,13 @@ describe('historyHint', () => {
 
   it('says when it was last played, and marks it after three months', () => {
     const h = history([play('a', '2026-06-14')]);
-    expect(historyHint('a', h).text).toMatch(/^Last played /);
+    expect(historyHint('a', h).text).toBe('Última vez: 14 de jun');
     expect(historyHint('a', h).stale).toBe(true);
   });
 
   it('says when a song was never played, and when it was played here last time', () => {
     expect(historyHint('b', history([], ['b']))).toEqual({
-      text: 'Never played',
+      text: 'Nunca se ha tocado',
       stale: false,
       hereLastTime: true,
     });

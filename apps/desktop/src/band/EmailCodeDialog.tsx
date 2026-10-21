@@ -8,25 +8,25 @@ type Mode = 'add' | 'sign-in';
 
 const TEXT = {
   add: {
-    title: 'Add your email',
+    title: 'Agrega tu correo',
     intro:
-      'Then you can sign in with it on your other devices, and keep your bands if you lose this one. You stay signed in here.',
-    sent: 'We sent a 6-digit code to',
-    submit: 'Add email',
+      'Así podrás iniciar sesión con él en tus otros dispositivos y no perder tus bandas si pierdes este. Aquí sigues con tu sesión iniciada.',
+    sent: 'Enviamos un código de 6 dígitos a',
+    submit: 'Agregar correo',
   },
   'sign-in': {
-    title: 'Sign in with email',
+    title: 'Inicia sesión con tu correo',
     intro:
-      'Use the email you added on the device you set up first. This device then signs in as you, with your bands.',
-    sent: 'We sent a sign-in code to',
-    submit: 'Sign in',
+      'Usa el correo que agregaste en el primer dispositivo que configuraste. Este dispositivo iniciará sesión como tú, con tus bandas.',
+    sent: 'Enviamos un código de acceso a',
+    submit: 'Iniciar sesión',
   },
 } as const;
 
 const failure = (error: unknown) =>
   error instanceof EmailCodeError
     ? error.message
-    : "Couldn't reach the server. Check your internet connection and try again.";
+    : 'No se pudo conectar con el servidor. Revisa tu conexión a internet e inténtalo de nuevo.';
 
 /**
  * Both email flows of #51, in two steps (email, then the 6-digit code it receives):
@@ -68,7 +68,7 @@ export function EmailCodeDialog({
   function sendCode(event: FormEvent) {
     event.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setError("That doesn't look like an email address.");
+      setError('Eso no parece un correo electrónico.');
       return;
     }
     void work(async () => {
@@ -98,8 +98,8 @@ export function EmailCodeDialog({
 
   if (step === 'finishing') {
     return (
-      <Modal title="Signing in" onClose={onClose} busy>
-        <p role="status">Getting your bands…</p>
+      <Modal title="Iniciando sesión" onClose={onClose} busy>
+        <p role="status">Trayendo tus bandas…</p>
       </Modal>
     );
   }
@@ -109,7 +109,7 @@ export function EmailCodeDialog({
       {step === 'email' ? (
         <form className="form-grid" onSubmit={sendCode} noValidate>
           <p className="form-grid__wide">{text.intro}</p>
-          <Field id="account-email" label="Email" error={error} wide>
+          <Field id="account-email" label="Correo" error={error} wide>
             <input
               {...inputProps('account-email', error)}
               type="email"
@@ -122,20 +122,20 @@ export function EmailCodeDialog({
           </Field>
           <div className="modal__actions form-grid__wide">
             <button type="button" className="sm-button" onClick={onClose} disabled={busy}>
-              Cancel
+              Cancelar
             </button>
             <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-              {busy ? 'Sending…' : 'Send code'}
+              {busy ? 'Enviando…' : 'Enviar código'}
             </button>
           </div>
         </form>
       ) : (
         <form className="form-grid" onSubmit={confirm} noValidate>
           <p className="form-grid__wide">
-            {text.sent} <strong>{email.trim()}</strong>. It can take a minute; check your spam
-            folder too.
+            {text.sent} <strong>{email.trim()}</strong>. Puede tardar un minuto; revisa también la
+            carpeta de spam.
           </p>
-          <Field id="account-code" label="Code" error={error} wide>
+          <Field id="account-code" label="Código" error={error} wide>
             <input
               {...inputProps('account-code', error)}
               inputMode="numeric"
@@ -153,10 +153,10 @@ export function EmailCodeDialog({
               onClick={() => setStep('email')}
               disabled={busy}
             >
-              Use another email
+              Usar otro correo
             </button>
             <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-              {busy ? 'Checking…' : text.submit}
+              {busy ? 'Verificando…' : text.submit}
             </button>
           </div>
         </form>

@@ -1,7 +1,9 @@
 import {
   countWarnings,
   ENTRY_WARNING_LABELS,
+  formatDate,
   formatDuration,
+  formatTime,
   localDateString,
   missingCounts,
   playedHereLastTime,
@@ -30,18 +32,12 @@ import { useHistory } from '../setlist/useHistory';
 import { useBandRows } from '../storage/useBandRows';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 
-const longDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'full' });
-const toDate = (date: string) => {
-  const [y, m, d] = date.split('-').map(Number);
-  return new Date(y!, m! - 1, d!);
-};
-
 const WARNING_SUMMARY: Record<EntryWarning, (n: number) => string> = {
-  duplicate: (n) => `${n} repeated`,
-  retired: (n) => `${n} archived`,
-  'no-length': (n) => `${n} without length`,
-  'missing-song': (n) => `${n} deleted`,
-  // Said per tag instead ("2 need piano"); see missingCounts below.
+  duplicate: (n) => `${n} ${n === 1 ? 'repetida' : 'repetidas'}`,
+  retired: (n) => `${n} ${n === 1 ? 'archivada' : 'archivadas'}`,
+  'no-length': (n) => `${n} sin duración`,
+  'missing-song': (n) => `${n} ${n === 1 ? 'eliminada' : 'eliminadas'}`,
+  // Said per tag instead ("2 necesitan piano"); see missingCounts below.
   'needs-missing': () => '',
 };
 
@@ -89,16 +85,16 @@ export function GigSetlistPage() {
   const back = (
     <Link to="/gigs" className="back-link">
       <ArrowLeft size={16} aria-hidden="true" />
-      Gigs
+      Toques
     </Link>
   );
 
   if (state.status === 'loading' || songs.rows === null)
-    return <p className="muted">Loading setlist…</p>;
+    return <p className="muted">Cargando setlist…</p>;
   if (state.status === 'error') {
     return (
       <p className="sm-field__error" role="alert">
-        Couldn&apos;t load this gig: {String(state.error)}
+        No se pudo cargar este toque: {String(state.error)}
       </p>
     );
   }
@@ -106,7 +102,7 @@ export function GigSetlistPage() {
     return (
       <>
         {back}
-        <p className="muted">This gig no longer exists.</p>
+        <p className="muted">Este toque ya no existe.</p>
       </>
     );
   }
@@ -118,11 +114,11 @@ export function GigSetlistPage() {
   );
   const needs = missingCounts(allEntries, songsById, missing);
   const details = [
-    longDate.format(toDate(gig.date)),
+    formatDate(gig.date, 'full'),
     venue && (venue.city ? `${venue.name}, ${venue.city}` : venue.name),
-    gig.loadInTime && `Load-in ${gig.loadInTime}`,
-    gig.startTime && `Start ${gig.startTime}`,
-    missing.length > 0 && `Missing ${missing.join(', ')}`,
+    gig.loadInTime && `Montaje ${formatTime(gig.loadInTime)}`,
+    gig.startTime && `Inicio ${formatTime(gig.startTime)}`,
+    missing.length > 0 && `Faltan: ${missing.join(', ')}`,
   ].filter(Boolean);
 
   return (
@@ -133,10 +129,10 @@ export function GigSetlistPage() {
           <h1 className="sm-page-header__title">
             {gig.title}
             {gig.status === 'cancelled' && (
-              <span className="status status--retired gig-header__status">Cancelled</span>
+              <span className="status status--retired gig-header__status">Cancelado</span>
             )}
             {gig.status === 'played' && (
-              <span className="status status--active gig-header__status">Played</span>
+              <span className="status status--active gig-header__status">Tocado</span>
             )}
           </h1>
           <p className="muted gig-header__details">{details.join(' · ')}</p>
@@ -147,8 +143,12 @@ export function GigSetlistPage() {
               <button
                 type="button"
                 className="icon-button"
-                aria-label={history.undoLabel ? `Undo ${history.undoLabel}` : 'Undo'}
-                title={history.undoLabel ? `Undo ${history.undoLabel} (Ctrl+Z)` : 'Nothing to undo'}
+                aria-label={history.undoLabel ? `Deshacer: ${history.undoLabel}` : 'Deshacer'}
+                title={
+                  history.undoLabel
+                    ? `Deshacer: ${history.undoLabel} (Ctrl+Z)`
+                    : 'Nada que deshacer'
+                }
                 disabled={!history.canUndo}
                 onClick={() => void history.undo()}
               >
@@ -157,8 +157,10 @@ export function GigSetlistPage() {
               <button
                 type="button"
                 className="icon-button"
-                aria-label={history.redoLabel ? `Redo ${history.redoLabel}` : 'Redo'}
-                title={history.redoLabel ? `Redo ${history.redoLabel} (Ctrl+Y)` : 'Nothing to redo'}
+                aria-label={history.redoLabel ? `Rehacer: ${history.redoLabel}` : 'Rehacer'}
+                title={
+                  history.redoLabel ? `Rehacer: ${history.redoLabel} (Ctrl+Y)` : 'Nada que rehacer'
+                }
                 disabled={!history.canRedo}
                 onClick={() => void history.redo()}
               >
@@ -166,11 +168,11 @@ export function GigSetlistPage() {
               </button>
               <button type="button" className="sm-button" onClick={() => setEditingGig(true)}>
                 <Pencil size={14} aria-hidden="true" />
-                Edit details
+                Editar detalles
               </button>
               <button type="button" className="sm-button" onClick={() => setStartingFrom(true)}>
                 <Copy size={14} aria-hidden="true" />
-                Start from…
+                Empezar desde…
               </button>
               {gig.status !== 'cancelled' && (
                 <button
@@ -184,19 +186,19 @@ export function GigSetlistPage() {
                   onClick={() => setMarkingPlayed(true)}
                 >
                   <CircleCheck size={14} aria-hidden="true" />
-                  {gig.status === 'played' ? 'What we played' : 'Mark as played'}
+                  {gig.status === 'played' ? 'Lo que tocamos' : 'Marcar como tocado'}
                 </button>
               )}
               {gig.status === 'played' && (
                 <button type="button" className="sm-button" onClick={() => setRating('later')}>
                   <Star size={14} aria-hidden="true" />
-                  Rate songs
+                  Calificar canciones
                 </button>
               )}
               {sharing && (
                 <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
                   <Share2 size={14} aria-hidden="true" />
-                  Share
+                  Compartir
                 </button>
               )}
             </>
@@ -223,8 +225,8 @@ export function GigSetlistPage() {
 
       <p className="setlist-summary" aria-live="polite">
         <span>
-          <strong>{formatDuration(total.totalSec)}</strong> total · {total.songs}{' '}
-          {total.songs === 1 ? 'song' : 'songs'}
+          <strong>{formatDuration(total.totalSec)}</strong> en total · {total.songs}{' '}
+          {total.songs === 1 ? 'canción' : 'canciones'}
         </span>
         {summary.map((warning) => (
           <span
@@ -239,21 +241,22 @@ export function GigSetlistPage() {
           <span
             key={tag}
             className="setlist-summary__warning"
-            title={`Missing at this gig: ${tag}`}
+            title={`Falta en este toque: ${tag}`}
           >
-            {count} {count === 1 ? 'needs' : 'need'} {tag}
+            {count} {count === 1 ? 'necesita' : 'necesitan'} {tag}
           </span>
         ))}
       </p>
       {startedFrom && (
         <p className="muted start-from__done" role="status">
-          Started from {startedFrom.from}.
-          {startedFrom.dropped.length > 0 && ` Left out: ${startedFrom.dropped.join(', ')}.`}
+          Setlist copiado de {startedFrom.from}.
+          {startedFrom.dropped.length > 0 &&
+            ` Quedaron por fuera: ${startedFrom.dropped.join(', ')}.`}
         </p>
       )}
       {history.failure && (
         <p className="sm-field__error" role="alert">
-          That change didn&apos;t save: {history.failure}
+          Ese cambio no se guardó: {history.failure}
         </p>
       )}
 

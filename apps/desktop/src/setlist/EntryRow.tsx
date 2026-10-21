@@ -20,9 +20,9 @@ import { SongTags } from '../components/SongTags';
 
 /** What an entry is called: the song title, the break's label, or the note. */
 export function entryTitle(entry: SetEntry, song: Song | undefined): string {
-  if (entry.kind === 'song') return song?.title ?? 'Deleted song';
-  if (entry.kind === 'break') return entry.label ?? 'Break';
-  return entry.label ?? 'Note';
+  if (entry.kind === 'song') return song?.title ?? 'Canción eliminada';
+  if (entry.kind === 'break') return entry.label ?? 'Descanso';
+  return entry.label ?? 'Nota';
 }
 
 export function EntryRow({
@@ -66,7 +66,7 @@ export function EntryRow({
         type="button"
         ref={setActivatorNodeRef}
         className="drag-handle"
-        aria-label={`Move ${title}`}
+        aria-label={`Mover ${title}`}
         {...attributes}
         {...listeners}
       >
@@ -88,9 +88,9 @@ export function EntryRow({
         )}
       </span>
       {entry.segueToNext && (
-        <span className="entry__segue" title="Segues into the next song">
+        <span className="entry__segue" title="Enlaza con la siguiente canción">
           <ArrowDown size={14} aria-hidden="true" />
-          <span className="visually-hidden">Segues into the next song</span>
+          <span className="visually-hidden">Enlaza con la siguiente canción</span>
         </span>
       )}
       {warnings.length > 0 && (
@@ -107,20 +107,25 @@ export function EntryRow({
       <span className={entry.keyOverride ? 'entry__key entry__key--override' : 'entry__key'}>
         {key}
         {entry.keyOverride && song?.key && song.key !== entry.keyOverride && (
-          <span className="visually-hidden"> (usually {song.key})</span>
+          <span className="visually-hidden"> (normalmente {song.key})</span>
         )}
       </span>
       <span className="entry__length">
         {entry.kind === 'song' && song?.durationSec != null ? formatDuration(song.durationSec) : ''}
       </span>
       <span className="entry__actions">
-        <button type="button" className="icon-button" aria-label={`Edit ${title}`} onClick={onEdit}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={`Editar ${title}`}
+          onClick={onEdit}
+        >
           <Pencil size={14} aria-hidden="true" />
         </button>
         <button
           type="button"
           className="icon-button"
-          aria-label={`Remove ${title}`}
+          aria-label={`Quitar ${title}`}
           onClick={onRemove}
         >
           <X size={14} aria-hidden="true" />

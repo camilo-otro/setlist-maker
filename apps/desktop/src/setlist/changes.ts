@@ -60,7 +60,7 @@ export function setlistChanges(repository: Repository, bandId: string) {
 
     moveEntry(entry: SetEntry, to: { blockId: string; position: string }): Change {
       return {
-        label: 'Move',
+        label: 'mover',
         apply: () =>
           repository.setEntries.update(entry.id, { setBlockId: to.blockId, position: to.position }),
         revert: () =>
@@ -91,7 +91,7 @@ export function setlistChanges(repository: Repository, bandId: string) {
     addBlock(setlistId: string, name: string, position: string): Change {
       let id: string | null = null;
       return {
-        label: `Add ${name}`,
+        label: `agregar ${name}`,
         apply: async () => {
           if (id) return repository.setBlocks.restore(id);
           id = (await repository.setBlocks.create({ bandId, setlistId, name, position })).id;
@@ -114,7 +114,7 @@ export function setlistChanges(repository: Repository, bandId: string) {
     removeBlock(block: SetBlock): Change {
       let removed: Awaited<ReturnType<typeof removeSetBlock>> | null = null;
       return {
-        label: `Delete ${block.name}`,
+        label: `eliminar ${block.name}`,
         apply: async () => {
           removed = await removeSetBlock(repository, block.id);
         },

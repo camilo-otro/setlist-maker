@@ -1,5 +1,7 @@
 import {
+  collator,
   DEFAULT_CLONE_OPTIONS,
+  formatDate,
   localDateString,
   sortByPosition,
   type CloneOptions,
@@ -19,21 +21,15 @@ interface Source {
   setlist: Setlist;
   group: 'past' | 'upcoming' | 'template';
   title: string;
-  /** Date and venue, or "Template". */
+  /** Date and venue, or "Plantilla". */
   detail: string;
   date: string;
 }
 
 const GROUP_LABELS: Record<Source['group'], string> = {
-  past: 'Past gigs',
-  upcoming: 'Upcoming gigs',
-  template: 'Templates',
-};
-
-const longDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-const formatDate = (date: string) => {
-  const [y, m, d] = date.split('-').map(Number);
-  return longDate.format(new Date(y!, m! - 1, d!));
+  past: 'Toques pasados',
+  upcoming: 'Próximos toques',
+  template: 'Plantillas',
 };
 
 /**
@@ -93,7 +89,7 @@ export function StartFromDialog({
           setlist,
           group: 'template',
           title: setlist.name,
-          detail: 'Template',
+          detail: 'Plantilla',
           date: '',
         });
         continue;
@@ -116,7 +112,7 @@ export function StartFromDialog({
       (a, b) =>
         order[a.group] - order[b.group] ||
         (a.group === 'past' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)) ||
-        a.title.localeCompare(b.title),
+        collator.compare(a.title, b.title),
     );
   }, [setlists, gigs.rows, venues.rows, setlistId]);
 
@@ -141,7 +137,7 @@ export function StartFromDialog({
           name: block.name,
           songs: sortByPosition(await repository.setEntries.list({ setBlockId: block.id }))
             .filter((entry) => entry.kind === 'song' && entry.songId)
-            .map((entry) => songsById.get(entry.songId!)?.title ?? 'Deleted song'),
+            .map((entry) => songsById.get(entry.songId!)?.title ?? 'Canción eliminada'),
         })),
       );
       if (current) setPreview({ setlistId: picked.setlist.id, sets });
@@ -185,7 +181,7 @@ export function StartFromDialog({
   );
 
   return (
-    <Modal title={`Start ${gig.title} from…`} busy={busy} onClose={onClose} wide>
+    <Modal title={`Empezar ${gig.title} desde…`} busy={busy} onClose={onClose} wide>
       <div className="start-from">
         <div className="start-from__pick">
           <label className="search-box">
@@ -194,20 +190,22 @@ export function StartFromDialog({
               type="search"
               className="sm-input"
               autoFocus
-              placeholder="Search gigs and templates"
-              aria-label="Search gigs and templates"
+              placeholder="Buscar toques y plantillas"
+              aria-label="Buscar toques y plantillas"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
           {sources === null ? (
-            <p className="muted">Loading…</p>
+            <p className="muted">Cargando…</p>
           ) : shown.length === 0 ? (
             <p className="muted">
-              {sources.length === 0 ? 'No other gigs or templates yet.' : 'No matches.'}
+              {sources.length === 0
+                ? 'Aún no hay otros toques ni plantillas.'
+                : 'No hay resultados.'}
             </p>
           ) : (
-            <ul className="start-from__list" aria-label="Setlists to start from">
+            <ul className="start-from__list" aria-label="Setlists para empezar">
               {shown.map((source, index) => (
                 <li key={source.setlist.id}>
                   {(index === 0 || shown[index - 1]!.group !== source.group) && (
@@ -230,9 +228,9 @@ export function StartFromDialog({
 
         <div className="start-from__preview" aria-live="polite">
           {!picked ? (
-            <p className="muted">Pick a gig or template to see its setlist.</p>
+            <p className="muted">Elige un toque o una plantilla para ver su setlist.</p>
           ) : sets === null ? (
-            <p className="muted">Loading…</p>
+            <p className="muted">Cargando…</p>
           ) : (
             <>
               <h3 className="start-from__preview-title">{picked.title}</h3>
@@ -240,7 +238,7 @@ export function StartFromDialog({
                 <section key={set.name} className="start-from__set" aria-label={set.name}>
                   <h4>{set.name}</h4>
                   {set.songs.length === 0 ? (
-                    <p className="muted">No songs</p>
+                    <p className="muted">Sin canciones</p>
                   ) : (
                     <ol>
                       {set.songs.map((title, i) => (
@@ -250,10 +248,10 @@ export function StartFromDialog({
                   )}
                 </section>
               ))}
-              <div className="start-from__options" role="group" aria-label="Copy options">
-                {option('dropRetired', 'Leave out archived songs')}
-                {option('resetKeys', "Use each song's own key")}
-                {option('keepNotes', 'Keep notes')}
+              <div className="start-from__options" role="group" aria-label="Opciones de copia">
+                {option('dropRetired', 'Dejar por fuera las canciones archivadas')}
+                {option('resetKeys', 'Usar el tono de cada canción')}
+                {option('keepNotes', 'Conservar las notas')}
               </div>
             </>
           )}
@@ -262,18 +260,18 @@ export function StartFromDialog({
 
       {picked && songCount > 0 && (
         <p className="start-from__warning" role="alert">
-          This replaces the {songCount} {songCount === 1 ? 'song' : 'songs'} already in this
-          gig&apos;s setlist.
+          Esto reemplaza {songCount} {songCount === 1 ? 'canción' : 'canciones'} que ya tiene el
+          setlist de este toque.
         </p>
       )}
       {failure && (
         <p className="sm-field__error" role="alert">
-          Couldn&apos;t copy the setlist: {failure}
+          No se pudo copiar el setlist: {failure}
         </p>
       )}
       <div className="modal__actions">
         <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button
           type="button"
@@ -281,7 +279,7 @@ export function StartFromDialog({
           disabled={busy || !picked || sets === null}
           onClick={() => void copy()}
         >
-          {songCount > 0 ? 'Replace setlist' : 'Use this setlist'}
+          {songCount > 0 ? 'Reemplazar setlist' : 'Usar este setlist'}
         </button>
       </div>
     </Modal>

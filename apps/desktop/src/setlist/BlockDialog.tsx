@@ -23,8 +23,8 @@ export function BlockDialog({
     event.preventDefault();
     const seconds = parseDuration(target);
     const found = {
-      name: name.trim() ? undefined : 'Give the set a name',
-      target: seconds === undefined ? 'Use hours and minutes like 45:00 or 1:30:00' : undefined,
+      name: name.trim() ? undefined : 'Ponle un nombre al set',
+      target: seconds === undefined ? 'Usa una duración como 45:00 o 1:30:00' : undefined,
     };
     if (found.name || found.target) {
       setErrors(found);
@@ -34,9 +34,9 @@ export function BlockDialog({
   }
 
   return (
-    <Modal title={`Edit ${block.name}`} onClose={onClose}>
+    <Modal title={`Editar ${block.name}`} onClose={onClose}>
       <form className="form-grid" onSubmit={save} noValidate>
-        <Field id="block-name" label="Name" error={errors.name}>
+        <Field id="block-name" label="Nombre" error={errors.name}>
           <input
             {...inputProps('block-name', errors.name)}
             autoFocus
@@ -45,7 +45,7 @@ export function BlockDialog({
             onChange={(e) => setName(e.target.value)}
           />
         </Field>
-        <Field id="block-target" label="Target length (m:ss)" error={errors.target}>
+        <Field id="block-target" label="Duración objetivo (m:ss)" error={errors.target}>
           <input
             {...inputProps('block-target', errors.target)}
             placeholder="45:00"
@@ -55,10 +55,10 @@ export function BlockDialog({
         </Field>
         <div className="modal__actions form-grid__wide">
           <button type="button" className="sm-button" onClick={onClose}>
-            Cancel
+            Cancelar
           </button>
           <button type="submit" className="sm-button sm-button--primary">
-            Save
+            Guardar
           </button>
         </div>
       </form>

@@ -19,12 +19,12 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 
 /** `onPhone`: shown in the phone's bottom tab bar too; the rest is desktop-only for now (#42). */
 export const NAV_ITEMS = [
-  { to: '/library', label: 'Library', icon: Library, onPhone: true },
-  { to: '/gigs', label: 'Gigs', icon: CalendarDays, onPhone: true },
-  { to: '/venues', label: 'Venues', icon: MapPin, onPhone: false },
-  { to: '/templates', label: 'Templates', icon: LayoutTemplate, onPhone: false },
-  { to: '/stats', label: 'Stats', icon: ChartColumn, onPhone: false },
-  { to: '/band', label: 'Band', icon: Users, onPhone: true },
+  { to: '/library', label: 'Repertorio', icon: Library, onPhone: true },
+  { to: '/gigs', label: 'Toques', icon: CalendarDays, onPhone: true },
+  { to: '/venues', label: 'Lugares', icon: MapPin, onPhone: false },
+  { to: '/templates', label: 'Plantillas', icon: LayoutTemplate, onPhone: false },
+  { to: '/stats', label: 'Estadísticas', icon: ChartColumn, onPhone: false },
+  { to: '/band', label: 'Banda', icon: Users, onPhone: true },
 ] as const;
 
 export function AppLayout() {
@@ -40,7 +40,7 @@ export function AppLayout() {
         <SyncStatusLine />
         {!persistent && (
           <p className="mobile-header__notice" role="status">
-            {storageNote ?? "Browser preview: changes aren't saved."}
+            {storageNote ?? 'Vista previa en el navegador: los cambios no se guardan.'}
           </p>
         )}
       </header>
@@ -53,8 +53,8 @@ export function AppLayout() {
               <button
                 type="button"
                 className="sidebar__band-name"
-                title="Rename the band"
-                aria-label={`Band: ${band.name}. Rename`}
+                title="Cambiar el nombre de la banda"
+                aria-label={`Banda: ${band.name}. Cambiar nombre`}
                 onClick={() => setRenaming(true)}
               >
                 <span>{band.name}</span>
@@ -67,10 +67,10 @@ export function AppLayout() {
         </div>
         {!persistent && (
           <p className="sidebar__notice" role="status">
-            {storageNote ?? "Browser preview: changes aren't saved."}
+            {storageNote ?? 'Vista previa en el navegador: los cambios no se guardan.'}
           </p>
         )}
-        <nav className="sidebar__nav" aria-label="Main">
+        <nav className="sidebar__nav" aria-label="Principal">
           {NAV_ITEMS.map(({ to, label, icon: Icon, onPhone }) => (
             <NavLink
               key={to}
