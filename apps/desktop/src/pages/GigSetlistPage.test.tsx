@@ -14,7 +14,7 @@ afterEach(cleanup);
 
 /** Opens a gig's setlist page, with three songs in the library. */
 /** `history`: songs (by title) played at an earlier gig at the same venue, ten days ago. */
-async function setup({ history = [] as string[] } = {}) {
+async function setup({ history = [] as string[], date = '2026-10-23' } = {}) {
   const repository = createMemoryRepository();
   const workspace: Workspace = { repository, band: await ensureBand(repository), persistent: true };
   const bandId = workspace.band.id;
@@ -23,7 +23,7 @@ async function setup({ history = [] as string[] } = {}) {
     bandId,
     venueId: venue.id,
     title: 'Friday at the Cavern',
-    date: '2026-10-23',
+    date,
     startTime: '21:00',
   });
   await repository.songs.createMany([
@@ -81,6 +81,25 @@ const songsIn = (name: string) =>
 const library = () => within(screen.getByRole('complementary', { name: 'Repertorio' }));
 const summary = () => document.querySelector('.setlist-summary')!.textContent;
 const dialog = () => within(screen.getByRole('dialog'));
+const header = () => within(document.querySelector('.gig-header__actions') as HTMLElement);
+/**
+ * Runs one of the gig's actions from wherever it is: the header's main button, or the "⋯" menu.
+ * Which depends on the gig's date compared with today, so tests about the actions themselves
+ * don't depend on the day they run.
+ */
+async function action(user: ReturnType<typeof userEvent.setup>, name: string) {
+  const main = header().queryByRole('button', { name });
+  if (main) return user.click(main);
+  await user.click(header().getByRole('button', { name: 'Más acciones' }));
+  await user.click(screen.getByRole('menuitem', { name }));
+}
+/** The names of the "⋯" menu's items, closing it again. */
+async function menuItems(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(header().getByRole('button', { name: 'Más acciones' }));
+  const names = screen.getAllByRole('menuitem').map((item) => item.textContent);
+  await user.keyboard('{Escape}');
+  return names;
+}
 
 describe('GigSetlistPage', () => {
   it('shows the gig and its empty first set', async () => {
@@ -91,13 +110,66 @@ describe('GigSetlistPage', () => {
     expect(summary()).toContain('0:00 en total · 0 canciones');
   });
 
+  it('leads with sharing before the gig’s day, keeping the rest in the ⋯ menu', async () => {
+    const { user } = await setup({ date: '2099-05-01' });
+    const buttons = header()
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label') ?? button.textContent);
+    expect(buttons).toEqual(['Compartir', 'Más acciones']);
+    expect(header().getByRole('button', { name: 'Compartir' }).className).toContain('primary');
+    expect(await menuItems(user)).toEqual([
+      'Editar detalles',
+      'Empezar desde…',
+      'Marcar como tocado',
+    ]);
+    // Undo and redo sit with the setlist's summary instead.
+    expect(header().queryByRole('button', { name: 'Deshacer' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Deshacer' })).toBeTruthy();
+  });
+
+  it('makes marking as played the main action from the gig’s day', async () => {
+    const { user } = await setup({ date: localDateString() });
+    const main = header().getByRole('button', { name: 'Marcar como tocado' });
+    expect(main.className).toContain('primary');
+    expect(header().getByRole('button', { name: 'Compartir' }).className).not.toContain('primary');
+    expect(await menuItems(user)).toEqual(['Editar detalles', 'Empezar desde…']);
+  });
+
+  it('closes the ⋯ menu with Escape, and moves through it with the arrow keys', async () => {
+    const { user } = await setup({ date: '2099-05-01' });
+    await user.click(header().getByRole('button', { name: 'Más acciones' }));
+    expect(document.activeElement?.textContent).toBe('Editar detalles');
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement?.textContent).toBe('Empezar desde…');
+    await user.keyboard('{ArrowUp}{ArrowUp}');
+    expect(document.activeElement?.textContent).toBe('Marcar como tocado');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(header().getByRole('button', { name: 'Más acciones' }));
+  });
+
+  it('gathers the ways to share the setlist in one sheet', async () => {
+    const { user } = await setup();
+    await user.click(header().getByRole('button', { name: 'Compartir' }));
+    expect(screen.getByRole('heading', { name: 'Compartir el setlist' })).toBeTruthy();
+    // No server here: no share link or playlist, and this browser can't copy images.
+    expect(
+      dialog()
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['WhatsApp', 'Descargar imagen', 'Imprimir', 'Cerrar']);
+    await user.click(dialog().getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('copies the setlist as WhatsApp text', async () => {
     const { user } = await setup();
     await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));
     await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita']));
 
-    await user.click(screen.getByRole('button', { name: 'Copiar para WhatsApp' }));
-    expect(await screen.findByRole('button', { name: 'Copiado' })).toBeTruthy();
+    await user.click(header().getByRole('button', { name: 'Compartir' }));
+    await user.click(dialog().getByRole('button', { name: 'WhatsApp' }));
+    expect(await dialog().findByRole('button', { name: 'Copiado' })).toBeTruthy();
     const text = await navigator.clipboard.readText();
     expect(text).toContain('*Friday at the Cavern*');
     expect(text).toContain('*Set 1* (3:45)\n1. Basurita · A');
@@ -109,7 +181,7 @@ describe('GigSetlistPage', () => {
     await user.click(library().getByRole('button', { name: 'Agregar Here Without You' }));
     await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You']));
 
-    await user.click(screen.getByRole('button', { name: 'Marcar como tocado' }));
+    await action(user, 'Marcar como tocado');
     await user.click(dialog().getByRole('checkbox', { name: 'Here Without You' }));
     await user.click(dialog().getByRole('button', { name: 'Tocamos 1 canción' }));
     // Asked how it went next; skipped here.
@@ -122,7 +194,7 @@ describe('GigSetlistPage', () => {
     ]);
 
     // Opening it again shows what was recorded, and can take it back.
-    await user.click(screen.getByRole('button', { name: 'Lo que tocamos' }));
+    await action(user, 'Lo que tocamos');
     await waitFor(() =>
       expect(
         (dialog().getByRole('checkbox', { name: 'Here Without You' }) as HTMLInputElement).checked,
@@ -132,7 +204,11 @@ describe('GigSetlistPage', () => {
       true,
     );
     await user.click(dialog().getByRole('button', { name: 'Al final no se tocó' }));
-    expect(await screen.findByRole('button', { name: 'Marcar como tocado' })).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: /Friday at the Cavern/ }).textContent,
+      ).not.toContain('Tocado'),
+    );
     expect(await workspace.repository.performances.list({ gigId: gig.id })).toEqual([]);
   });
 
@@ -141,7 +217,7 @@ describe('GigSetlistPage', () => {
     await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));
     await user.click(library().getByRole('button', { name: 'Agregar Here Without You' }));
     await waitFor(() => expect(songsIn('Set 1')).toEqual(['Basurita', 'Here Without You']));
-    await user.click(screen.getByRole('button', { name: 'Marcar como tocado' }));
+    await action(user, 'Marcar como tocado');
     await user.click(dialog().getByRole('button', { name: 'Tocamos 2 canciones' }));
 
     // Straight after: how did it go?
@@ -167,7 +243,7 @@ describe('GigSetlistPage', () => {
     ]);
 
     // Changing what was played keeps Basurita's rating.
-    await user.click(screen.getByRole('button', { name: 'Lo que tocamos' }));
+    await action(user, 'Lo que tocamos');
     const skip = await screen.findByRole('checkbox', { name: 'Here Without You' });
     await waitFor(() => expect((skip as HTMLInputElement).checked).toBe(true));
     await user.click(skip);
@@ -175,8 +251,8 @@ describe('GigSetlistPage', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(await stored()).toEqual([['Basurita', 4, 'Crowd loved it']]);
 
-    // Rated again later: clicking the rating given clears it.
-    await user.click(screen.getByRole('button', { name: 'Calificar canciones' }));
+    // Rated again later, from the main button: clicking the rating given clears it.
+    await user.click(header().getByRole('button', { name: 'Calificar canciones' }));
     const again = within(await screen.findByRole('group', { name: 'Calificación de Basurita' }));
     await user.click(again.getByRole('button', { name: '4 estrellas' }));
     await user.clear(dialog().getByLabelText('Notas de Basurita'));
@@ -193,7 +269,7 @@ describe('GigSetlistPage', () => {
     expect(summary()).not.toContain('necesita');
 
     // The keyboardist can't make it.
-    await user.click(screen.getByRole('button', { name: 'Editar detalles' }));
+    await action(user, 'Editar detalles');
     await user.click(
       within(dialog().getByRole('group', { name: 'Faltan en este toque' })).getByRole('button', {
         name: 'piano',
@@ -269,7 +345,7 @@ describe('GigSetlistPage', () => {
     await user.click(library().getByRole('button', { name: 'Agregar Untimed' }));
     await waitFor(() => expect(songsIn('Set 1')).toEqual(['Untimed']));
 
-    await user.click(screen.getByRole('button', { name: 'Empezar desde…' }));
+    await action(user, 'Empezar desde…');
     await user.click(await dialog().findByRole('button', { name: /Last time at the Cavern/ }));
     const preview = within(await dialog().findByRole('region', { name: 'Set 1' }));
     expect(preview.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
@@ -460,7 +536,7 @@ describe('GigSetlistPage', () => {
 
   it('edits the gig details, including cancelling it', async () => {
     const { user, workspace } = await setup();
-    await user.click(screen.getByRole('button', { name: 'Editar detalles' }));
+    await action(user, 'Editar detalles');
     await user.click(dialog().getByRole('button', { name: 'Cancelar toque' }));
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: /Friday at the Cavern/ }).textContent).toContain(

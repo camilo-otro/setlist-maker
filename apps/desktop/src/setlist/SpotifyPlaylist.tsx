@@ -4,7 +4,6 @@ import {
   type SpotifyPlaylistInfo,
   type SpotifyPlaylistProblem,
 } from '@setlist/storage';
-import { ListMusic } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../components/Modal';
 import { SpotifyAttribution, SpotifyPlaylistLink } from '../components/SpotifyLink';
@@ -22,30 +21,26 @@ const PROBLEMS: Record<SpotifyPlaylistProblem, string> = {
 const problemOf = (error: unknown) =>
   PROBLEMS[error instanceof SpotifyPlaylistError ? error.problem : 'unavailable'];
 
+/** What the gig page knows about the gig's playlist. */
+export interface GigPlaylist {
+  /** Null until known; whether the band is shared, which playlists need. */
+  shared: boolean | null;
+  /** Undefined while loading; null when the gig has none. */
+  playlist: SpotifyPlaylistInfo | null | undefined;
+  setPlaylist: (playlist: SpotifyPlaylistInfo | null) => void;
+}
+
 /**
- * The gig as a Spotify playlist, in the app's own Spotify account (ADR 0003): create or update
- * it, open it, or remove it from Spotify. Only for shared bands, since the server checks who's
- * asking. Viewers see the button only once the gig has a playlist, and can only open it.
+ * The gig's Spotify playlist, in the app's own Spotify account (ADR 0003), looked up in the
+ * background. Only shared bands have one, since the server checks who's asking.
  */
-export function SpotifyPlaylist({
-  bandId,
-  gig,
-  blocks,
-  songsById,
-  sharing,
-  canEdit,
-}: {
-  bandId: string;
-  gig: Gig;
-  blocks: readonly BlockWithEntries[];
-  songsById: ReadonlyMap<string, Song>;
-  sharing: Sharing | null | undefined;
-  canEdit: boolean;
-}) {
+export function useGigPlaylist(
+  sharing: Sharing | null | undefined,
+  bandId: string,
+  gigId: string,
+): GigPlaylist {
   const [shared, setShared] = useState<boolean | null>(null);
-  // Undefined while loading; null when the gig has none.
   const [playlist, setPlaylist] = useState<SpotifyPlaylistInfo | null | undefined>(undefined);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!sharing) return;
@@ -56,7 +51,7 @@ export function SpotifyPlaylist({
       if (!current) return;
       setShared(isShared);
       if (!isShared) return;
-      const found = await sharing.playlists.get(bandId, gig.id);
+      const found = await sharing.playlists.get(bandId, gigId);
       if (current) setPlaylist(found);
     })().catch(() => {
       if (current) setPlaylist(null);
@@ -64,36 +59,26 @@ export function SpotifyPlaylist({
     return () => {
       current = false;
     };
-  }, [sharing, bandId, gig.id]);
+  }, [sharing, bandId, gigId]);
 
-  if (!sharing || shared === null) return null;
-  if (!canEdit && !playlist) return null;
-
-  return (
-    <>
-      <button type="button" className="sm-button" onClick={() => setOpen(true)}>
-        <ListMusic size={14} aria-hidden="true" />
-        Playlist de Spotify
-      </button>
-      {open && (
-        <PlaylistDialog
-          bandId={bandId}
-          gig={gig}
-          blocks={blocks}
-          songsById={songsById}
-          sharing={sharing}
-          shared={shared}
-          canEdit={canEdit}
-          playlist={playlist ?? null}
-          onPlaylist={setPlaylist}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </>
-  );
+  return { shared, playlist, setPlaylist };
 }
 
-function PlaylistDialog({
+/**
+ * Whether the share sheet offers the playlist: to owners and editors once it's known whether the
+ * band is shared, and to viewers only once the gig has one, which they can open.
+ */
+export function offersPlaylist(
+  sharing: Sharing | null | undefined,
+  { shared, playlist }: GigPlaylist,
+  canEdit: boolean,
+): boolean {
+  if (!sharing || shared === null) return false;
+  return canEdit || Boolean(playlist);
+}
+
+/** Create or update the gig's playlist, open it, or remove it from Spotify. */
+export function SpotifyPlaylistDialog({
   bandId,
   gig,
   blocks,

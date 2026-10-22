@@ -1,15 +1,63 @@
 // @vitest-environment jsdom
-import type { Song } from '@setlist/core';
+import type { Gig, Song } from '@setlist/core';
 import { SpotifyPlaylistError, type SpotifyPlaylists } from '@setlist/storage';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Sharing } from '../sharing/sharing';
 import { playlistName, playlistTracks } from './playlistTracks';
 import { sampleGig } from './sampleGig';
-import { SpotifyPlaylist } from './SpotifyPlaylist';
+import { offersPlaylist, SpotifyPlaylistDialog, useGigPlaylist } from './SpotifyPlaylist';
+import type { BlockWithEntries } from './useGigSetlist';
 
 afterEach(cleanup);
+
+/**
+ * The playlist's tile and dialog, put together as the gig page's share sheet does: the tile shows
+ * when offersPlaylist() says so, and opens the dialog with what useGigPlaylist() found.
+ */
+function SpotifyPlaylist({
+  bandId,
+  gig,
+  blocks,
+  songsById,
+  sharing,
+  canEdit,
+}: {
+  bandId: string;
+  gig: Gig;
+  blocks: readonly BlockWithEntries[];
+  songsById: ReadonlyMap<string, Song>;
+  sharing: Sharing;
+  canEdit: boolean;
+}) {
+  const gigPlaylist = useGigPlaylist(sharing, bandId, gig.id);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {offersPlaylist(sharing, gigPlaylist, canEdit) && (
+        <button type="button" onClick={() => setOpen(true)}>
+          Playlist de Spotify
+        </button>
+      )}
+      {open && (
+        <SpotifyPlaylistDialog
+          bandId={bandId}
+          gig={gig}
+          blocks={blocks}
+          songsById={songsById}
+          sharing={sharing}
+          shared={gigPlaylist.shared ?? false}
+          canEdit={canEdit}
+          playlist={gigPlaylist.playlist ?? null}
+          onPlaylist={gigPlaylist.setPlaylist}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
 
 const BASURITA = '4uLU6hMCjMI75M1A2tKUQC';
 const PLAYLIST = { id: 'p1', url: 'https://open.spotify.com/playlist/p1' };
