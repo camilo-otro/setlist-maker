@@ -97,10 +97,15 @@ body {
   color: var(--sm-text-muted);
 }
 
+/* Long band names take a second line, then are cut off. */
 .sidebar__band-name span {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: left;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 /* The pencil only shows on hover or focus, so the name reads as a name. */
@@ -275,9 +280,17 @@ body {
 /* Library */
 .library-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 8px 16px;
   margin-bottom: 16px;
+}
+
+/* On a phone the search gets the whole row, so its hint isn't cut to a few letters. */
+@container (width < 520px) {
+  .library-toolbar .search-box {
+    flex-basis: 100%;
+  }
 }
 
 .library-toolbar__count {
@@ -324,6 +337,11 @@ body {
   color: var(--sm-text-muted);
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+/* "En práctica" stays on one line. */
+.song-table__status {
+  white-space: nowrap;
 }
 
 .song-table__numeric {
@@ -1139,6 +1157,7 @@ body {
 
 .set__footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px 12px;
 }
@@ -1200,6 +1219,20 @@ body {
 
 .entry > .entry__main {
   flex: 1 1 0;
+}
+
+/* A tag never shows half its name: the artist gives way first. */
+.entry__main .song-tags,
+.entry__main .tag {
+  flex: none;
+}
+
+/* In a narrow setlist, tags give way to the title. A tag the gig is missing still shows as the
+   row's warning icon and in the summary above the sets ("1 necesita piano"). */
+@container (width < 600px) {
+  .entry__main .song-tags {
+    display: none;
+  }
 }
 
 /* The title keeps priority: it never shrinks, so the artist and notes give up
