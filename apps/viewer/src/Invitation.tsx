@@ -1,3 +1,4 @@
+import { formatDate } from '@setlist/core';
 import type { InvitePreview } from '@setlist/storage';
 import { useEffect, useState } from 'react';
 
@@ -7,11 +8,11 @@ type State =
   | { kind: 'failed' }
   | { kind: 'ready'; invite: InvitePreview };
 
-const ROLE_TEXT = { editor: 'edit songs, gigs and setlists', viewer: 'see everything' } as const;
+const ROLE_TEXT = { editor: 'editar canciones, toques y setlists', viewer: 'ver todo' } as const;
 const CLOSED_TEXT = {
-  revoked: 'This invite was turned off.',
-  expired: 'This invite has expired.',
-  used: 'This invite has been used up.',
+  revoked: 'Esta invitación se desactivó.',
+  expired: 'Esta invitación ya venció.',
+  used: 'Esta invitación ya se usó todas las veces posibles.',
 } as const;
 
 /**
@@ -46,7 +47,7 @@ export function Invitation({
   if (state.kind === 'loading') {
     return (
       <main className="viewer viewer--message">
-        <h1>Loading the invite…</h1>
+        <h1>Cargando la invitación…</h1>
       </main>
     );
   }
@@ -54,12 +55,14 @@ export function Invitation({
     return (
       <main className="viewer viewer--message">
         <h1>
-          {state.kind === 'missing' ? "This invite link doesn't work" : "Couldn't load the invite"}
+          {state.kind === 'missing'
+            ? 'Este enlace de invitación no funciona'
+            : 'No se pudo cargar la invitación'}
         </h1>
         <p>
           {state.kind === 'missing'
-            ? 'Check you copied all of it, or ask the band for a new one.'
-            : 'Check your internet connection and try again.'}
+            ? 'Revisa que lo hayas copiado completo, o pide a la banda uno nuevo.'
+            : 'Revisa tu conexión a internet e inténtalo de nuevo.'}
         </p>
       </main>
     );
@@ -71,35 +74,35 @@ export function Invitation({
     <main className="viewer viewer--message invitation">
       <p className="viewer__band">Setlist Maker</p>
       <h1>
-        {open ? `Join ${invite.band}` : CLOSED_TEXT[invite.status as keyof typeof CLOSED_TEXT]}
+        {open ? `Únete a ${invite.band}` : CLOSED_TEXT[invite.status as keyof typeof CLOSED_TEXT]}
       </h1>
       {open ? (
         <>
           <p>
-            {invite.invitedBy ? `${invite.invitedBy} invited you` : "You're invited"} to join{' '}
-            <strong>{invite.band}</strong>, where you can {ROLE_TEXT[invite.role]}. The invite works
-            until {new Date(invite.expiresAt).toLocaleDateString()}.
+            {invite.invitedBy ? `${invite.invitedBy} te invitó` : 'Te invitaron'} a unirte a{' '}
+            <strong>{invite.band}</strong>, donde podrás {ROLE_TEXT[invite.role]}. La invitación
+            funciona hasta el {formatDate(new Date(invite.expiresAt), 'long')}.
           </p>
           <a
             className="sm-button sm-button--primary invitation__join"
             href={`${appUrl}#/join/${encodeURIComponent(token)}`}
           >
-            Join in your browser
+            Únete desde tu navegador
           </a>
           <p className="invitation__or">
-            Or, with the Setlist Maker app on your computer: go to <strong>Band</strong>, choose{' '}
-            <strong>Join a band</strong> and paste this link.
+            O, con la app de Setlist Maker en tu computador: ve a <strong>Banda</strong>, elige{' '}
+            <strong>Unirse a una banda</strong> y pega este enlace.
           </p>
           <button
             type="button"
             className="sm-button"
             onClick={() => void navigator.clipboard?.writeText(link)}
           >
-            Copy this link
+            Copiar este enlace
           </button>
         </>
       ) : (
-        <p>Ask {invite.invitedBy ?? 'the band'} for a new invite.</p>
+        <p>Pide a {invite.invitedBy ?? 'la banda'} una invitación nueva.</p>
       )}
     </main>
   );

@@ -135,8 +135,8 @@ export function SetlistEditor({
   const positioned = blocks.map(({ block, entries }) => ({ id: block.id, entries }));
 
   function addSong(songId: string, blockId: string) {
-    const title = songsById.get(songId)?.title ?? 'song';
-    void run(changes.addEntry(`Add ${title}`, blockId, AT_END, { kind: 'song', songId }));
+    const title = songsById.get(songId)?.title ?? 'canción';
+    void run(changes.addEntry(`agregar ${title}`, blockId, AT_END, { kind: 'song', songId }));
   }
 
   function onDragStart({ active }: DragStartEvent) {
@@ -166,7 +166,7 @@ export function SetlistEditor({
       if (fromIndex === toIndex) return;
       const block = blocks[fromIndex]!.block;
       void run(
-        changes.updateBlock(`Move ${block.name}`, block, {
+        changes.updateBlock(`mover ${block.name}`, block, {
           position: move(order, fromIndex, toIndex),
         }),
       );
@@ -182,7 +182,7 @@ export function SetlistEditor({
 
     if (from.type === 'library') {
       void run(
-        changes.addEntry(`Add ${from.title}`, plan.blockId, plan.position, {
+        changes.addEntry(`agregar ${from.title}`, plan.blockId, plan.position, {
           kind: 'song',
           songId: from.songId,
         }),
@@ -197,7 +197,7 @@ export function SetlistEditor({
     if (!editing) return;
     if (editing.kind === 'new-note') {
       void run(
-        changes.addEntry('Add note', editing.blockId, AT_END, {
+        changes.addEntry('agregar nota', editing.blockId, AT_END, {
           kind: 'note',
           label: values.label,
         }),
@@ -207,7 +207,14 @@ export function SetlistEditor({
       const patch = Object.fromEntries(
         Object.entries(values).filter(([key, value]) => entry[key as keyof EntryValues] !== value),
       );
-      if (Object.keys(patch).length > 0) void run(changes.updateEntry('Edit entry', entry, patch));
+      if (Object.keys(patch).length > 0)
+        void run(
+          changes.updateEntry(
+            `editar ${entryTitle(entry, entry.songId ? songsById.get(entry.songId) : undefined)}`,
+            entry,
+            patch,
+          ),
+        );
     }
     setEditing(null);
   }
@@ -250,7 +257,7 @@ export function SetlistEditor({
                 onRemoveBlock={() => void run(changes.removeBlock(item.block))}
                 onAddBreak={() =>
                   void run(
-                    changes.addEntry('Add break', item.block.id, AT_END, {
+                    changes.addEntry('agregar descanso', item.block.id, AT_END, {
                       kind: 'break',
                     }),
                   )
@@ -264,7 +271,7 @@ export function SetlistEditor({
                 onRemoveEntry={(entry) =>
                   void run(
                     changes.removeEntry(
-                      `Remove ${entryTitle(entry, entry.songId ? songsById.get(entry.songId) : undefined)}`,
+                      `quitar ${entryTitle(entry, entry.songId ? songsById.get(entry.songId) : undefined)}`,
                       entry,
                     ),
                   )
@@ -275,7 +282,7 @@ export function SetlistEditor({
           {!readOnly && (
             <button type="button" className="sm-button setlist-editor__add-set" onClick={addSet}>
               <Plus size={16} aria-hidden="true" />
-              Add set
+              Agregar set
             </button>
           )}
         </div>
@@ -303,7 +310,7 @@ export function SetlistEditor({
           block={editing.block}
           onClose={() => setEditing(null)}
           onSave={(values) => {
-            void run(changes.updateBlock(`Edit ${editing.block.name}`, editing.block, values));
+            void run(changes.updateBlock(`editar ${editing.block.name}`, editing.block, values));
             setEditing(null);
           }}
         />

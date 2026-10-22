@@ -1,4 +1,4 @@
-import type { BandMember, MemberRole } from '@setlist/core';
+import { formatDate, type BandMember, type MemberRole } from '@setlist/core';
 import type { InviteInfo } from '@setlist/storage';
 import { EmptyState, PageHeader } from '@setlist/ui';
 import { LogIn, Pencil, UserPlus, Users } from 'lucide-react';
@@ -13,9 +13,9 @@ import { useSync } from '../sharing/SyncProvider';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 
 const ROLE_LABELS: Record<MemberRole, string> = {
-  owner: 'Owner',
+  owner: 'Administrador',
   editor: 'Editor',
-  viewer: 'Viewer',
+  viewer: 'Solo lectura',
 };
 
 /** Opens the app again on its gigs, now showing the band just joined. */
@@ -67,13 +67,13 @@ export function BandPage({
             {isOwner && (
               <button type="button" className="sm-button" onClick={() => setRenaming(true)}>
                 <Pencil size={14} aria-hidden="true" />
-                Rename band
+                Cambiar nombre
               </button>
             )}
             {sharing && (
               <button type="button" className="sm-button" onClick={() => setJoining(true)}>
                 <LogIn size={14} aria-hidden="true" />
-                Join a band
+                Unirse a una banda
               </button>
             )}
             {canInvite && (
@@ -83,7 +83,7 @@ export function BandPage({
                 onClick={() => setInviting(true)}
               >
                 <UserPlus size={14} aria-hidden="true" />
-                Invite
+                Invitar
               </button>
             )}
           </>
@@ -91,16 +91,16 @@ export function BandPage({
       />
       {sharing && <AccountSection sharing={sharing} reopen={reopen} />}
       {!shared ? (
-        <EmptyState icon={<Users size={24} />} title="Just you for now">
-          Share a gig to put your band online. Then you can invite bandmates here. Got an invite
-          from another band? Use Join a band.
+        <EmptyState icon={<Users size={24} />} title="Por ahora solo estás tú">
+          Comparte un toque para poner tu banda en línea. Luego podrás invitar aquí a los demás
+          integrantes. ¿Te invitaron a otra banda? Usa Unirse a una banda.
         </EmptyState>
       ) : (
         <table className="song-table member-table">
           <thead>
             <tr>
-              <th scope="col">Member</th>
-              <th scope="col">Role</th>
+              <th scope="col">Integrante</th>
+              <th scope="col">Rol</th>
             </tr>
           </thead>
           <tbody>
@@ -121,7 +121,7 @@ export function BandPage({
                     ) : (
                       member.displayName
                     )}
-                    {isMe && <span className="badge">You</span>}
+                    {isMe && <span className="badge">Tú</span>}
                   </td>
                   <td>{ROLE_LABELS[member.role]}</td>
                 </tr>
@@ -132,17 +132,17 @@ export function BandPage({
       )}
 
       {canInvite && invites && invites.length > 0 && (
-        <section className="pending-invites" aria-label="Pending invites">
-          <h2 className="pending-invites__title">Pending invites</h2>
+        <section className="pending-invites" aria-label="Invitaciones pendientes">
+          <h2 className="pending-invites__title">Invitaciones pendientes</h2>
           <ul>
             {invites.map((invite) => (
               <li key={invite.id}>
                 <span>
                   {ROLE_LABELS[invite.role]} ·{' '}
                   {invite.maxUses === 1
-                    ? 'single use'
-                    : `${invite.useCount} of ${invite.maxUses} uses`}{' '}
-                  · until {new Date(invite.expiresAt).toLocaleDateString()}
+                    ? 'un solo uso'
+                    : `${invite.useCount} de ${invite.maxUses} usos`}{' '}
+                  · hasta el {formatDate(new Date(invite.expiresAt))}
                 </span>
                 {invite.url && (
                   <button
@@ -150,7 +150,7 @@ export function BandPage({
                     className="sm-button"
                     onClick={() => void navigator.clipboard?.writeText(invite.url!)}
                   >
-                    Copy link
+                    Copiar enlace
                   </button>
                 )}
                 <button
@@ -158,7 +158,7 @@ export function BandPage({
                   className="sm-button"
                   onClick={() => void sharing!.invites.revoke(invite.id).then(reloadInvites)}
                 >
-                  Turn off
+                  Desactivar
                 </button>
               </li>
             ))}

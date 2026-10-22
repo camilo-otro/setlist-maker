@@ -82,51 +82,56 @@ const rows = (name: string) =>
 describe('StatsPage', () => {
   it('explains that stats need played gigs', async () => {
     await setup();
-    expect(await screen.findByText('Nothing to show yet')).toBeTruthy();
+    expect(await screen.findByText('Aún no hay nada que mostrar')).toBeTruthy();
   });
 
   it('shows the totals and the most and least played songs', async () => {
     await setup(seedHistory);
-    expect(await screen.findByText('Gigs played')).toBeTruthy();
-    expect(screen.getByText('Gigs played').nextElementSibling!.textContent).toBe('4');
-    expect(screen.getByText('Songs played').nextElementSibling!.textContent).toBe('4 of 5');
+    expect(await screen.findByText('Toques realizados')).toBeTruthy();
+    expect(screen.getByText('Toques realizados').nextElementSibling!.textContent).toBe('4');
+    expect(screen.getByText('Canciones tocadas').nextElementSibling!.textContent).toBe('4 de 5');
 
-    expect(rows('Most played')).toEqual([
-      '1Hey Jude4 times',
-      '2Ours2 times',
-      '3Wonderwallonce',
-      '4Yesterdayonce',
+    expect(rows('Más tocadas')).toEqual([
+      '1Hey Jude4 veces',
+      '2Ours2 veces',
+      '3Wonderwall1 vez',
+      '4Yesterday1 vez',
     ]);
     // Only active songs, never played first, and only the bottom half of the four.
-    const least = rows('Least played');
-    expect(least[0]).toBe('1CreepNever played');
-    expect(least[1]).toMatch(/^2Wonderwallonce, last /);
+    const least = rows('Menos tocadas');
+    expect(least[0]).toBe('1CreepNunca se ha tocado');
+    expect(least[1]).toMatch(/^2Wonderwall1 vez, última: /);
     expect(least).toHaveLength(2);
   });
 
   it('lists songs not played in the last few gigs', async () => {
     const { user } = await setup(seedHistory);
-    await screen.findByText('Gigs played');
+    await screen.findByText('Toques realizados');
     // Five by default, more gigs than the band has played.
-    expect(card('Not played lately').getByText(/Every active song was played/)).toBeTruthy();
+    expect(
+      card('Sin tocar últimamente').getByText(/Todas las canciones activas se tocaron/),
+    ).toBeTruthy();
 
     // With 3: Creep was never played, Wonderwall not since the first of four gigs.
-    await user.selectOptions(card('Not played lately').getByRole('combobox'), '3');
-    expect(rows('Not played lately')).toEqual(['1CreepNever played', '2Wonderwall3 gigs']);
+    await user.selectOptions(card('Sin tocar últimamente').getByRole('combobox'), '3');
+    expect(rows('Sin tocar últimamente')).toEqual([
+      '1CreepNunca se ha tocado',
+      '2Wonderwall3 toques',
+    ]);
   });
 
   it('compares originals with covers and counts gigs per month', async () => {
     await setup(seedHistory);
-    await screen.findByText('Gigs played');
-    const split = card('Originals and covers');
-    expect(split.getByText('1 song (25% of the repertoire)')).toBeTruthy();
-    expect(split.getByText('Played 2 times (25% of plays)')).toBeTruthy();
-    expect(split.getByText('3 songs (75% of the repertoire)')).toBeTruthy();
-    expect(split.getByText('Played 6 times (75% of plays)')).toBeTruthy();
+    await screen.findByText('Toques realizados');
+    const split = card('Originales y covers');
+    expect(split.getByText('1 canción (25% del repertorio)')).toBeTruthy();
+    expect(split.getByText('Tocadas 2 veces (25% del total)')).toBeTruthy();
+    expect(split.getByText('3 canciones (75% del repertorio)')).toBeTruthy();
+    expect(split.getByText('Tocadas 6 veces (75% del total)')).toBeTruthy();
 
-    const months = card('Gigs per month').getAllByRole('listitem');
+    const months = card('Toques por mes').getAllByRole('listitem');
     expect(months).toHaveLength(12);
-    const counted = months.map((li) => Number(/: (\d+) gigs?$/.exec(li.title)![1]));
+    const counted = months.map((li) => Number(/: (\d+) toques?$/.exec(li.title)![1]));
     expect(counted.reduce((a, b) => a + b, 0)).toBe(4);
   });
 });

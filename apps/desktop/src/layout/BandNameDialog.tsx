@@ -20,7 +20,7 @@ export function BandNameDialog({
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Give the band a name');
+      setError('Ponle un nombre a la banda');
       return;
     }
     if (trimmed === current) {
@@ -32,15 +32,15 @@ export function BandNameDialog({
       await onSave(trimmed);
       onClose();
     } catch (failure) {
-      setError(`Couldn't save the name: ${String(failure)}`);
+      setError(`No se pudo guardar el nombre: ${String(failure)}`);
       setBusy(false);
     }
   }
 
   return (
-    <Modal title="Band name" onClose={onClose} busy={busy}>
+    <Modal title="Nombre de la banda" onClose={onClose} busy={busy}>
       <form className="form-grid" onSubmit={save} noValidate>
-        <Field id="band-name" label="Name" error={error} wide>
+        <Field id="band-name" label="Nombre" error={error} wide>
           <input
             {...inputProps('band-name', error)}
             autoFocus
@@ -51,14 +51,14 @@ export function BandNameDialog({
           />
         </Field>
         <p className="muted form-grid__wide">
-          Shown in the app and at the top of your share links.
+          Se muestra en la app y arriba en tus enlaces para compartir.
         </p>
         <div className="modal__actions form-grid__wide">
           <button type="button" className="sm-button" onClick={onClose} disabled={busy}>
-            Cancel
+            Cancelar
           </button>
           <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-            Save
+            Guardar
           </button>
         </div>
       </form>

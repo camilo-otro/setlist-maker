@@ -1,6 +1,7 @@
 import {
   checkImportRows,
   countImportRows,
+  formatNumber,
   guessMapping,
   parseCsv,
   SONG_IMPORT_FIELDS,
@@ -14,9 +15,8 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 
 const PREVIEW_ROWS = 200;
-const count = new Intl.NumberFormat();
 const plural = (n: number, one: string, many: string) =>
-  `${count.format(n)} ${n === 1 ? one : many}`;
+  `${formatNumber(n)} ${n === 1 ? one : many}`;
 
 interface LoadedFile {
   name: string;
@@ -25,9 +25,9 @@ interface LoadedFile {
 }
 
 const STATUS_LABELS: Record<ImportRow['status'], string> = {
-  ready: 'Ready',
-  duplicate: 'Duplicate',
-  invalid: 'Problem',
+  ready: 'Lista',
+  duplicate: 'Duplicada',
+  invalid: 'Con problemas',
 };
 
 /**
@@ -65,12 +65,13 @@ export function ImportDialog({
     setFileError(null);
     try {
       const [headers, ...rows] = parseCsv(await chosen.text());
-      if (!headers) return setFileError(`${chosen.name} is empty.`);
-      if (rows.length === 0) return setFileError(`${chosen.name} has a header row but no songs.`);
+      if (!headers) return setFileError(`${chosen.name} está vacío.`);
+      if (rows.length === 0)
+        return setFileError(`${chosen.name} tiene la fila de encabezados pero ninguna canción.`);
       setFile({ name: chosen.name, headers, rows });
       setMapping(guessMapping(headers));
     } catch (error) {
-      setFileError(`Couldn't read ${chosen.name}: ${String(error)}`);
+      setFileError(`No se pudo leer ${chosen.name}: ${String(error)}`);
     }
   }
 
@@ -101,12 +102,12 @@ export function ImportDialog({
   const filePicker = (
     <label className="sm-button import__file">
       <FileUp size={16} aria-hidden="true" />
-      {file ? 'Choose a different file' : 'Choose a CSV file'}
+      {file ? 'Elegir otro archivo' : 'Elegir un archivo CSV'}
       <input
         type="file"
         accept=".csv,.tsv,.txt,text/csv"
         className="visually-hidden"
-        aria-label="CSV file"
+        aria-label="Archivo CSV"
         onChange={(event) => void chooseFile(event)}
       />
     </label>
@@ -125,12 +126,15 @@ export function ImportDialog({
         onKeyDown={(e) => e.key === 'Escape' && !busy && onClose()}
       >
         <h2 id="import-title" className="modal__title">
-          Import songs from CSV
+          Importar canciones desde CSV
         </h2>
 
         {phase === 'done' ? (
           <>
-            <p role="status">Imported {plural(imported, 'song', 'songs')} into your library.</p>
+            <p role="status">
+              {imported === 1 ? 'Se importó' : 'Se importaron'}{' '}
+              {plural(imported, 'canción', 'canciones')} a tu repertorio.
+            </p>
             <div className="modal__actions">
               <button
                 type="button"
@@ -138,16 +142,16 @@ export function ImportDialog({
                 onClick={onClose}
                 autoFocus
               >
-                Done
+                Listo
               </button>
             </div>
           </>
         ) : !file ? (
           <>
             <p className="muted">
-              Export your song list from a spreadsheet as CSV. The first row should name the
-              columns, for example Title, Artist, Key, BPM, Length and Tags. You&apos;ll see every
-              song before anything is imported.
+              Exporta tu lista de canciones desde una hoja de cálculo como CSV. La primera fila debe
+              nombrar las columnas, por ejemplo Título, Artista, Tono, BPM, Duración y Etiquetas.
+              Vas a ver cada canción antes de importar nada.
             </p>
             {filePicker}
             {fileError && (
@@ -157,7 +161,7 @@ export function ImportDialog({
             )}
             <div className="modal__actions">
               <button type="button" className="sm-button" onClick={onClose}>
-                Cancel
+                Cancelar
               </button>
             </div>
           </>
@@ -165,7 +169,7 @@ export function ImportDialog({
           <>
             <div className="import__file-row">
               <span>
-                <strong>{file.name}</strong> · {plural(file.rows.length, 'row', 'rows')}
+                <strong>{file.name}</strong> · {plural(file.rows.length, 'fila', 'filas')}
               </span>
               {filePicker}
             </div>
@@ -177,7 +181,7 @@ export function ImportDialog({
 
             <section aria-labelledby="import-columns">
               <h3 id="import-columns" className="import__heading">
-                Columns
+                Columnas
               </h3>
               <div className="import__columns">
                 {SONG_IMPORT_FIELDS.map(({ field, label }) => {
@@ -194,10 +198,10 @@ export function ImportDialog({
                         value={column ?? ''}
                         onChange={(e) => setColumn(field, e.target.value)}
                       >
-                        <option value="">Don&apos;t import</option>
+                        <option value="">No importar</option>
                         {file.headers.map((header, i) => (
                           <option key={i} value={i}>
-                            {header || `Column ${i + 1}`}
+                            {header || `Columna ${i + 1}`}
                           </option>
                         ))}
                       </select>
@@ -210,34 +214,38 @@ export function ImportDialog({
               </div>
               {mapping.title === undefined && (
                 <p className="sm-field__error" role="alert">
-                  Choose which column holds the song titles.
+                  Elige la columna que tiene los títulos de las canciones.
                 </p>
               )}
             </section>
 
             <section aria-labelledby="import-review">
               <h3 id="import-review" className="import__heading">
-                Review
+                Revisión
               </h3>
               <p className="import__summary" aria-live="polite">
                 <span className="import__count import__count--ready">
-                  {plural(counts.ready, 'song', 'songs')} ready
+                  {plural(counts.ready, 'canción lista', 'canciones listas')}
                 </span>
                 <span className="import__count">
-                  {plural(counts.duplicate, 'duplicate', 'duplicates')} skipped
+                  {plural(counts.duplicate, 'duplicada omitida', 'duplicadas omitidas')}
                 </span>
                 <span className="import__count import__count--invalid">
-                  {plural(counts.invalid, 'row', 'rows')} with problems skipped
+                  {plural(
+                    counts.invalid,
+                    'fila con problemas omitida',
+                    'filas con problemas omitidas',
+                  )}
                 </span>
               </p>
               <div className="import__preview">
                 <table className="song-table">
                   <thead>
                     <tr>
-                      <th scope="col">Line</th>
-                      <th scope="col">Title</th>
-                      <th scope="col">Artist</th>
-                      <th scope="col">Result</th>
+                      <th scope="col">Línea</th>
+                      <th scope="col">Título</th>
+                      <th scope="col">Artista</th>
+                      <th scope="col">Resultado</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -257,20 +265,20 @@ export function ImportDialog({
               </div>
               {checked.length > PREVIEW_ROWS && (
                 <p className="muted">
-                  Showing the first {PREVIEW_ROWS} of {count.format(checked.length)} rows.
+                  Se muestran las primeras {PREVIEW_ROWS} de {formatNumber(checked.length)} filas.
                 </p>
               )}
             </section>
 
             {failure && (
               <p className="sm-field__error" role="alert">
-                Nothing was imported: {failure}
+                No se importó nada: {failure}
               </p>
             )}
 
             <div className="modal__actions">
               <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -279,8 +287,8 @@ export function ImportDialog({
                 onClick={() => void runImport()}
               >
                 {busy
-                  ? `Importing ${count.format(counts.ready)}…`
-                  : `Import ${plural(counts.ready, 'song', 'songs')}`}
+                  ? `Importando ${formatNumber(counts.ready)}…`
+                  : `Importar ${plural(counts.ready, 'canción', 'canciones')}`}
               </button>
             </div>
           </>

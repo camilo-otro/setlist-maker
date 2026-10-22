@@ -4,7 +4,7 @@ import { Field, inputProps, validationErrors, type FieldErrors } from '../compon
 import { Modal } from '../components/Modal';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 
-const MESSAGES = { name: 'Give the venue a name' };
+const MESSAGES = { name: 'Ponle un nombre al lugar' };
 
 /** Adds a venue (`venue` is null) or edits one. Deleting is blocked while gigs use the venue. */
 export function VenueDialog({
@@ -63,9 +63,9 @@ export function VenueDialog({
   }
 
   return (
-    <Modal title={venue ? 'Edit venue' : 'Add venue'} busy={busy} onClose={onClose}>
+    <Modal title={venue ? 'Editar lugar' : 'Agregar lugar'} busy={busy} onClose={onClose}>
       <form className="form-grid" onSubmit={save} noValidate>
-        <Field id="venue-name" label="Name" error={errors.name} wide>
+        <Field id="venue-name" label="Nombre" error={errors.name} wide>
           <input
             {...inputProps('venue-name', errors.name)}
             autoFocus
@@ -73,24 +73,24 @@ export function VenueDialog({
             onChange={(e) => set('name', e.target.value)}
           />
         </Field>
-        <Field id="venue-city" label="City" error={errors.city}>
+        <Field id="venue-city" label="Ciudad" error={errors.city}>
           <input
             {...inputProps('venue-city', errors.city)}
             value={form.city}
             onChange={(e) => set('city', e.target.value)}
           />
         </Field>
-        <Field id="venue-address" label="Address" error={errors.address}>
+        <Field id="venue-address" label="Dirección" error={errors.address}>
           <input
             {...inputProps('venue-address', errors.address)}
             value={form.address}
             onChange={(e) => set('address', e.target.value)}
           />
         </Field>
-        <Field id="venue-notes" label="Notes" error={errors.notes} wide>
+        <Field id="venue-notes" label="Notas" error={errors.notes} wide>
           <textarea
             {...inputProps('venue-notes', errors.notes)}
-            placeholder="Load-in door, parking, contact, PA…"
+            placeholder="Puerta de montaje, parqueadero, contacto, sonido…"
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
           />
@@ -98,29 +98,29 @@ export function VenueDialog({
 
         {failure && (
           <p className="sm-field__error form-grid__wide" role="alert">
-            Couldn&apos;t save: {failure}
+            No se pudo guardar: {failure}
           </p>
         )}
         {deleting === 'confirm' && venue && (
           <div className="modal__confirm form-grid__wide" role="alert">
-            <span>Delete “{venue.name}”?</span>
+            <span>¿Eliminar “{venue.name}”?</span>
             <button
               type="button"
               className="sm-button sm-button--danger"
               disabled={busy}
               onClick={() => void run(() => repository.venues.remove(venue.id))}
             >
-              Delete venue
+              Eliminar lugar
             </button>
             <button type="button" className="sm-button" onClick={() => setDeleting('idle')}>
-              Keep it
+              Conservarlo
             </button>
           </div>
         )}
         {typeof deleting === 'number' && (
           <p className="modal__confirm form-grid__wide" role="alert">
-            {deleting === 1 ? '1 gig uses' : `${deleting} gigs use`} this venue, so it can&apos;t be
-            deleted.
+            {deleting === 1 ? '1 toque usa' : `${deleting} toques usan`} este lugar, así que no se
+            puede eliminar.
           </p>
         )}
 
@@ -133,15 +133,15 @@ export function VenueDialog({
                 disabled={busy || deleting !== 'idle'}
                 onClick={() => void startDelete()}
               >
-                Delete
+                Eliminar
               </button>
             </div>
           )}
           <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-            Cancel
+            Cancelar
           </button>
           <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-            {venue ? 'Save changes' : 'Add venue'}
+            {venue ? 'Guardar cambios' : 'Agregar lugar'}
           </button>
         </div>
       </form>

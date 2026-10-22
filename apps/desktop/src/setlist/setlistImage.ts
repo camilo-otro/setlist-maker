@@ -1,4 +1,13 @@
-import { formatDuration, setDuration, type Gig, type Song, type Venue } from '@setlist/core';
+import {
+  formatDate,
+  formatDuration,
+  formatTime,
+  formatWeekday,
+  setDuration,
+  type Gig,
+  type Song,
+  type Venue,
+} from '@setlist/core';
 import type { BlockWithEntries } from './useGigSetlist';
 
 /**
@@ -113,7 +122,6 @@ export function layoutSetlistImage({
   blocks,
   songsById,
   measure,
-  locale,
   theme = 'light',
 }: {
   gig: Gig;
@@ -121,8 +129,6 @@ export function layoutSetlistImage({
   blocks: readonly BlockWithEntries[];
   songsById: ReadonlyMap<string, Song>;
   measure: Measure;
-  /** For the date; the device's own by default. */
-  locale?: string;
   theme?: ImageTheme;
 }): ImageLayout {
   const COLORS = PALETTES[theme];
@@ -152,17 +158,12 @@ export function layoutSetlistImage({
     y += 32;
     text(PAD, y, line, titleFont);
   }
-  const [year, month, day] = gig.date.split('-').map(Number);
-  const date = new Date(year!, month! - 1, day!).toLocaleDateString(locale, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  // Short, so the line fits a phone: "sáb, 7 de nov de 2026".
+  const date = `${formatWeekday(gig.date)}, ${formatDate(gig.date)}`;
   const where = venue && (venue.city ? `${venue.name}, ${venue.city}` : venue.name);
   const detailsFont = font(15);
   for (const line of wrap(
-    [date, gig.startTime, where].filter(Boolean).join(' · '),
+    [date, gig.startTime && formatTime(gig.startTime), where].filter(Boolean).join(' · '),
     IMAGE_WIDTH - PAD * 2,
     detailsFont,
     measure,
@@ -172,7 +173,7 @@ export function layoutSetlistImage({
   }
   if (gig.status === 'cancelled') {
     y += 24;
-    text(PAD, y, 'Cancelled', font(15, 700), COLORS.danger);
+    text(PAD, y, 'Cancelado', font(15, 700), COLORS.danger);
   }
   const total = sets.reduce(
     (sum, { entries }) => {
@@ -185,7 +186,7 @@ export function layoutSetlistImage({
   text(
     PAD,
     y,
-    `${formatDuration(total.totalSec)} total · ${total.songs} ${total.songs === 1 ? 'song' : 'songs'}`,
+    `${formatDuration(total.totalSec)} en total · ${total.songs} ${total.songs === 1 ? 'canción' : 'canciones'}`,
     detailsFont,
     COLORS.muted,
   );
@@ -272,8 +273,8 @@ export function layoutSetlistImage({
           items.push({ kind: 'rect', x: CARD_X, y, w: CARD_W, h: 38, fill: COLORS.hover });
         const label = isBreak
           ? entry.label
-            ? `BREAK · ${entry.label.toUpperCase()}`
-            : 'BREAK'
+            ? `DESCANSO · ${entry.label.toUpperCase()}`
+            : 'DESCANSO'
           : (entry.label ?? '');
         const labelFont = isBreak ? font(14, 600) : font(15, 400, 'italic');
         text(
@@ -289,7 +290,7 @@ export function layoutSetlistImage({
     }
     if (entries.length === 0) {
       items.push({ kind: 'line', x: CARD_X, y, w: CARD_W, color: COLORS.border });
-      text(CARD_X + INSET, y + 26, 'No songs yet', font(15), COLORS.muted);
+      text(CARD_X + INSET, y + 26, 'Aún sin canciones', font(15), COLORS.muted);
       y += 40;
     }
     card.h = y - top;
@@ -306,7 +307,7 @@ export function drawSetlistImage(layout: ImageLayout): Promise<Blob> {
   canvas.width = layout.width * IMAGE_SCALE;
   canvas.height = Math.ceil(layout.height * IMAGE_SCALE);
   const ctx = canvas.getContext('2d');
-  if (!ctx) return Promise.reject(new Error("This device can't draw images."));
+  if (!ctx) return Promise.reject(new Error('Este dispositivo no puede dibujar imágenes.'));
   ctx.scale(IMAGE_SCALE, IMAGE_SCALE);
   ctx.fillStyle = layout.background;
   ctx.fillRect(0, 0, layout.width, layout.height);
@@ -336,7 +337,7 @@ export function drawSetlistImage(layout: ImageLayout): Promise<Blob> {
   }
   return new Promise((resolve, reject) =>
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Couldn't make the image."))),
+      (blob) => (blob ? resolve(blob) : reject(new Error('No se pudo crear la imagen.'))),
       'image/png',
     ),
   );

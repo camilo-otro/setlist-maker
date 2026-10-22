@@ -36,7 +36,7 @@ const row = (title: string) => screen.getByRole('button', { name: title }).close
 /** Opens a song's detail panel from the table, then its editor. */
 async function openEditor(user: ReturnType<typeof userEvent.setup>, title: string) {
   await user.click(await screen.findByRole('button', { name: title }));
-  await user.click(within(detail(title)).getByRole('button', { name: 'Edit' }));
+  await user.click(within(detail(title)).getByRole('button', { name: 'Editar' }));
   return within(dialog());
 }
 const detail = (title: string) => screen.getByRole('complementary', { name: title });
@@ -49,21 +49,21 @@ const titlesInTable = () =>
 describe('LibraryPage', () => {
   it('adds the first song from the empty state', async () => {
     const { user, workspace } = await setup();
-    await screen.findByText('No songs yet');
+    await screen.findByText('Aún no hay canciones');
 
-    await user.click(screen.getByRole('button', { name: 'Add song' }));
+    await user.click(screen.getByRole('button', { name: 'Agregar canción' }));
     const form = within(dialog());
-    await user.type(form.getByLabelText('Title'), 'Wasteland');
-    await user.type(form.getByLabelText('Artist'), '10 Years');
-    await user.selectOptions(form.getByLabelText('Key'), 'Em');
+    await user.type(form.getByLabelText('Título'), 'Wasteland');
+    await user.type(form.getByLabelText('Artista'), '10 Years');
+    await user.selectOptions(form.getByLabelText('Tono'), 'Em');
     await user.type(form.getByLabelText('Tempo (BPM)'), '74');
-    await user.type(form.getByLabelText('Length (m:ss)'), '3:50');
-    await user.type(form.getByLabelText('Tags (separated by commas)'), 'slow, ballad');
-    await user.click(form.getByRole('button', { name: 'Add song' }));
+    await user.type(form.getByLabelText('Duración (m:ss)'), '3:50');
+    await user.type(form.getByLabelText('Etiquetas (separadas por comas)'), 'slow, ballad');
+    await user.click(form.getByRole('button', { name: 'Agregar canción' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const cells = within(row('Wasteland'));
-    for (const text of ['10 Years', 'Em', '74', '3:50', 'Active', 'slow', 'ballad']) {
+    for (const text of ['10 Years', 'Em', '74', '3:50', 'Activa', 'slow', 'ballad']) {
       expect(cells.getByText(text)).toBeTruthy();
     }
     const [stored] = await workspace.repository.songs.list({ bandId: workspace.band.id });
@@ -72,16 +72,16 @@ describe('LibraryPage', () => {
 
   it('explains invalid input and saves nothing', async () => {
     const { user, workspace } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'Add song' }));
+    await user.click(await screen.findByRole('button', { name: 'Agregar canción' }));
     const form = within(dialog());
     await user.type(form.getByLabelText('Tempo (BPM)'), 'fast');
-    await user.click(form.getByRole('button', { name: 'Add song' }));
-    expect(form.getByText('Use a whole number, e.g. 120')).toBeTruthy();
+    await user.click(form.getByRole('button', { name: 'Agregar canción' }));
+    expect(form.getByText('Usa un número entero, p. ej. 120')).toBeTruthy();
 
     await user.clear(form.getByLabelText('Tempo (BPM)'));
-    await user.click(form.getByRole('button', { name: 'Add song' }));
-    expect(await form.findByText('Give the song a title')).toBeTruthy();
-    expect(form.getByLabelText('Title').getAttribute('aria-invalid')).toBe('true');
+    await user.click(form.getByRole('button', { name: 'Agregar canción' }));
+    expect(await form.findByText('Ponle un título a la canción')).toBeTruthy();
+    expect(form.getByLabelText('Título').getAttribute('aria-invalid')).toBe('true');
     expect(await workspace.repository.songs.list()).toEqual([]);
   });
 
@@ -90,28 +90,28 @@ describe('LibraryPage', () => {
     await screen.findByRole('table');
     expect(titlesInTable()).toEqual(['Beautiful', 'Here Without You', 'Wasteland']);
 
-    await user.click(screen.getByRole('button', { name: 'Title' }));
+    await user.click(screen.getByRole('button', { name: 'Título' }));
     expect(titlesInTable()).toEqual(['Wasteland', 'Here Without You', 'Beautiful']);
-    expect(screen.getByRole('columnheader', { name: /Title/ }).getAttribute('aria-sort')).toBe(
+    expect(screen.getByRole('columnheader', { name: /Título/ }).getAttribute('aria-sort')).toBe(
       'descending',
     );
 
-    await user.type(screen.getByRole('searchbox', { name: 'Search songs' }), 'with');
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar canciones' }), 'with');
     expect(titlesInTable()).toEqual(['Here Without You']);
-    expect(screen.getByText('1 song')).toBeTruthy();
+    expect(screen.getByText('1 canción')).toBeTruthy();
 
     await user.type(screen.getByRole('searchbox'), 'zzz');
-    expect(screen.getByText('No songs match your search and filters.')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Clear search and filters' }));
+    expect(screen.getByText('Ninguna canción coincide con tu búsqueda y filtros.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Borrar búsqueda y filtros' }));
     expect(titlesInTable()).toHaveLength(3);
   });
 
   it('edits a song', async () => {
     const { user } = await setup(addSongs(['Wasteland']));
     const form = await openEditor(user, 'Wasteland');
-    expect(form.getByRole('heading', { name: 'Edit song' })).toBeTruthy();
-    await user.selectOptions(form.getByLabelText('Key'), 'D');
-    await user.click(form.getByRole('button', { name: 'Save changes' }));
+    expect(form.getByRole('heading', { name: 'Editar canción' })).toBeTruthy();
+    await user.selectOptions(form.getByLabelText('Tono'), 'D');
+    await user.click(form.getByRole('button', { name: 'Guardar cambios' }));
 
     await waitFor(() => expect(within(row('Wasteland')).getByText('D')).toBeTruthy());
   });
@@ -119,20 +119,20 @@ describe('LibraryPage', () => {
   it('archives songs out of the list and restores them', async () => {
     const { user } = await setup(addSongs(['Wasteland', 'Beautiful']));
     const editor = await openEditor(user, 'Wasteland');
-    await user.click(editor.getByRole('button', { name: 'Archive' }));
+    await user.click(editor.getByRole('button', { name: 'Archivar' }));
 
     // Hidden by the default status filter; the detail panel stays open on it.
     await waitFor(() => expect(titlesInTable()).toEqual(['Beautiful']));
-    expect(within(detail('Wasteland')).getByText('Retired')).toBeTruthy();
+    expect(within(detail('Wasteland')).getByText('Archivada')).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Filters' }));
-    const status = within(screen.getByRole('group', { name: 'Status' }));
-    await user.click(status.getByRole('button', { name: 'Retired' }));
-    expect(within(row('Wasteland')).getByText('Retired')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Filtros' }));
+    const status = within(screen.getByRole('group', { name: 'Estado' }));
+    await user.click(status.getByRole('button', { name: 'Archivada' }));
+    expect(within(row('Wasteland')).getByText('Archivada')).toBeTruthy();
 
-    await user.click(within(detail('Wasteland')).getByRole('button', { name: 'Edit' }));
-    await user.click(within(dialog()).getByRole('button', { name: 'Restore' }));
-    await waitFor(() => expect(within(row('Wasteland')).getByText('Active')).toBeTruthy());
+    await user.click(within(detail('Wasteland')).getByRole('button', { name: 'Editar' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Restaurar' }));
+    await waitFor(() => expect(within(row('Wasteland')).getByText('Activa')).toBeTruthy());
   });
 
   it("won't delete a song that's in a gig's history", async () => {
@@ -154,16 +154,16 @@ describe('LibraryPage', () => {
       });
     });
     const editor = await openEditor(user, 'Wasteland');
-    await user.click(editor.getByRole('button', { name: 'Delete' }));
-    expect(await within(dialog()).findByText(/history of 1 gig/)).toBeTruthy();
-    expect(within(dialog()).queryByRole('button', { name: 'Delete song' })).toBeNull();
+    await user.click(editor.getByRole('button', { name: 'Eliminar' }));
+    expect(await within(dialog()).findByText(/historial de 1 toque/)).toBeTruthy();
+    expect(within(dialog()).queryByRole('button', { name: 'Eliminar canción' })).toBeNull();
   });
 
   it('deletes a song after confirming', async () => {
     const { user, workspace } = await setup(addSongs(['Wasteland', 'Beautiful']));
     const editor = await openEditor(user, 'Wasteland');
-    await user.click(editor.getByRole('button', { name: 'Delete' }));
-    await user.click(await within(dialog()).findByRole('button', { name: 'Delete song' }));
+    await user.click(editor.getByRole('button', { name: 'Eliminar' }));
+    await user.click(await within(dialog()).findByRole('button', { name: 'Eliminar canción' }));
 
     await waitFor(() => expect(titlesInTable()).toEqual(['Beautiful']));
     expect(screen.queryByRole('complementary')).toBeNull();
@@ -173,8 +173,8 @@ describe('LibraryPage', () => {
 
   it('closes the dialog with Escape without saving', async () => {
     const { user, workspace } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'Add song' }));
-    await user.type(within(dialog()).getByLabelText('Title'), 'Draft');
+    await user.click(await screen.findByRole('button', { name: 'Agregar canción' }));
+    await user.type(within(dialog()).getByLabelText('Título'), 'Draft');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(await workspace.repository.songs.list()).toEqual([]);
@@ -197,15 +197,15 @@ describe('LibraryPage', () => {
     });
     await user.click(await screen.findByRole('button', { name: 'Wasteland' }));
     const panel = within(detail('Wasteland'));
-    for (const text of ['10 Years', 'Learning', 'Em', '74 BPM', '3:50', 'Drop D', 'slow']) {
+    for (const text of ['10 Years', 'En práctica', 'Em', '74 BPM', '3:50', 'Drop D', 'slow']) {
       expect(panel.getByText(text)).toBeTruthy();
     }
     expect(panel.getByText(/Capo 2/).textContent).toBe('Capo 2\nCount in from the drums');
-    expect(panel.getByText(/Once you mark gigs as played/)).toBeTruthy();
+    expect(panel.getByText(/Cuando marques toques como tocados/)).toBeTruthy();
     const titleButton = screen.getByRole('button', { name: 'Wasteland' });
     expect(titleButton.getAttribute('aria-current')).toBe('true');
 
-    await user.click(panel.getByRole('button', { name: 'Close details' }));
+    await user.click(panel.getByRole('button', { name: 'Cerrar detalles' }));
     expect(screen.queryByRole('complementary')).toBeNull();
   });
 
@@ -213,11 +213,11 @@ describe('LibraryPage', () => {
     const { user } = await setup(addSongs(['Wasteland']));
     await user.click(await screen.findByRole('button', { name: 'Wasteland' }));
     const panel = within(detail('Wasteland'));
-    expect(panel.getAllByText('Not set')).toHaveLength(4);
-    expect(panel.getByText('No tags')).toBeTruthy();
-    expect(panel.getByText('No notes')).toBeTruthy();
+    expect(panel.getAllByText('Sin definir')).toHaveLength(4);
+    expect(panel.getByText('Sin etiquetas')).toBeTruthy();
+    expect(panel.getByText('Sin notas')).toBeTruthy();
 
-    panel.getByRole('button', { name: 'Close details' }).focus();
+    panel.getByRole('button', { name: 'Cerrar detalles' }).focus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('complementary')).toBeNull();
   });
@@ -231,30 +231,30 @@ describe('LibraryPage', () => {
       await add({ title: 'Ours', tags: ['fast'], key: 'A', tempoBpm: 120, isOriginal: true });
     });
     await screen.findByRole('table');
-    const filtersButton = screen.getByRole('button', { name: 'Filters' });
+    const filtersButton = screen.getByRole('button', { name: 'Filtros' });
     expect(filtersButton.getAttribute('aria-expanded')).toBe('false');
     await user.click(filtersButton);
     const group = (name: string) => within(screen.getByRole('group', { name }));
 
-    await user.click(group('Tags').getByRole('button', { name: /fast/ }));
+    await user.click(group('Etiquetas').getByRole('button', { name: /fast/ }));
     expect(titlesInTable()).toEqual(['Opener', 'Ours']);
-    await user.click(group('Songs').getByRole('button', { name: 'Covers' }));
+    await user.click(group('Canciones').getByRole('button', { name: 'Covers' }));
     expect(titlesInTable()).toEqual(['Opener']);
-    expect(screen.getByRole('button', { name: /Filters/ }).textContent).toContain('2');
+    expect(screen.getByRole('button', { name: /Filtros/ }).textContent).toContain('2');
 
-    await user.click(screen.getByRole('button', { name: 'Reset filters' }));
+    await user.click(screen.getByRole('button', { name: 'Quitar filtros' }));
     expect(titlesInTable()).toHaveLength(3);
 
-    const keyA = group('Key').getByRole('button', { name: 'A' });
+    const keyA = group('Tono').getByRole('button', { name: 'A' });
     await user.click(keyA);
-    await user.type(screen.getByLabelText('Minimum BPM'), '130');
+    await user.type(screen.getByLabelText('BPM mínimo'), '130');
     expect(titlesInTable()).toEqual(['Opener']);
     expect(keyA.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('imports songs from a CSV file, skipping duplicates and rows with problems', async () => {
     const { user, workspace } = await setup(addSongs(['Wasteland']));
-    await user.click(await screen.findByRole('button', { name: 'Import CSV' }));
+    await user.click(await screen.findByRole('button', { name: 'Importar CSV' }));
     const csv = [
       'Song,Artist,BPM,Key,Tags',
       'Here Without You,3 Doors Down,72,Bb,"ballad, slow"',
@@ -263,23 +263,23 @@ describe('LibraryPage', () => {
       ',Nobody,90,C,',
       'Badtempo,Someone,fast,C,',
     ].join('\n');
-    const input = within(dialog()).getByLabelText('CSV file');
+    const input = within(dialog()).getByLabelText('Archivo CSV');
     await user.upload(input, new File([csv], 'songs.csv', { type: 'text/csv' }));
 
     const form = within(dialog());
     expect(await form.findByText('songs.csv')).toBeTruthy();
-    expect((form.getByLabelText('Title') as HTMLSelectElement).value).toBe('0');
+    expect((form.getByLabelText('Título') as HTMLSelectElement).value).toBe('0');
     expect((form.getByLabelText('Tempo (BPM)') as HTMLSelectElement).value).toBe('2');
-    expect(form.getByText('2 songs ready')).toBeTruthy();
-    expect(form.getByText('1 duplicate skipped')).toBeTruthy();
-    expect(form.getByText('2 rows with problems skipped')).toBeTruthy();
-    expect(form.getByText('Duplicate: Already in your library')).toBeTruthy();
-    expect(form.getByText('Problem: No title')).toBeTruthy();
-    expect(form.getByText('Problem: Tempo "fast" isn\'t a number')).toBeTruthy();
+    expect(form.getByText('2 canciones listas')).toBeTruthy();
+    expect(form.getByText('1 duplicada omitida')).toBeTruthy();
+    expect(form.getByText('2 filas con problemas omitidas')).toBeTruthy();
+    expect(form.getByText('Duplicada: Ya está en tu repertorio')).toBeTruthy();
+    expect(form.getByText('Con problemas: No tiene título')).toBeTruthy();
+    expect(form.getByText('Con problemas: El tempo "fast" no es un número')).toBeTruthy();
 
-    await user.click(form.getByRole('button', { name: 'Import 2 songs' }));
-    expect(await form.findByText('Imported 2 songs into your library.')).toBeTruthy();
-    await user.click(form.getByRole('button', { name: 'Done' }));
+    await user.click(form.getByRole('button', { name: 'Importar 2 canciones' }));
+    expect(await form.findByText('Se importaron 2 canciones a tu repertorio.')).toBeTruthy();
+    await user.click(form.getByRole('button', { name: 'Listo' }));
 
     await waitFor(() =>
       expect(titlesInTable()).toEqual(['Basurita', 'Here Without You', 'Wasteland']),
@@ -294,31 +294,39 @@ describe('LibraryPage', () => {
 
   it('lets you change which column fills a field', async () => {
     const { user } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'Import CSV' }));
+    await user.click(await screen.findByRole('button', { name: 'Importar CSV' }));
     await user.upload(
-      within(dialog()).getByLabelText('CSV file'),
+      within(dialog()).getByLabelText('Archivo CSV'),
       new File(['Name,Notes\nWasteland,Capo 2'], 'list.csv', { type: 'text/csv' }),
     );
     const form = within(dialog());
     await form.findByText('list.csv');
 
-    await user.selectOptions(form.getByLabelText('Title'), '');
-    expect(form.getByText('Choose which column holds the song titles.')).toBeTruthy();
-    expect(form.getByRole('button', { name: 'Import 0 songs' })).toHaveProperty('disabled', true);
+    await user.selectOptions(form.getByLabelText('Título'), '');
+    expect(form.getByText('Elige la columna que tiene los títulos de las canciones.')).toBeTruthy();
+    expect(form.getByRole('button', { name: 'Importar 0 canciones' })).toHaveProperty(
+      'disabled',
+      true,
+    );
 
-    await user.selectOptions(form.getByLabelText('Title'), 'Notes');
-    expect(form.getByRole('button', { name: 'Import 1 song' })).toHaveProperty('disabled', false);
+    await user.selectOptions(form.getByLabelText('Título'), 'Notes');
+    expect(form.getByRole('button', { name: 'Importar 1 canción' })).toHaveProperty(
+      'disabled',
+      false,
+    );
   });
 
   it('explains files without songs', async () => {
     const { user } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'Import CSV' }));
+    await user.click(await screen.findByRole('button', { name: 'Importar CSV' }));
     await user.upload(
-      within(dialog()).getByLabelText('CSV file'),
+      within(dialog()).getByLabelText('Archivo CSV'),
       new File(['Title,Artist\n'], 'empty.csv', { type: 'text/csv' }),
     );
     expect(
-      await within(dialog()).findByText('empty.csv has a header row but no songs.'),
+      await within(dialog()).findByText(
+        'empty.csv tiene la fila de encabezados pero ninguna canción.',
+      ),
     ).toBeTruthy();
   });
 
@@ -363,22 +371,22 @@ describe('LibraryPage', () => {
     });
 
     await user.click(await screen.findByRole('button', { name: 'Wasteland' }));
-    const history = within(within(detail('Wasteland')).getByRole('region', { name: 'History' }));
-    expect(await history.findByText(/Played 2 times/)).toBeTruthy();
+    const history = within(within(detail('Wasteland')).getByRole('region', { name: 'Historial' }));
+    expect(await history.findByText(/Tocada 2 veces/)).toBeTruthy();
     const items = history.getAllByRole('listitem');
     expect(items).toHaveLength(2);
     // The street fair first: no venue, played a step down, rated and with notes.
     expect(items[0]!.textContent).toContain('Street fair');
-    expect(items[0]!.textContent).toContain('Encore, song 1 · in Dm');
-    expect(within(items[0]!).getByLabelText('Rated 4 of 5')).toBeTruthy();
+    expect(items[0]!.textContent).toContain('Encore, canción 1 · en Dm');
+    expect(within(items[0]!).getByLabelText('Calificación: 4 de 5')).toBeTruthy();
     expect(within(items[0]!).getByText('Crowd sang along')).toBeTruthy();
     // The spring show: at the Cavern, in the song's own key, so no key is shown.
     expect(items[1]!.textContent).toContain('Spring show · The Cavern');
-    expect(items[1]!.textContent).toContain('Set 1, song 3');
-    expect(items[1]!.textContent).not.toContain(' in Em');
+    expect(items[1]!.textContent).toContain('Set 1, canción 3');
+    expect(items[1]!.textContent).not.toContain(' en Em');
     expect(within(items[1]!).getByRole('link').getAttribute('href')).toMatch(/^\/gigs\//);
 
     await user.click(screen.getByRole('button', { name: 'Beautiful' }));
-    expect(await within(detail('Beautiful')).findByText(/Not played yet/)).toBeTruthy();
+    expect(await within(detail('Beautiful')).findByText(/Aún no la han tocado/)).toBeTruthy();
   });
 });

@@ -70,54 +70,56 @@ describe('ShareDialog', () => {
   it('asks for a name the first time, uploads the band and shows a link to copy', async () => {
     const sharing = fakeSharing();
     const { user } = open(sharing);
-    await user.type(await screen.findByLabelText('Your name'), 'Camilo');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(await screen.findByLabelText('Tu nombre'), 'Camilo');
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
-    const link = await screen.findByLabelText<HTMLInputElement>('Share link');
+    const link = await screen.findByLabelText<HTMLInputElement>('Enlace para compartir');
     expect(link.value).toBe('https://setlist.rockthehouse.app/#token-1');
     expect(sharing.share).toHaveBeenCalledWith('Camilo');
     expect(sharing.links.create).toHaveBeenCalledWith('b1', 'g1');
 
-    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    await user.click(screen.getByRole('button', { name: 'Copiar enlace' }));
     expect(await navigator.clipboard.readText()).toBe('https://setlist.rockthehouse.app/#token-1');
-    expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copiado' })).toBeTruthy();
   });
 
   it('shows the existing link straight away once signed in', async () => {
     const sharing = fakeSharing({ signedIn: true });
     await sharing.links.create('b1', 'g1');
     open(sharing);
-    expect((await screen.findByLabelText<HTMLInputElement>('Share link')).value).toContain(
-      '#token-1',
-    );
-    expect(screen.queryByLabelText('Your name')).toBeNull();
+    expect(
+      (await screen.findByLabelText<HTMLInputElement>('Enlace para compartir')).value,
+    ).toContain('#token-1');
+    expect(screen.queryByLabelText('Tu nombre')).toBeNull();
     expect(sharing.links.create).toHaveBeenCalledTimes(1);
   });
 
   it('says when the upload fails, and tries again', async () => {
     const sharing = fakeSharing({ signedIn: true, failShare: 1 });
     const { user } = open(sharing);
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Couldn’t reach the server/);
-    await user.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByLabelText('Share link')).toBeTruthy();
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /No se pudo conectar con el servidor/,
+    );
+    await user.click(screen.getByRole('button', { name: 'Intentar de nuevo' }));
+    expect(await screen.findByLabelText('Enlace para compartir')).toBeTruthy();
   });
 
   it('turns the link off after confirming, and can make a new one', async () => {
     const sharing = fakeSharing({ signedIn: true });
     const { user } = open(sharing);
-    await screen.findByLabelText('Share link');
-    await user.click(screen.getByRole('button', { name: 'Turn off link' }));
-    await user.click(screen.getByRole('button', { name: 'Keep the link' }));
+    await screen.findByLabelText('Enlace para compartir');
+    await user.click(screen.getByRole('button', { name: 'Desactivar enlace' }));
+    await user.click(screen.getByRole('button', { name: 'Conservar el enlace' }));
     expect(sharing.links.revoke).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'Turn off link' }));
-    await user.click(screen.getByRole('button', { name: 'Turn off link' }));
-    expect(await screen.findByText(/The link is off/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Desactivar enlace' }));
+    await user.click(screen.getByRole('button', { name: 'Desactivar enlace' }));
+    expect(await screen.findByText(/El enlace está desactivado/)).toBeTruthy();
     expect(sharing.links.revoke).toHaveBeenCalledWith('l1');
 
-    await user.click(screen.getByRole('button', { name: 'Create a new link' }));
-    expect((await screen.findByLabelText<HTMLInputElement>('Share link')).value).toContain(
-      '#token-2',
-    );
+    await user.click(screen.getByRole('button', { name: 'Crear un enlace nuevo' }));
+    expect(
+      (await screen.findByLabelText<HTMLInputElement>('Enlace para compartir')).value,
+    ).toContain('#token-2');
   });
 });

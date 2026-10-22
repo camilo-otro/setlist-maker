@@ -1,6 +1,7 @@
 import { useDndMonitor, useDraggable } from '@dnd-kit/core';
 import {
   formatDuration,
+  formatNumber,
   missingNeeds,
   searchSongs,
   sortByHistory,
@@ -44,7 +45,7 @@ function LibrarySong({
         type="button"
         ref={setActivatorNodeRef}
         className="drag-handle"
-        aria-label={`Drag ${song.title} into a set`}
+        aria-label={`Arrastrar ${song.title} a un set`}
         {...attributes}
         {...listeners}
       >
@@ -60,24 +61,24 @@ function LibrarySong({
         {hint && (
           <span className="library-song__history">
             <span className="muted">{hint.text}</span>
-            {hint.stale && <span className="history-mark">Not played in a while</span>}
+            {hint.stale && <span className="history-mark">Hace rato no se toca</span>}
             {hint.hereLastTime && (
-              <span className="history-mark history-mark--here">Played here last time</span>
+              <span className="history-mark history-mark--here">Se tocó aquí la última vez</span>
             )}
           </span>
         )}
         <SongTags tags={song.tags} missing={missing} className="library-song__tags" />
       </span>
       {inSetlist && (
-        <span className="library-song__used" title="Already in this setlist">
+        <span className="library-song__used" title="Ya está en este setlist">
           <Check size={14} aria-hidden="true" />
-          <span className="visually-hidden">Already in this setlist</span>
+          <span className="visually-hidden">Ya está en este setlist</span>
         </span>
       )}
       <button
         type="button"
         className="icon-button"
-        aria-label={`Add ${song.title}`}
+        aria-label={`Agregar ${song.title}`}
         onClick={onAdd}
       >
         <Plus size={16} aria-hidden="true" />
@@ -162,12 +163,12 @@ export function LibraryPanel({
     );
 
   return (
-    <aside className="library-panel" aria-label="Library">
+    <aside className="library-panel" aria-label="Repertorio">
       <div className="library-panel__header">
-        <h2 className="library-panel__title">Library</h2>
+        <h2 className="library-panel__title">Repertorio</h2>
         {onClose && (
           <button type="button" className="sm-button library-panel__close" onClick={onClose}>
-            Done
+            Listo
           </button>
         )}
       </div>
@@ -177,14 +178,14 @@ export function LibraryPanel({
           ref={searchRef}
           type="search"
           className="sm-input"
-          placeholder="Search songs"
-          aria-label="Search the library"
+          placeholder="Buscar canciones"
+          aria-label="Buscar en el repertorio"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
       {tagsInUse.length > 0 && (
-        <div className="library-panel__tags" role="group" aria-label="Filter by tag">
+        <div className="library-panel__tags" role="group" aria-label="Filtrar por etiqueta">
           {tagsInUse.map(({ tag }) => (
             <button
               key={tag}
@@ -205,28 +206,29 @@ export function LibraryPanel({
             checked={showMissing}
             onChange={(e) => setShowMissing(e.target.checked)}
           />
-          Show {needingMissing} {needingMissing === 1 ? 'song' : 'songs'} needing{' '}
+          Mostrar {needingMissing}{' '}
+          {needingMissing === 1 ? 'canción que necesita' : 'canciones que necesitan'}{' '}
           {missing.join(', ')}
         </label>
       )}
       {history && (
         <label className="library-panel__target">
-          <span className="muted">Sort</span>
+          <span className="muted">Ordenar</span>
           <select
             className="sm-input"
             value={sort}
             onChange={(e) => setSort(e.target.value as 'title' | HistorySort)}
           >
-            <option value="title">Title</option>
-            <option value="most-played">Most played</option>
-            <option value="least-played">Least played</option>
-            <option value="longest-ago">Longest since played</option>
+            <option value="title">Título</option>
+            <option value="most-played">Más tocadas</option>
+            <option value="least-played">Menos tocadas</option>
+            <option value="longest-ago">Más tiempo sin tocar</option>
           </select>
         </label>
       )}
       {blocks.length > 1 && (
         <label className="library-panel__target">
-          <span className="muted">Add to</span>
+          <span className="muted">Agregar a</span>
           <select
             className="sm-input"
             value={targetId}
@@ -242,8 +244,8 @@ export function LibraryPanel({
       )}
       <p className="muted library-panel__count" aria-live="polite">
         {matches.length > SHOWN
-          ? `Showing ${SHOWN} of ${matches.length.toLocaleString()} songs; search to narrow down`
-          : `${matches.length} ${matches.length === 1 ? 'song' : 'songs'}`}
+          ? `Mostrando ${SHOWN} de ${formatNumber(matches.length)} canciones; busca para filtrar`
+          : `${matches.length} ${matches.length === 1 ? 'canción' : 'canciones'}`}
       </p>
       <ul className="library-panel__list">
         {matches.slice(0, SHOWN).map((song) => (

@@ -1,5 +1,6 @@
 import {
   daysSinceLastPlayed,
+  formatDate,
   STALE_AFTER_DAYS,
   timesPlayedWithin,
   type SongStats,
@@ -14,22 +15,13 @@ export interface SongHistory {
   today: string;
 }
 
-const dayMonth = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
-const dayMonthYear = new Intl.DateTimeFormat(undefined, {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
 function shortDate(date: string, today: string) {
-  const [y, m, d] = date.split('-').map(Number);
-  const value = new Date(y!, m! - 1, d!);
-  return (date.slice(0, 4) === today.slice(0, 4) ? dayMonth : dayMonthYear).format(value);
+  return formatDate(date, date.slice(0, 4) === today.slice(0, 4) ? 'short' : 'medium');
 }
 
 /**
- * One song's history in a few words, e.g. "3× this month · 7× this quarter" or "Last played 14
- * Jun", and whether to mark it as not played in a while.
+ * One song's history in a few words, e.g. "3× este mes · 7× este trimestre" or "Última vez: 14
+ * de jun", and whether to mark it as not played in a while.
  */
 export function historyHint(
   songId: string,
@@ -37,13 +29,13 @@ export function historyHint(
 ): { text: string; stale: boolean; hereLastTime: boolean } {
   const stats = history.stats.get(songId);
   const hereLastTime = history.hereLastTime.has(songId);
-  if (!stats) return { text: 'Never played', stale: false, hereLastTime };
+  if (!stats) return { text: 'Nunca se ha tocado', stale: false, hereLastTime };
   const month = timesPlayedWithin(stats, history.today, 30);
   const quarter = timesPlayedWithin(stats, history.today, 91);
   const parts = [];
-  if (month > 0) parts.push(`${month}× this month`);
-  if (quarter > 0) parts.push(`${quarter}× this quarter`);
-  if (parts.length === 0) parts.push(`Last played ${shortDate(stats.lastPlayed, history.today)}`);
+  if (month > 0) parts.push(`${month}× este mes`);
+  if (quarter > 0) parts.push(`${quarter}× este trimestre`);
+  if (parts.length === 0) parts.push(`Última vez: ${shortDate(stats.lastPlayed, history.today)}`);
   const days = daysSinceLastPlayed(stats, history.today) ?? 0;
   return { text: parts.join(' · '), stale: days >= STALE_AFTER_DAYS, hereLastTime };
 }

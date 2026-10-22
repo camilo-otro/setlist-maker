@@ -8,9 +8,9 @@ import {
 } from '../theme';
 
 const OPTIONS = [
-  { value: 'system', label: 'Match system', icon: Monitor },
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'Igual que el sistema', icon: Monitor },
+  { value: 'light', label: 'Claro', icon: Sun },
+  { value: 'dark', label: 'Oscuro', icon: Moon },
 ] as const satisfies readonly { value: ThemePreference; label: string; icon: unknown }[];
 
 const storage = () => (typeof localStorage === 'undefined' ? undefined : localStorage);
@@ -26,7 +26,7 @@ export function ThemeSwitcher() {
   }, [preference]);
 
   return (
-    <div className="theme-switcher" role="radiogroup" aria-label="Theme">
+    <div className="theme-switcher" role="radiogroup" aria-label="Tema">
       {OPTIONS.map(({ value, label, icon: Icon }) => (
         <button
           key={value}

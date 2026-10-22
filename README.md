@@ -114,8 +114,8 @@ Locally, codes land in the test mailbox at http://127.0.0.1:54324 (Mailpit), and
    - Sender email `setlist@rockthehouse.app`, sender name `Setlist Maker`
    - Host `smtp.resend.com`, port `465`, username `resend`, password: the Resend API key
 5. **Supabase dashboard → Authentication → Emails → Templates:**
-   - **Magic Link:** subject `Your Setlist Maker sign-in code`, body: the contents of `supabase/templates/sign_in_code.html`.
-   - **Change Email Address:** subject `Your Setlist Maker code`, body: the contents of `supabase/templates/add_email_code.html`.
+   - **Magic Link:** subject `Tu código de acceso a Setlist Maker`, body: the contents of `supabase/templates/sign_in_code.html`.
+   - **Change Email Address:** subject `Tu código de Setlist Maker`, body: the contents of `supabase/templates/add_email_code.html`.
 
    Both show `{{ .Token }}`, the code.
 
@@ -197,6 +197,7 @@ Exporting setlists as playlists (the **Spotify playlist** button on a gig) uses 
 1. In Setlist Maker's Spotify app in the dashboard, add `http://127.0.0.1:8976/callback` as a redirect URI, and add the playlist account's email under User Management.
 2. Set `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SUPABASE_DB_URL` (the database that should keep the token) in your own terminal, or in a `.env` file at the repo's root, which git ignores. Then run `pnpm spotify:connect`. Sign in as the playlist account, not your own.
 3. `--check` also creates, fills and removes a test playlist, and reports each step.
+4. In Spotify, signed in as the playlist account, turn off **People can see the playlists you've added to your profile** (in its privacy settings). The playlists stay public, so their links still open, but the profile doesn't list every band's gigs.
 
 Run it again if Spotify ever stops accepting the token.
 

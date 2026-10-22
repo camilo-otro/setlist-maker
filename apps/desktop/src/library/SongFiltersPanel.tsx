@@ -11,8 +11,8 @@ import {
 import type { ReactNode } from 'react';
 
 const ORIGINS: { value: SongFilters['origin']; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'original', label: 'Originals' },
+  { value: 'all', label: 'Todas' },
+  { value: 'original', label: 'Propias' },
   { value: 'cover', label: 'Covers' },
 ];
 
@@ -67,7 +67,7 @@ export function SongFiltersPanel({
 
   return (
     <div className="filters" id="song-filters">
-      <Group label="Status">
+      <Group label="Estado">
         {(Object.keys(SONG_STATUS_LABELS) as SongStatus[]).map((status) => (
           <Chip
             key={status}
@@ -79,7 +79,7 @@ export function SongFiltersPanel({
         ))}
       </Group>
 
-      <Group label="Songs">
+      <Group label="Canciones">
         {ORIGINS.map(({ value, label }) => (
           <Chip
             key={value}
@@ -92,7 +92,7 @@ export function SongFiltersPanel({
       </Group>
 
       {tags.length > 0 && (
-        <Group label="Tags">
+        <Group label="Etiquetas">
           {tags.map(({ tag, count }) => (
             <Chip
               key={tag}
@@ -112,7 +112,7 @@ export function SongFiltersPanel({
       )}
 
       {keys.length > 0 && (
-        <Group label="Key">
+        <Group label="Tono">
           {keys.map((key) => (
             <Chip
               key={key}
@@ -131,17 +131,17 @@ export function SongFiltersPanel({
           <input
             className="sm-input"
             inputMode="numeric"
-            aria-label="Minimum BPM"
-            placeholder="Min"
+            aria-label="BPM mínimo"
+            placeholder="Mín."
             value={filters.bpmMin ?? ''}
             onChange={(e) => update({ bpmMin: readBpm(e.target.value) })}
           />
-          <span className="muted">to</span>
+          <span className="muted">a</span>
           <input
             className="sm-input"
             inputMode="numeric"
-            aria-label="Maximum BPM"
-            placeholder="Max"
+            aria-label="BPM máximo"
+            placeholder="Máx."
             value={filters.bpmMax ?? ''}
             onChange={(e) => update({ bpmMax: readBpm(e.target.value) })}
           />
@@ -155,7 +155,7 @@ export function SongFiltersPanel({
           className="sm-button filters__reset"
           onClick={() => onChange(DEFAULT_SONG_FILTERS)}
         >
-          Reset filters
+          Quitar filtros
         </button>
       )}
     </div>

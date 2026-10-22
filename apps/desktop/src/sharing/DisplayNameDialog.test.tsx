@@ -31,8 +31,8 @@ describe('DisplayNameDialog', () => {
       userId: 'u1',
       displayName: name,
     }));
-    await user.type(screen.getByLabelText('Your name'), 'Camilo');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByLabelText('Tu nombre'), 'Camilo');
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(identity.ensure).toHaveBeenCalledWith('Camilo');
     expect(onReady).toHaveBeenCalledWith({ userId: 'u1', displayName: 'Camilo' });
@@ -40,8 +40,8 @@ describe('DisplayNameDialog', () => {
 
   it('asks for a name before connecting', async () => {
     const { identity, user } = setup(async () => ({ userId: 'u1', displayName: 'x' }));
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(screen.getByText('Enter the name your bandmates know you by')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByText('Escribe el nombre con el que te conocen en la banda')).toBeTruthy();
     expect(identity.ensure).not.toHaveBeenCalled();
   });
 
@@ -49,11 +49,11 @@ describe('DisplayNameDialog', () => {
     const { onReady, user } = setup(async () => {
       throw new Error('offline');
     });
-    await user.type(screen.getByLabelText('Your name'), 'Camilo');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByLabelText('Tu nombre'), 'Camilo');
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
-    expect(await screen.findByText(/Couldn't connect/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Continue' })).toHaveProperty('disabled', false);
+    expect(await screen.findByText(/No se pudo conectar/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continuar' })).toHaveProperty('disabled', false);
     expect(onReady).not.toHaveBeenCalled();
   });
 });

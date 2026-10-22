@@ -71,11 +71,11 @@ export function readSongForm(
   const tempoText = form.tempoBpm.trim();
   const tempoBpm = tempoText === '' ? null : Number(tempoText);
   if (tempoBpm !== null && !Number.isInteger(tempoBpm)) {
-    errors.tempoBpm = 'Use a whole number, e.g. 120';
+    errors.tempoBpm = 'Usa un número entero, p. ej. 120';
   }
 
   const durationSec = parseDuration(form.duration);
-  if (durationSec === undefined) errors.duration = 'Use minutes and seconds, e.g. 3:20';
+  if (durationSec === undefined) errors.duration = 'Usa minutos y segundos, p. ej. 3:20';
 
   if (Object.keys(errors).length > 0) return { errors };
 
@@ -105,10 +105,10 @@ const FIELD_FOR_SCHEMA_PATH: Partial<Record<string, SongFormField>> = {
 };
 
 const MESSAGES: Partial<Record<SongFormField, string>> = {
-  title: 'Give the song a title',
-  tempoBpm: 'Use a tempo between 20 and 400',
-  duration: 'Use a length up to 4 hours',
-  tags: 'Tags must be different from each other, up to 40 characters each',
+  title: 'Ponle un título a la canción',
+  tempoBpm: 'Usa un tempo entre 20 y 400',
+  duration: 'Usa una duración de hasta 4 horas',
+  tags: 'Las etiquetas deben ser distintas entre sí, de hasta 40 caracteres cada una',
 };
 
 /** Form errors for a validation error thrown by the repository (a ZodError), or null for anything else. */

@@ -1,4 +1,4 @@
-import type { Gig, Song } from '@setlist/core';
+import { formatDate, type Gig, type Song } from '@setlist/core';
 import type { BlockWithEntries } from './useGigSetlist';
 
 /**
@@ -59,24 +59,16 @@ export function layoutSetlistPdf({
   blocks,
   songsById,
   measure,
-  locale,
 }: {
   bandName: string;
   gig: Gig;
   blocks: readonly BlockWithEntries[];
   songsById: ReadonlyMap<string, Song>;
   measure: PdfMeasure;
-  /** For the date; the device's own by default. */
-  locale?: string;
 }): PdfPage[] {
   const width = PAGE.width - PAGE.margin * 2;
   const centre = PAGE.width / 2;
-  const [year, month, day] = gig.date.split('-').map(Number);
-  const date = new Date(year!, month! - 1, day!).toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const date = formatDate(gig.date);
 
   const header = (subtitle: string): PdfText[] => [
     {
@@ -116,7 +108,7 @@ export function layoutSetlistPdf({
         items: [
           ...header(`${gig.title} · ${date}`),
           {
-            text: 'No songs yet',
+            text: 'Aún sin canciones',
             x: centre,
             y: SONGS_TOP + MAX_TITLE,
             size: 18,
@@ -133,7 +125,7 @@ export function layoutSetlistPdf({
   for (const set of sets) {
     for (let start = 0; start < set.songs.length; start += SONGS_PER_PAGE) {
       const songs = set.songs.slice(start, start + SONGS_PER_PAGE);
-      const name = start === 0 ? set.name : `${set.name} (continued)`;
+      const name = start === 0 ? set.name : `${set.name} (continuación)`;
       const items = header(`${name} · ${gig.title} · ${date}`);
       // One size for the page, as large as the number of songs allows.
       const size = Math.min(MAX_TITLE, Math.max(MIN_TITLE, SONGS_HEIGHT / (songs.length * LINE)));
@@ -223,7 +215,7 @@ export async function makeSetlistPdf(
       });
     }
   }
-  doc.setTitle(`${clean(input.gig.title)} setlist`);
+  doc.setTitle(`Setlist de ${clean(input.gig.title)}`);
   doc.setCreator('Setlist Maker');
   return doc.save();
 }

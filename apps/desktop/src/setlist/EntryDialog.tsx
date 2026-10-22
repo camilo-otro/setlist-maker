@@ -36,17 +36,17 @@ export function EntryDialog({
 
   const title =
     kind === 'song'
-      ? `Edit ${song?.title ?? 'song'}`
+      ? `Editar ${song?.title ?? 'canción'}`
       : kind === 'break'
-        ? 'Edit break'
+        ? 'Editar descanso'
         : entry
-          ? 'Edit note'
-          : 'Add note';
+          ? 'Editar nota'
+          : 'Agregar nota';
 
   function save(event: FormEvent) {
     event.preventDefault();
     if (kind === 'note' && !label.trim()) {
-      setLabelError('Write the note');
+      setLabelError('Escribe la nota');
       return;
     }
     onSave({
@@ -62,13 +62,15 @@ export function EntryDialog({
       <form className="form-grid" onSubmit={save} noValidate>
         {kind === 'song' ? (
           <>
-            <Field id="entry-key" label="Key for this gig">
+            <Field id="entry-key" label="Tono para este toque">
               <select
                 {...inputProps('entry-key', undefined)}
                 value={keyOverride}
                 onChange={(e) => setKeyOverride(e.target.value)}
               >
-                <option value="">{song?.key ? `Usual key (${song.key})` : 'Usual key'}</option>
+                <option value="">
+                  {song?.key ? `Tono habitual (${song.key})` : 'Tono habitual'}
+                </option>
                 {MUSICAL_KEYS.map((key) => (
                   <option key={key} value={key}>
                     {key}
@@ -78,12 +80,12 @@ export function EntryDialog({
             </Field>
             <label className="song-form__checkbox">
               <input type="checkbox" checked={segue} onChange={(e) => setSegue(e.target.checked)} />
-              Segue into the next song
+              Enlazar con la siguiente canción
             </label>
-            <Field id="entry-notes" label="Notes for this gig" wide>
+            <Field id="entry-notes" label="Notas para este toque" wide>
               <textarea
                 {...inputProps('entry-notes', undefined)}
-                placeholder="Extended solo, crowd sing-along…"
+                placeholder="Solo extendido, el público canta el coro…"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -92,14 +94,14 @@ export function EntryDialog({
         ) : (
           <Field
             id="entry-label"
-            label={kind === 'break' ? 'Label' : 'Note'}
+            label={kind === 'break' ? 'Texto' : 'Nota'}
             error={labelError}
             wide
           >
             <input
               {...inputProps('entry-label', labelError)}
               autoFocus
-              placeholder={kind === 'break' ? '15 min' : 'Tune to Drop D'}
+              placeholder={kind === 'break' ? '15 min' : 'Afinar en Drop D'}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
             />
@@ -107,10 +109,10 @@ export function EntryDialog({
         )}
         <div className="modal__actions form-grid__wide">
           <button type="button" className="sm-button" onClick={onClose}>
-            Cancel
+            Cancelar
           </button>
           <button type="submit" className="sm-button sm-button--primary">
-            {entry ? 'Save' : 'Add note'}
+            {entry ? 'Guardar' : 'Agregar nota'}
           </button>
         </div>
       </form>

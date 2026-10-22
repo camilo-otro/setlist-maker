@@ -93,7 +93,7 @@ describe('spotifyAccountApi', () => {
       new Response(JSON.stringify({ snapshot_id: 's' }), { status: 200 }),
     );
     const api = spotifyAccountApi(impl, 'access');
-    expect(await api.createPlaylist('Friday', 'Made with Setlist Maker')).toEqual({
+    expect(await api.createPlaylist('Friday', 'Hecha con Setlist Maker')).toEqual({
       id: 'p1',
       url: 'https://open.spotify.com/playlist/p1',
     });
@@ -105,7 +105,7 @@ describe('spotifyAccountApi', () => {
     ]);
     expect(JSON.parse(requests[0]!.init.body as string)).toEqual({
       name: 'Friday',
-      description: 'Made with Setlist Maker',
+      description: 'Hecha con Setlist Maker',
       public: true,
     });
     expect(JSON.parse(requests[1]!.init.body as string)).toEqual({
@@ -121,7 +121,7 @@ describe('spotifyAccountApi', () => {
     await spotifyAccountApi(impl, 'access').updateDetails(
       'p1',
       'Saturday',
-      'Made with Setlist Maker',
+      'Hecha con Setlist Maker',
     );
     expect([requests[0]!.init.method, requests[0]!.url]).toEqual([
       'PUT',
@@ -129,7 +129,7 @@ describe('spotifyAccountApi', () => {
     ]);
     expect(JSON.parse(requests[0]!.init.body as string)).toEqual({
       name: 'Saturday',
-      description: 'Made with Setlist Maker',
+      description: 'Hecha con Setlist Maker',
     });
   });
 

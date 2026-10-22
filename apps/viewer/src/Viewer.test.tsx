@@ -74,19 +74,19 @@ describe('Viewer', () => {
     await flush();
 
     expect(screen.getByRole('heading', { name: 'Friday at the Cavern' })).toBeTruthy();
-    // Formatted in the reader's locale, e.g. "Friday, 23 October 2026" or "Friday, October 23, 2026".
-    expect(screen.getByText(/Friday.*October.*2026 · 21:00/)).toBeTruthy();
+    // Always Colombian Spanish, whatever the reader's device language.
+    expect(screen.getByText(/viernes, 23 de octubre de 2026 · 9:00\sp\.\sm\./)).toBeTruthy();
     expect(screen.getByText(/The Cavern, Liverpool/)).toBeTruthy();
     const set1 = within(screen.getByRole('region', { name: 'Set 1' }));
     expect(set1.getByText('7:05')).toBeTruthy();
     expect(set1.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       '1Basurita →1280 AlmasB3:45',
-      'Break · 15 min',
+      'Descanso · 15 min',
       'Thank the venue',
       '2Ours3:20',
     ]);
     expect(
-      within(screen.getByRole('region', { name: 'Encore' })).getByText('No songs yet.'),
+      within(screen.getByRole('region', { name: 'Encore' })).getByText('Aún no hay canciones.'),
     ).toBeTruthy();
     expect(document.title).toBe('Friday at the Cavern');
   });
@@ -118,17 +118,17 @@ describe('Viewer', () => {
     online = false;
     await act(async () => vi.advanceTimersByTime(REFRESH_MS));
     expect(screen.getByText('Basurita')).toBeTruthy();
-    expect(screen.getByRole('status').textContent).toMatch(/last version/);
+    expect(screen.getByRole('status').textContent).toMatch(/última versión/);
   });
 
   it('explains links that don’t work, and pages opened without a link', async () => {
     render(<Viewer token="t" load={async () => null} />);
     await flush();
-    expect(screen.getByRole('heading', { name: "This link doesn't work" })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Este enlace no funciona' })).toBeTruthy();
     cleanup();
 
     render(<Viewer token={null} load={async () => setlist()} />);
-    expect(screen.getByText(/Open a share link/)).toBeTruthy();
+    expect(screen.getByText(/Abre el enlace/)).toBeTruthy();
   });
 
   it('says when a gig was cancelled', async () => {
@@ -136,6 +136,6 @@ describe('Viewer', () => {
     cancelled.gig!.status = 'cancelled';
     render(<Viewer token="t" load={async () => cancelled} />);
     await flush();
-    expect(screen.getByText('This gig was cancelled.')).toBeTruthy();
+    expect(screen.getByText('Este toque se canceló.')).toBeTruthy();
   });
 });

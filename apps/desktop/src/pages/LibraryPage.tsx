@@ -71,7 +71,7 @@ export function LibraryPage() {
     <>
       <button type="button" className="sm-button" onClick={() => setImporting(true)}>
         <FileUp size={16} aria-hidden="true" />
-        Import CSV
+        Importar CSV
       </button>
       <button
         type="button"
@@ -79,7 +79,7 @@ export function LibraryPage() {
         onClick={() => setEditing(null)}
       >
         <Plus size={16} aria-hidden="true" />
-        Add song
+        Agregar canción
       </button>
     </>
   );
@@ -88,16 +88,16 @@ export function LibraryPage() {
   if (error) {
     content = (
       <p className="sm-field__error" role="alert">
-        Couldn&apos;t load songs: {String(error)}
+        No se pudieron cargar las canciones: {String(error)}
       </p>
     );
   } else if (songs === null) {
-    content = <p className="muted">Loading songs…</p>;
+    content = <p className="muted">Cargando canciones…</p>;
   } else if (songs.length === 0) {
     content = (
-      <EmptyState icon={<Library size={24} />} title="No songs yet">
-        Add the songs your band plays: search for them with Add song, type them in, or import them
-        from a spreadsheet.
+      <EmptyState icon={<Library size={24} />} title="Aún no hay canciones">
+        Agrega las canciones que toca tu banda: búscalas con Agregar canción, escríbelas o
+        impórtalas desde una hoja de cálculo.
       </EmptyState>
     );
   } else {
@@ -110,8 +110,8 @@ export function LibraryPage() {
               <input
                 type="search"
                 className="sm-input"
-                placeholder="Search title, artist or tag"
-                aria-label="Search songs"
+                placeholder="Busca por título, artista o etiqueta"
+                aria-label="Buscar canciones"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -124,11 +124,11 @@ export function LibraryPage() {
               onClick={() => setShowFilters((shown) => !shown)}
             >
               <SlidersHorizontal size={16} aria-hidden="true" />
-              Filters
+              Filtros
               {activeFilters > 0 && <span className="badge">{activeFilters}</span>}
             </button>
             <span className="muted library-toolbar__count" aria-live="polite">
-              {visible.length} {visible.length === 1 ? 'song' : 'songs'}
+              {visible.length} {visible.length === 1 ? 'canción' : 'canciones'}
             </span>
           </div>
 
@@ -146,7 +146,7 @@ export function LibraryPage() {
             />
           ) : (
             <div className="library-no-match">
-              <p className="muted">No songs match your search and filters.</p>
+              <p className="muted">Ninguna canción coincide con tu búsqueda y filtros.</p>
               <button
                 type="button"
                 className="sm-button"
@@ -155,7 +155,7 @@ export function LibraryPage() {
                   setFilters(DEFAULT_SONG_FILTERS);
                 }}
               >
-                Clear search and filters
+                Borrar búsqueda y filtros
               </button>
             </div>
           )}
@@ -177,7 +177,7 @@ export function LibraryPage() {
   return (
     <>
       <PageHeader
-        title="Library"
+        title="Repertorio"
         actions={canEdit && songs && songs.length > 0 ? addButtons : undefined}
       />
       {content}

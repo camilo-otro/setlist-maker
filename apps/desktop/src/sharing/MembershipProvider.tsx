@@ -1,4 +1,4 @@
-import type { BandMember, MemberRole } from '@setlist/core';
+import { collator, type BandMember, type MemberRole } from '@setlist/core';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useBandRows } from '../storage/useBandRows';
 import { useWorkspace } from '../storage/WorkspaceProvider';
@@ -42,7 +42,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Membership>(() => {
     if (!shared) return SOLO;
     const members = [...(rows ?? [])].sort(
-      (a, b) => ORDER[a.role] - ORDER[b.role] || a.displayName.localeCompare(b.displayName),
+      (a, b) => ORDER[a.role] - ORDER[b.role] || collator.compare(a.displayName, b.displayName),
     );
     const me = members.find((member) => member.userId === userId) ?? null;
     // Until this device's member row arrives, let it edit; the server has the final say.

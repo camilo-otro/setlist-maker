@@ -1,11 +1,10 @@
-import type { Venue } from '@setlist/core';
+import { collator, type Venue } from '@setlist/core';
 import { Field, inputProps } from '../components/forms';
 
 export type VenueChoice =
   { kind: 'none' } | { kind: 'existing'; id: string } | { kind: 'new'; name: string; city: string };
 
 const NEW = '__new__';
-const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
 /** Picks a saved venue, no venue, or a new one typed in place (created when the form is saved). */
 export function VenuePicker({
@@ -24,7 +23,7 @@ export function VenuePicker({
 
   return (
     <>
-      <Field id="gig-venue" label="Venue" wide={value.kind !== 'new'}>
+      <Field id="gig-venue" label="Lugar" wide={value.kind !== 'new'}>
         <select
           {...inputProps('gig-venue', undefined)}
           value={selected}
@@ -39,25 +38,25 @@ export function VenuePicker({
             );
           }}
         >
-          <option value="">No venue yet</option>
+          <option value="">Aún sin lugar</option>
           {sorted.map((venue) => (
             <option key={venue.id} value={venue.id}>
               {venue.city ? `${venue.name} — ${venue.city}` : venue.name}
             </option>
           ))}
-          <option value={NEW}>New venue…</option>
+          <option value={NEW}>Lugar nuevo…</option>
         </select>
       </Field>
       {value.kind === 'new' && (
         <>
-          <Field id="gig-new-venue-name" label="New venue name" error={nameError}>
+          <Field id="gig-new-venue-name" label="Nombre del lugar nuevo" error={nameError}>
             <input
               {...inputProps('gig-new-venue-name', nameError)}
               value={value.name}
               onChange={(e) => onChange({ ...value, name: e.target.value })}
             />
           </Field>
-          <Field id="gig-new-venue-city" label="City">
+          <Field id="gig-new-venue-city" label="Ciudad">
             <input
               {...inputProps('gig-new-venue-city', undefined)}
               value={value.city}

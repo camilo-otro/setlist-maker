@@ -46,19 +46,19 @@ const gigTitles = () =>
 describe('GigsPage', () => {
   it('creates a gig with a new venue, and its empty first set', async () => {
     const { user, workspace } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'New gig' }));
+    await user.click(await screen.findByRole('button', { name: 'Nuevo toque' }));
 
-    await user.type(dialog().getByLabelText('Title'), 'Friday at the Cavern');
-    setValue(dialog().getByLabelText('Date'), inDays(6));
-    setValue(dialog().getByLabelText('Start'), '21:00');
-    await user.selectOptions(dialog().getByLabelText('Venue'), 'New venue…');
-    await user.type(dialog().getByLabelText('New venue name'), 'The Cavern');
-    await user.type(dialog().getByLabelText('City'), 'Liverpool');
-    await user.click(dialog().getByRole('button', { name: 'Create gig' }));
+    await user.type(dialog().getByLabelText('Título'), 'Friday at the Cavern');
+    setValue(dialog().getByLabelText('Fecha'), inDays(6));
+    setValue(dialog().getByLabelText('Inicio'), '21:00');
+    await user.selectOptions(dialog().getByLabelText('Lugar'), 'Lugar nuevo…');
+    await user.type(dialog().getByLabelText('Nombre del lugar nuevo'), 'The Cavern');
+    await user.type(dialog().getByLabelText('Ciudad'), 'Liverpool');
+    await user.click(dialog().getByRole('button', { name: 'Crear toque' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const row = screen.getByRole('button', { name: /Friday at the Cavern/ });
-    for (const text of ['The Cavern, Liverpool', 'Start 21:00', 'In 6 days']) {
+    for (const text of ['The Cavern, Liverpool', 'Inicio 9:00 p. m.', 'En 6 días']) {
       expect(within(row).getByText(text)).toBeTruthy();
     }
 
@@ -74,14 +74,16 @@ describe('GigsPage', () => {
 
   it('explains what is missing and saves nothing', async () => {
     const { user, workspace } = await setup();
-    await user.click(await screen.findByRole('button', { name: 'New gig' }));
-    await user.click(dialog().getByRole('button', { name: 'Create gig' }));
-    expect(await dialog().findByText('Give the gig a title, e.g. the venue or event')).toBeTruthy();
-    expect(dialog().getByText('Choose the date')).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: 'Nuevo toque' }));
+    await user.click(dialog().getByRole('button', { name: 'Crear toque' }));
+    expect(
+      await dialog().findByText('Ponle un título al toque, como el lugar o el evento'),
+    ).toBeTruthy();
+    expect(dialog().getByText('Elige la fecha')).toBeTruthy();
 
-    await user.selectOptions(dialog().getByLabelText('Venue'), 'New venue…');
-    await user.click(dialog().getByRole('button', { name: 'Create gig' }));
-    expect(dialog().getByText('Give the new venue a name')).toBeTruthy();
+    await user.selectOptions(dialog().getByLabelText('Lugar'), 'Lugar nuevo…');
+    await user.click(dialog().getByRole('button', { name: 'Crear toque' }));
+    expect(dialog().getByText('Ponle un nombre al lugar nuevo')).toBeTruthy();
     expect(await workspace.repository.gigs.list()).toEqual([]);
     expect(await workspace.repository.venues.list()).toEqual([]);
   });
@@ -97,9 +99,9 @@ describe('GigsPage', () => {
     });
     await screen.findByRole('tablist');
     expect(gigTitles()).toEqual(['Tonight', 'Next month']);
-    expect(screen.getByText('Today')).toBeTruthy();
+    expect(screen.getByText('Hoy')).toBeTruthy();
 
-    await user.click(screen.getByRole('tab', { name: /Past/ }));
+    await user.click(screen.getByRole('tab', { name: /Pasados/ }));
     expect(gigTitles()).toEqual(['Last week', 'Long ago']);
     const years = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(years).toContain('2024');

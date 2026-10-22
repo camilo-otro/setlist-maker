@@ -8,10 +8,10 @@ import { useWorkspace } from '../storage/WorkspaceProvider';
 import { VenuePicker, type VenueChoice } from '../venues/VenuePicker';
 
 const MESSAGES = {
-  title: 'Give the gig a title, e.g. the venue or event',
-  date: 'Choose the date',
-  loadInTime: 'Use a time like 18:30',
-  startTime: 'Use a time like 21:00',
+  title: 'Ponle un título al toque, como el lugar o el evento',
+  date: 'Elige la fecha',
+  loadInTime: 'Usa una hora como 6:30 p. m.',
+  startTime: 'Usa una hora como 9:00 p. m.',
 };
 
 /**
@@ -84,7 +84,7 @@ export function GigDialog({
   function save(event: FormEvent) {
     event.preventDefault();
     if (venue.kind === 'new' && !venue.name.trim()) {
-      setErrors({ newVenueName: 'Give the new venue a name' });
+      setErrors({ newVenueName: 'Ponle un nombre al lugar nuevo' });
       return;
     }
     setErrors({});
@@ -114,18 +114,18 @@ export function GigDialog({
   };
 
   return (
-    <Modal title={gig ? 'Edit gig' : 'New gig'} busy={busy} onClose={onClose}>
+    <Modal title={gig ? 'Editar toque' : 'Nuevo toque'} busy={busy} onClose={onClose}>
       <form className="form-grid" onSubmit={save} noValidate>
-        <Field id="gig-title" label="Title" error={errors.title} wide>
+        <Field id="gig-title" label="Título" error={errors.title} wide>
           <input
             {...inputProps('gig-title', errors.title)}
             autoFocus
-            placeholder="Friday at the Cavern"
+            placeholder="Viernes en el bar"
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
           />
         </Field>
-        <Field id="gig-date" label="Date" error={errors.date}>
+        <Field id="gig-date" label="Fecha" error={errors.date}>
           <input
             {...inputProps('gig-date', errors.date)}
             type="date"
@@ -134,7 +134,7 @@ export function GigDialog({
           />
         </Field>
         <div className="form-grid__pair">
-          <Field id="gig-load-in" label="Load-in" error={errors.loadInTime}>
+          <Field id="gig-load-in" label="Montaje" error={errors.loadInTime}>
             <input
               {...inputProps('gig-load-in', errors.loadInTime)}
               type="time"
@@ -142,7 +142,7 @@ export function GigDialog({
               onChange={(e) => set('loadInTime', e.target.value)}
             />
           </Field>
-          <Field id="gig-start" label="Start" error={errors.startTime}>
+          <Field id="gig-start" label="Inicio" error={errors.startTime}>
             <input
               {...inputProps('gig-start', errors.startTime)}
               type="time"
@@ -164,7 +164,7 @@ export function GigDialog({
             aria-labelledby="gig-missing-label"
           >
             <span className="sm-field__label" id="gig-missing-label">
-              Missing at this gig
+              Faltan en este toque
             </span>
             <div className="filters__chips">
               {tagChoices.map((tag) => (
@@ -180,15 +180,15 @@ export function GigDialog({
               ))}
             </div>
             <span className="muted gig-form__hint">
-              Songs with these tags are flagged in the setlist, e.g. piano when the keyboardist
-              can&apos;t come.
+              Las canciones con estas etiquetas se marcan en el setlist, como piano cuando el
+              tecladista no puede ir.
             </span>
           </div>
         )}
-        <Field id="gig-notes" label="Notes" error={errors.notes} wide>
+        <Field id="gig-notes" label="Notas" error={errors.notes} wide>
           <textarea
             {...inputProps('gig-notes', errors.notes)}
-            placeholder="Fee, contact, dress code, backline…"
+            placeholder="Pago, contacto, vestuario, backline…"
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
           />
@@ -196,7 +196,7 @@ export function GigDialog({
 
         {failure && (
           <p className="sm-field__error form-grid__wide" role="alert">
-            Couldn&apos;t save: {failure}
+            No se pudo guardar: {failure}
           </p>
         )}
 
@@ -210,7 +210,7 @@ export function GigDialog({
                   disabled={busy}
                   onClick={() => setStatus('upcoming')}
                 >
-                  Reinstate gig
+                  Reactivar toque
                 </button>
               ) : (
                 <button
@@ -219,16 +219,16 @@ export function GigDialog({
                   disabled={busy}
                   onClick={() => setStatus('cancelled')}
                 >
-                  Cancel gig
+                  Cancelar toque
                 </button>
               )}
             </div>
           )}
           <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-            {gig ? 'Close' : 'Cancel'}
+            {gig ? 'Cerrar' : 'Cancelar'}
           </button>
           <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-            {gig ? 'Save changes' : 'Create gig'}
+            {gig ? 'Guardar cambios' : 'Crear toque'}
           </button>
         </div>
       </form>

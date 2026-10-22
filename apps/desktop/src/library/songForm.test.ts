@@ -34,8 +34,8 @@ describe('readSongForm', () => {
       duration: '3:75',
     });
     expect(errors).toEqual({
-      tempoBpm: 'Use a whole number, e.g. 120',
-      duration: 'Use minutes and seconds, e.g. 3:20',
+      tempoBpm: 'Usa un número entero, p. ej. 120',
+      duration: 'Usa minutos y segundos, p. ej. 3:20',
     });
   });
 });
@@ -71,9 +71,9 @@ describe('errorsFromValidation', () => {
     expect(parsed.success).toBe(false);
     const errors = errorsFromValidation(parsed.error);
     expect(errors).toMatchObject({
-      title: 'Give the song a title',
-      tempoBpm: 'Use a tempo between 20 and 400',
-      duration: 'Use a length up to 4 hours',
+      title: 'Ponle un título a la canción',
+      tempoBpm: 'Usa un tempo entre 20 y 400',
+      duration: 'Usa una duración de hasta 4 horas',
     });
   });
 

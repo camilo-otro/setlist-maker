@@ -81,8 +81,10 @@ describe('SyncProvider', () => {
   it('syncs on start, showing other devices’ changes and the sync status', async () => {
     const { sharing } = await setup();
     expect(await screen.findByText('Made on the phone')).toBeTruthy();
-    expect(sidebar().getByRole('button', { name: 'Band: The Rock House. Rename' })).toBeTruthy();
-    expect(await sidebar().findByText('Synced')).toBeTruthy();
+    expect(
+      sidebar().getByRole('button', { name: 'Banda: The Rock House. Cambiar nombre' }),
+    ).toBeTruthy();
+    expect(await sidebar().findByText('Sincronizado')).toBeTruthy();
     expect(sharing.listen).toHaveBeenCalledTimes(1);
     expect(sharing.push).not.toHaveBeenCalled();
   });
@@ -112,11 +114,11 @@ describe('SyncProvider', () => {
 
   it('uploads local edits shortly after they are made', async () => {
     const { repository, band, sharing } = await setup();
-    await sidebar().findByText('Synced');
+    await sidebar().findByText('Sincronizado');
     await repository.songs.create({ bandId: band.id, title: 'Made here' });
 
-    expect(await sidebar().findByText('Saved · 1 change waiting')).toBeTruthy();
+    expect(await sidebar().findByText('Guardado · 1 cambio pendiente')).toBeTruthy();
     await waitFor(() => expect(sharing.push).toHaveBeenCalledTimes(1), { timeout: 3000 });
-    expect(await sidebar().findByText('Synced')).toBeTruthy();
+    expect(await sidebar().findByText('Sincronizado')).toBeTruthy();
   });
 });

@@ -25,11 +25,11 @@ const render = (path: string, overrides: Partial<Workspace> = {}) =>
 
 describe('AppRoutes', () => {
   it.each([
-    ['/library', 'Library', 'Loading songs'],
-    ['/gigs', 'Gigs', 'Loading gigs'],
-    ['/venues', 'Venues', 'Loading venues'],
-    ['/templates', 'Templates', 'No templates yet'],
-    ['/stats', 'Stats', 'Loading stats'],
+    ['/library', 'Repertorio', 'Cargando canciones'],
+    ['/gigs', 'Toques', 'Cargando toques'],
+    ['/venues', 'Lugares', 'Cargando lugares'],
+    ['/templates', 'Plantillas', 'Aún no hay plantillas'],
+    ['/stats', 'Estadísticas', 'Cargando estadísticas'],
   ])('%s shows its page', (path, title, first) => {
     const html = render(path);
     expect(html).toContain(`<h1 class="sm-page-header__title">${title}</h1>`);
@@ -45,8 +45,8 @@ describe('AppRoutes', () => {
   });
 
   it('shows the band name, and warns only when changes are not saved', () => {
-    expect(render('/library')).toContain('My band');
-    expect(render('/library')).not.toContain('changes aren&#x27;t saved');
-    expect(render('/library', { persistent: false })).toContain('changes aren&#x27;t saved');
+    expect(render('/library')).toContain(workspace.band.name);
+    expect(render('/library')).not.toContain('los cambios no se guardan');
+    expect(render('/library', { persistent: false })).toContain('los cambios no se guardan');
   });
 });

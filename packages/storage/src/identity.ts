@@ -79,14 +79,18 @@ export class EmailCodeError extends Error {
 }
 
 const EMAIL_ERRORS: Record<string, string> = {
-  otp_expired: "That code isn't right, or it has expired. Check it, or ask for a new one.",
-  otp_disabled: 'No account uses this email yet. Add it on the device you set up first.',
-  signup_disabled: 'No account uses this email yet. Add it on the device you set up first.',
-  email_exists: 'Another account already uses this email. Sign in with it instead.',
-  email_address_invalid: "That doesn't look like an email address.",
-  validation_failed: "That doesn't look like an email address.",
-  over_email_send_rate_limit: 'Too many emails just now. Wait a minute and try again.',
-  over_request_rate_limit: 'Too many tries just now. Wait a minute and try again.',
+  otp_expired: 'Ese código no es correcto o ya venció. Revísalo o pide uno nuevo.',
+  otp_disabled:
+    'Ninguna cuenta usa este correo todavía. Agrégalo en el primer dispositivo que configuraste.',
+  signup_disabled:
+    'Ninguna cuenta usa este correo todavía. Agrégalo en el primer dispositivo que configuraste.',
+  email_exists: 'Otra cuenta ya usa este correo. Mejor inicia sesión con él.',
+  email_address_invalid: 'Eso no parece un correo electrónico.',
+  validation_failed: 'Eso no parece un correo electrónico.',
+  over_email_send_rate_limit:
+    'Demasiados correos en este momento. Espera un minuto e inténtalo de nuevo.',
+  over_request_rate_limit:
+    'Demasiados intentos en este momento. Espera un minuto e inténtalo de nuevo.',
 };
 
 const randomHex = (bytes: number) =>

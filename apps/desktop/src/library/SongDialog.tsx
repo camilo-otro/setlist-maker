@@ -32,7 +32,7 @@ function TagSuggestions({ value, onAdd }: { value: string; onAdd: (tags: string)
   const offered = SUGGESTED_TAGS.filter((tag) => !current.includes(tag));
   if (offered.length === 0) return null;
   return (
-    <div className="tag-suggestions" role="group" aria-label="Suggested tags">
+    <div className="tag-suggestions" role="group" aria-label="Etiquetas sugeridas">
       {offered.map((tag) => (
         <button
           key={tag}
@@ -138,7 +138,7 @@ export function SongDialog({
     if (song) void run(() => repository.songs.update(song.id, { status }));
   };
 
-  const title = song ? 'Edit song' : 'Add song';
+  const title = song ? 'Editar canción' : 'Agregar canción';
   // The error sits outside the <label> so it isn't read as part of the field's name;
   // aria-describedby announces it instead.
   const field = (name: SongFormField, label: string, input: ReactNode, wide = false) => (
@@ -186,13 +186,13 @@ export function SongDialog({
             <div className="catalog-link form-grid__wide" role="status">
               <Link2 size={16} aria-hidden="true" />
               <span>
-                {linked.source === 'spotify' ? 'From Spotify' : 'From the catalog'}:{' '}
+                {linked.source === 'spotify' ? 'De Spotify' : 'Del catálogo'}:{' '}
                 <strong>{linked.title}</strong> · {linked.artists.join(', ')}
               </span>
               <button
                 type="button"
                 className="icon-button"
-                aria-label="Don't link this song"
+                aria-label="No vincular esta canción"
                 onClick={() => setLinked(null)}
               >
                 <X size={14} aria-hidden="true" />
@@ -201,7 +201,7 @@ export function SongDialog({
           )}
           {field(
             'title',
-            'Title',
+            'Título',
             <input
               {...inputProps('title')}
               autoFocus={!showPicker}
@@ -212,7 +212,7 @@ export function SongDialog({
           )}
           {field(
             'artist',
-            'Artist',
+            'Artista',
             <input
               {...inputProps('artist')}
               value={form.artist}
@@ -226,17 +226,17 @@ export function SongDialog({
               checked={form.isOriginal}
               onChange={(e) => set('isOriginal', e.target.checked)}
             />
-            Our own song
+            Canción propia
           </label>
           {field(
             'key',
-            'Key',
+            'Tono',
             <select
               {...inputProps('key')}
               value={form.key}
               onChange={(e) => set('key', e.target.value)}
             >
-              <option value="">Not set</option>
+              <option value="">Sin definir</option>
               {MUSICAL_KEYS.map((key) => (
                 <option key={key} value={key}>
                   {key}
@@ -256,7 +256,7 @@ export function SongDialog({
           )}
           {field(
             'duration',
-            'Length (m:ss)',
+            'Duración (m:ss)',
             <input
               {...inputProps('duration')}
               placeholder="3:20"
@@ -266,17 +266,17 @@ export function SongDialog({
           )}
           {field(
             'tuning',
-            'Tuning',
+            'Afinación',
             <input
               {...inputProps('tuning')}
-              placeholder="Standard"
+              placeholder="Estándar"
               value={form.tuning}
               onChange={(e) => set('tuning', e.target.value)}
             />,
           )}
           {field(
             'status',
-            'Status',
+            'Estado',
             <select
               {...inputProps('status')}
               value={form.status}
@@ -291,11 +291,11 @@ export function SongDialog({
           )}
           {field(
             'tags',
-            'Tags (separated by commas)',
+            'Etiquetas (separadas por comas)',
             <>
               <input
                 {...inputProps('tags')}
-                placeholder="opener, slow, crowd favourite"
+                placeholder="para abrir, lenta, la favorita del público"
                 value={form.tags}
                 onChange={(e) => set('tags', e.target.value)}
               />
@@ -305,7 +305,7 @@ export function SongDialog({
           )}
           {field(
             'notes',
-            'Notes',
+            'Notas',
             <textarea
               {...inputProps('notes')}
               value={form.notes}
@@ -316,34 +316,35 @@ export function SongDialog({
 
           {failure && (
             <p className="sm-field__error song-form__wide" role="alert">
-              Couldn&apos;t save: {failure}
+              No se pudo guardar: {failure}
             </p>
           )}
 
           {deleting.step === 'confirm' && song && (
             <div className="modal__confirm song-form__wide" role="alert">
-              <span>Delete “{song.title}” from your library?</span>
+              <span>¿Eliminar “{song.title}” de tu repertorio?</span>
               <button
                 type="button"
                 className="sm-button sm-button--danger"
                 disabled={busy}
                 onClick={() => void run(() => repository.songs.remove(song.id))}
               >
-                Delete song
+                Eliminar canción
               </button>
               <button
                 type="button"
                 className="sm-button"
                 onClick={() => setDeleting({ step: 'idle' })}
               >
-                Keep it
+                Conservarla
               </button>
             </div>
           )}
           {deleting.step === 'blocked' && (
             <p className="modal__confirm song-form__wide" role="alert">
-              This song is in the history of {deleting.gigs} {deleting.gigs === 1 ? 'gig' : 'gigs'},
-              so it can&apos;t be deleted. Archive it instead to hide it from your library.
+              Esta canción está en el historial de {deleting.gigs}{' '}
+              {deleting.gigs === 1 ? 'toque' : 'toques'}, así que no se puede eliminar. Mejor
+              archívala para ocultarla de tu repertorio.
             </p>
           )}
 
@@ -357,7 +358,7 @@ export function SongDialog({
                     disabled={busy}
                     onClick={() => setStatus('active')}
                   >
-                    Restore
+                    Restaurar
                   </button>
                 ) : (
                   <button
@@ -366,7 +367,7 @@ export function SongDialog({
                     disabled={busy}
                     onClick={() => setStatus('retired')}
                   >
-                    Archive
+                    Archivar
                   </button>
                 )}
                 <button
@@ -375,15 +376,15 @@ export function SongDialog({
                   disabled={busy || deleting.step !== 'idle'}
                   onClick={() => void startDelete()}
                 >
-                  Delete
+                  Eliminar
                 </button>
               </div>
             )}
             <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-              Cancel
+              Cancelar
             </button>
             <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-              {song ? 'Save changes' : 'Add song'}
+              {song ? 'Guardar cambios' : 'Agregar canción'}
             </button>
           </div>
         </form>

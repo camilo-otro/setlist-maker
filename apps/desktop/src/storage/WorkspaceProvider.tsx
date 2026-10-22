@@ -74,13 +74,13 @@ export function WorkspaceProvider({
   }, [open]);
 
   if (state.status === 'loading') {
-    return <p className="app-status">Opening your library…</p>;
+    return <p className="app-status">Abriendo tu repertorio…</p>;
   }
   if (state.status === 'error') {
     return (
       <div className="app-status" role="alert">
-        <h1>Setlist Maker couldn&apos;t open its data</h1>
-        <p>Restart the app. If this keeps happening, include this message when reporting it:</p>
+        <h1>Setlist Maker no pudo abrir sus datos</h1>
+        <p>Reinicia la app. Si sigue pasando, incluye este mensaje cuando lo reportes:</p>
         <pre>{String(state.error)}</pre>
       </div>
     );

@@ -1,15 +1,12 @@
-import type { Gig, Song } from '@setlist/core';
+import { formatDate, type Gig, type Song } from '@setlist/core';
 import type { BlockWithEntries } from './useGigSetlist';
-
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
 /**
  * The playlist's name: the gig's title and date, and nothing about the band, since every band's
  * playlists share the app account's public profile (ADR 0003).
  */
 export function playlistName(gig: Pick<Gig, 'title' | 'date'>): string {
-  const [y, m, d] = gig.date.split('-').map(Number);
-  return `${gig.title} · ${dateFormat.format(new Date(y!, m! - 1, d!))}`;
+  return `${gig.title} · ${formatDate(gig.date)}`;
 }
 
 /**

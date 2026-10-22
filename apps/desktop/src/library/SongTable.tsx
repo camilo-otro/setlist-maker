@@ -13,12 +13,12 @@ export interface SongSort {
 }
 
 const COLUMNS: { key: SongSortKey; label: string; numeric?: boolean }[] = [
-  { key: 'title', label: 'Title' },
-  { key: 'artist', label: 'Artist' },
-  { key: 'key', label: 'Key' },
+  { key: 'title', label: 'Título' },
+  { key: 'artist', label: 'Artista' },
+  { key: 'key', label: 'Tono' },
   { key: 'tempoBpm', label: 'BPM', numeric: true },
-  { key: 'durationSec', label: 'Length', numeric: true },
-  { key: 'status', label: 'Status' },
+  { key: 'durationSec', label: 'Duración', numeric: true },
+  { key: 'status', label: 'Estado' },
 ];
 
 export function SongTable({
@@ -57,7 +57,7 @@ export function SongTable({
               </th>
             );
           })}
-          <th scope="col">Tags</th>
+          <th scope="col">Etiquetas</th>
         </tr>
       </thead>
       <tbody>

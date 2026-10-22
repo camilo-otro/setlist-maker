@@ -64,8 +64,8 @@ export function CatalogPicker({
           type="search"
           className="sm-input"
           autoFocus
-          placeholder="Search for a song by title or artist"
-          aria-label="Search for a song"
+          placeholder="Busca una canción por título o artista"
+          aria-label="Buscar una canción"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -74,15 +74,15 @@ export function CatalogPicker({
         <div className="catalog-picker__results" aria-live="polite">
           {failed ? (
             <p className="sm-field__error">
-              Couldn&apos;t search for songs. Check your connection, or fill in the song below.
+              No se pudo buscar. Revisa tu conexión o llena los datos de la canción abajo.
             </p>
           ) : tracks === null ? (
-            <p className="muted">Searching…</p>
+            <p className="muted">Buscando…</p>
           ) : tracks.length === 0 ? (
-            <p className="muted">No matches. Fill in the song below instead.</p>
+            <p className="muted">Sin resultados. Llena los datos de la canción abajo.</p>
           ) : (
             <>
-              <ul className="catalog-picker__list" aria-label="Search results">
+              <ul className="catalog-picker__list" aria-label="Resultados de la búsqueda">
                 {tracks.map((track) => {
                   const artists = track.artists.join(', ');
                   return (
@@ -111,7 +111,7 @@ export function CatalogPicker({
                           </span>
                         </span>
                         {inLibrary(track, librarySongs) && (
-                          <span className="badge">In your library</span>
+                          <span className="badge">En tu repertorio</span>
                         )}
                       </button>
                       {track.spotifyId && (

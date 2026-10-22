@@ -9,17 +9,11 @@ const texts = (items: ImageItem[]) =>
 
 describe('layoutSetlistImage', () => {
   it('lays out the gig, its sets and their entries in order', async () => {
-    const layout = layoutSetlistImage({ ...(await sampleGig()), measure, locale: 'en-GB' });
-    const date = new Date(2026, 10, 7).toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const layout = layoutSetlistImage({ ...(await sampleGig()), measure });
     expect(texts(layout.items)).toEqual([
       'Rock Party at the Pub',
-      `${date} · 21:30 · The Pub, Bogotá`,
-      '7:43 total · 3 songs',
+      'sáb, 7 de nov de 2026 · 9:30 p. m. · The Pub, Bogotá',
+      '7:43 en total · 3 canciones',
       'Set 1',
       '7:43',
       '3:45',
@@ -31,12 +25,12 @@ describe('layoutSetlistImage', () => {
       'C',
       '2',
       'Here Without You',
-      'BREAK · 15 MIN',
+      'DESCANSO · 15 MIN',
       'Thank the venue',
       '3',
       'Untimed',
       'Encore',
-      'No songs yet',
+      'Aún sin canciones',
       'Setlist Maker',
     ]);
   });

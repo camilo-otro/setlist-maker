@@ -56,7 +56,7 @@ export function identityFromEnv(
   return url && key ? createIdentity({ url, key, store }) : null;
 }
 
-export const DEFAULT_BAND_NAME = 'My band';
+export const DEFAULT_BAND_NAME = 'Mi banda';
 
 /**
  * The band to show: the one most recently shared or joined on this device, else the first one,
@@ -85,8 +85,9 @@ export function currentPlatform(): Platform {
 
 const STORAGE_NOTES = {
   'other-tab':
-    "Setlist Maker is open in another tab, so changes here aren't saved. Close this tab.",
-  unsupported: "This browser can't store the app's data, so changes here aren't saved.",
+    'Setlist Maker está abierto en otra pestaña, así que los cambios aquí no se guardan. Cierra esta pestaña.',
+  unsupported:
+    'Este navegador no puede guardar los datos de la app, así que los cambios aquí no se guardan.',
 } as const;
 
 /** Storage for each platform. The preview keeps data and sign-in in memory. */

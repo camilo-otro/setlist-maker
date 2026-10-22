@@ -32,6 +32,13 @@ export class InviteError extends Error {
   override name = 'InviteError';
 }
 
+/** Why the server refused an invite (its `hint`), in words for the person using the app. */
+const INVITE_REFUSALS: Record<string, string> = {
+  revoked: 'Esta invitación se desactivó. Pide una nueva.',
+  expired: 'Esta invitación ya venció. Pide una nueva.',
+  used: 'Esta invitación ya se usó todas las veces posibles. Pide una nueva.',
+};
+
 /**
  * The token in an invite link (`…/#join=<token>`), or a bare token pasted on its own; null if the
  * text isn't one.
@@ -67,12 +74,14 @@ async function rpc(
   });
   const data = (await response.json().catch(() => null)) as unknown;
   if (!response.ok) {
-    const error = data as { code?: string; message?: string } | null;
+    const error = data as { code?: string; message?: string; hint?: string } | null;
     if (error?.code === 'P0001' || error?.code === 'P0002') {
+      // The server's own messages are English; its hint says which case it is, in any language.
       throw new InviteError(
         error.code === 'P0002'
-          ? "This invite link doesn't work"
-          : (error.message ?? 'Invite refused'),
+          ? 'Este enlace de invitación no funciona.'
+          : (INVITE_REFUSALS[error.hint ?? ''] ??
+              'No se pudo usar esta invitación. Pide una nueva.'),
       );
     }
     throw new Error(`Request failed (HTTP ${response.status})`);

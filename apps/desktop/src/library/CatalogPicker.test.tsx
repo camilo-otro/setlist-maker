@@ -59,23 +59,23 @@ async function setup(catalog: CatalogSearch | null, seed?: (w: Workspace) => Pro
       <LibraryPage />
     </WorkspaceContextProvider>,
   );
-  await user.click(await screen.findByRole('button', { name: 'Add song' }));
+  await user.click(await screen.findByRole('button', { name: 'Agregar canción' }));
   return { user, workspace, dialog: within(screen.getByRole('dialog')) };
 }
 
 describe('Add song from the catalog', () => {
   it('fills in the song from a catalog match and links it', async () => {
     const { user, workspace, dialog } = await setup(fakeCatalog());
-    await user.type(dialog.getByRole('searchbox', { name: 'Search for a song' }), 'here');
+    await user.type(dialog.getByRole('searchbox', { name: 'Buscar una canción' }), 'here');
     await user.click(await dialog.findByRole('button', { name: /Here Without You/ }));
 
-    expect(dialog.getByRole('status').textContent).toContain('From the catalog: Here Without You');
-    expect((dialog.getByLabelText('Title') as HTMLInputElement).value).toBe('Here Without You');
-    expect((dialog.getByLabelText('Artist') as HTMLInputElement).value).toBe('3 Doors Down');
-    expect((dialog.getByLabelText('Length (m:ss)') as HTMLInputElement).value).toBe('3:58');
+    expect(dialog.getByRole('status').textContent).toContain('Del catálogo: Here Without You');
+    expect((dialog.getByLabelText('Título') as HTMLInputElement).value).toBe('Here Without You');
+    expect((dialog.getByLabelText('Artista') as HTMLInputElement).value).toBe('3 Doors Down');
+    expect((dialog.getByLabelText('Duración (m:ss)') as HTMLInputElement).value).toBe('3:58');
 
-    await user.selectOptions(dialog.getByLabelText('Key'), 'Bb');
-    await user.click(dialog.getByRole('button', { name: 'Add song' }));
+    await user.selectOptions(dialog.getByLabelText('Tono'), 'Bb');
+    await user.click(dialog.getByRole('button', { name: 'Agregar canción' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const [song] = await workspace.repository.songs.list();
     expect(song).toMatchObject({
@@ -97,17 +97,17 @@ describe('Add song from the catalog', () => {
     };
     const spotify: CatalogSearch = { search: async () => [fromSpotify] };
     const { user, workspace, dialog } = await setup(spotify);
-    await user.type(dialog.getByRole('searchbox', { name: 'Search for a song' }), 'basurita');
+    await user.type(dialog.getByRole('searchbox', { name: 'Buscar una canción' }), 'basurita');
 
-    const link = await dialog.findByRole('link', { name: 'Open Basurita in Spotify' });
+    const link = await dialog.findByRole('link', { name: 'Abrir Basurita en Spotify' });
     expect(link.getAttribute('href')).toBe('https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC');
     expect(link.textContent).toContain('Open Spotify');
     expect(dialog.getByRole('img', { name: 'Spotify' })).toBeTruthy();
     expect(dialog.getByText(/1280 Almas · 1999 · 3:45/)).toBeTruthy();
 
     await user.click(dialog.getByRole('button', { name: /Basurita/ }));
-    expect(dialog.getByRole('status').textContent).toContain('From Spotify: Basurita');
-    await user.click(dialog.getByRole('button', { name: 'Add song' }));
+    expect(dialog.getByRole('status').textContent).toContain('De Spotify: Basurita');
+    await user.click(dialog.getByRole('button', { name: 'Agregar canción' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const [song] = await workspace.repository.songs.list();
     expect(song).toMatchObject({
@@ -123,7 +123,7 @@ describe('Add song from the catalog', () => {
     // The song's details link to Spotify too.
     await user.click(await screen.findByText('Basurita'));
     expect(
-      (await screen.findByRole('link', { name: 'Open Basurita in Spotify' })).getAttribute('href'),
+      (await screen.findByRole('link', { name: 'Abrir Basurita en Spotify' })).getAttribute('href'),
     ).toBe('https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC');
   });
 
@@ -131,32 +131,32 @@ describe('Add song from the catalog', () => {
     const { user, dialog } = await setup(fakeCatalog(), ({ repository, band }) =>
       repository.songs.create({ bandId: band.id, title: 'bye bye bye', artist: '*NSYNC' }),
     );
-    await user.type(dialog.getByRole('searchbox', { name: 'Search for a song' }), 'bye');
+    await user.type(dialog.getByRole('searchbox', { name: 'Buscar una canción' }), 'bye');
     const match = await dialog.findByRole('button', { name: /Bye Bye Bye/ });
-    expect(within(match).getByText('In your library')).toBeTruthy();
+    expect(within(match).getByText('En tu repertorio')).toBeTruthy();
   });
 
   it('can unlink a pick, and says when nothing matches or search fails', async () => {
     const { user, dialog } = await setup(fakeCatalog());
-    const search = () => dialog.getByRole('searchbox', { name: 'Search for a song' });
+    const search = () => dialog.getByRole('searchbox', { name: 'Buscar una canción' });
     await user.type(search(), 'zzz');
-    expect(await dialog.findByText(/No matches/)).toBeTruthy();
+    expect(await dialog.findByText(/Sin resultados/)).toBeTruthy();
 
     await user.clear(search());
     await user.type(search(), 'bye');
     await user.click(await dialog.findByRole('button', { name: /Bye Bye Bye/ }));
-    await user.click(dialog.getByRole('button', { name: "Don't link this song" }));
-    expect(dialog.getByRole('searchbox', { name: 'Search for a song' })).toBeTruthy();
+    await user.click(dialog.getByRole('button', { name: 'No vincular esta canción' }));
+    expect(dialog.getByRole('searchbox', { name: 'Buscar una canción' })).toBeTruthy();
 
     cleanup();
     const offline = await setup(fakeCatalog(true));
     await offline.user.type(offline.dialog.getByRole('searchbox'), 'bye');
-    expect(await offline.dialog.findByText(/Couldn't search for songs/)).toBeTruthy();
+    expect(await offline.dialog.findByText(/No se pudo buscar/)).toBeTruthy();
   });
 
   it('hides catalog search when the app has no catalog configured', async () => {
     const { dialog } = await setup(null);
     expect(dialog.queryByRole('searchbox')).toBeNull();
-    expect(document.activeElement).toBe(dialog.getByLabelText('Title'));
+    expect(document.activeElement).toBe(dialog.getByLabelText('Título'));
   });
 });

@@ -15,18 +15,18 @@ export async function saveFile(
   if (currentPlatform() === 'desktop') {
     const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
     const path = await invoke<string>('save_download', { name, bytes });
-    if (!open) return 'Saved to Downloads';
+    if (!open) return 'Guardado en Descargas';
     try {
       await openPath(path);
-      return 'Opened';
+      return 'Abierto';
     } catch {
       // Saved anyway; nothing on this computer opens it.
-      return 'Saved to Downloads';
+      return 'Guardado en Descargas';
     }
   }
   const url = URL.createObjectURL(blob);
   const link = Object.assign(document.createElement('a'), { href: url, download: name });
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return 'Saved';
+  return 'Guardado';
 }

@@ -13,10 +13,10 @@ import { playlistName, playlistTracks } from './playlistTracks';
 import type { BlockWithEntries } from './useGigSetlist';
 
 const PROBLEMS: Record<SpotifyPlaylistProblem, string> = {
-  forbidden: 'Only the band’s owners and editors can change its playlists.',
-  limited: 'Your band has made a lot of playlists in the last hour. Try again later.',
-  'not-connected': 'Spotify playlists aren’t set up on the server yet.',
-  unavailable: 'Couldn’t reach Spotify. Check your connection and try again.',
+  forbidden: 'Solo los administradores y editores de la banda pueden cambiar sus playlists.',
+  limited: 'Tu banda ha creado muchas playlists en la última hora. Intenta de nuevo más tarde.',
+  'not-connected': 'Las playlists de Spotify aún no están configuradas en el servidor.',
+  unavailable: 'No se pudo conectar con Spotify. Revisa tu conexión e intenta de nuevo.',
 };
 
 const problemOf = (error: unknown) =>
@@ -73,7 +73,7 @@ export function SpotifyPlaylist({
     <>
       <button type="button" className="sm-button" onClick={() => setOpen(true)}>
         <ListMusic size={14} aria-hidden="true" />
-        Spotify playlist
+        Playlist de Spotify
       </button>
       {open && (
         <PlaylistDialog
@@ -147,7 +147,7 @@ function PlaylistDialog({
         trackIds,
       });
       onPlaylist(result.playlist);
-      return result.created ? 'Playlist created.' : 'Playlist updated.';
+      return result.created ? 'Playlist creada.' : 'Playlist actualizada.';
     });
 
   const remove = () =>
@@ -155,23 +155,23 @@ function PlaylistDialog({
       await sharing.playlists.remove(bandId, gig.id);
       onPlaylist(null);
       setConfirmRemove(false);
-      return 'Playlist removed from Spotify.';
+      return 'Playlist eliminada de Spotify.';
     });
 
-  const songs = (n: number) => `${n} ${n === 1 ? 'song' : 'songs'}`;
+  const songs = (n: number) => `${n} ${n === 1 ? 'canción' : 'canciones'}`;
 
   return (
-    <Modal title="Spotify playlist" busy={busy} onClose={onClose}>
+    <Modal title="Playlist de Spotify" busy={busy} onClose={onClose}>
       {!shared ? (
         <p>
-          Playlists are for shared bands, so the server knows who&apos;s asking. Share the band
-          first, from the Share button.
+          Las playlists son para bandas compartidas, así el servidor sabe quién las pide. Primero
+          comparte la banda, desde el botón Compartir.
         </p>
       ) : (
         <>
           <p className="muted">
-            The playlist is public: anyone with its link can open it, and it shows on the Setlist
-            Maker account&apos;s Spotify profile. Its name is the gig&apos;s title and date.
+            La playlist es pública: cualquiera con el enlace puede abrirla. Se llama como el toque,
+            con su fecha, y se guarda en la cuenta de Spotify de Setlist Maker.
           </p>
           {playlist && (
             <p className="spotify-playlist__link">
@@ -182,20 +182,26 @@ function PlaylistDialog({
           {canEdit &&
             (trackIds.length > 0 ? (
               <p>
-                {songs(trackIds.length)} with Spotify links
+                {songs(trackIds.length)} con enlace de Spotify
                 {playlist
-                  ? ' will replace what the playlist has now.'
-                  : ' will go in the playlist.'}
+                  ? trackIds.length === 1
+                    ? ' reemplazará lo que tiene la playlist ahora.'
+                    : ' reemplazarán lo que tiene la playlist ahora.'
+                  : trackIds.length === 1
+                    ? ' irá en la playlist.'
+                    : ' irán en la playlist.'}
               </p>
             ) : (
-              <p>None of this setlist&apos;s songs have Spotify links yet.</p>
+              <p>Ninguna canción de este setlist tiene enlace de Spotify todavía.</p>
             ))}
           {canEdit && leftOut.length > 0 && (
-            <p className="muted">Left out, with no Spotify link: {leftOut.join(', ')}.</p>
+            <p className="muted">
+              Quedaron por fuera, sin enlace de Spotify: {leftOut.join(', ')}.
+            </p>
           )}
           {confirmRemove && (
             <div className="share-dialog__confirm" role="alert">
-              <p>The playlist will be deleted from Spotify, and its link will stop working.</p>
+              <p>La playlist se eliminará de Spotify y su enlace dejará de funcionar.</p>
               <div className="modal__actions">
                 <button
                   type="button"
@@ -203,7 +209,7 @@ function PlaylistDialog({
                   disabled={busy}
                   onClick={() => setConfirmRemove(false)}
                 >
-                  Keep it
+                  Conservarla
                 </button>
                 <button
                   type="button"
@@ -211,7 +217,7 @@ function PlaylistDialog({
                   disabled={busy}
                   onClick={() => void remove()}
                 >
-                  Remove from Spotify
+                  Eliminar de Spotify
                 </button>
               </div>
             </div>
@@ -226,7 +232,7 @@ function PlaylistDialog({
           {failure}
         </p>
       )}
-      <SpotifyAttribution label="Playlists on" />
+      <SpotifyAttribution label="Playlists en" />
       <div className="modal__actions">
         {shared && canEdit && playlist && !confirmRemove && (
           <div className="modal__actions-start">
@@ -236,12 +242,12 @@ function PlaylistDialog({
               disabled={busy}
               onClick={() => setConfirmRemove(true)}
             >
-              Remove from Spotify
+              Eliminar de Spotify
             </button>
           </div>
         )}
         <button type="button" className="sm-button" disabled={busy} onClick={onClose}>
-          Close
+          Cerrar
         </button>
         {shared && canEdit && (
           <button
@@ -250,7 +256,7 @@ function PlaylistDialog({
             disabled={busy || trackIds.length === 0}
             onClick={() => void exportGig()}
           >
-            {playlist ? 'Update playlist' : 'Create playlist'}
+            {playlist ? 'Actualizar playlist' : 'Crear playlist'}
           </button>
         )}
       </div>

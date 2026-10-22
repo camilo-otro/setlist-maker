@@ -52,6 +52,23 @@ if (!clientId || !clientSecret || !dbUrl) {
   process.exit(1);
 }
 
+// Checked before signing in to Spotify, so a bad address doesn't waste the sign-in. The address
+// holds the database password, so it's never printed.
+let dbHost: string;
+try {
+  const parsed = new URL(dbUrl);
+  if (!/^postgres(ql)?:$/.test(parsed.protocol)) throw new Error('not postgres');
+  if (/YOUR-PASSWORD/i.test(dbUrl)) throw new Error('placeholder');
+  dbHost = parsed.host;
+} catch {
+  console.error(
+    'SUPABASE_DB_URL isn’t a usable postgresql:// address. Check that the password replaced ' +
+      '[YOUR-PASSWORD], and that characters like @ # / ? % in it are encoded (in PowerShell: ' +
+      '[uri]::EscapeDataString("…")). In .env, put the value in double quotes.',
+  );
+  process.exit(1);
+}
+
 const terminal = createInterface({ input: process.stdin, output: process.stdout });
 
 /** Opens the page in the default browser. The URL is printed too, in case this doesn't work. */
@@ -146,7 +163,7 @@ async function main() {
   } finally {
     await sql.end();
   }
-  console.log(`Stored the refresh token in ${new URL(dbUrl!).host}.`);
+  console.log(`Stored the refresh token in ${dbHost}.`);
 
   if (!check) return;
   console.log('\nChecking what playlist export needs:');

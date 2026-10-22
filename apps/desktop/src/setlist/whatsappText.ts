@@ -1,4 +1,12 @@
-import { formatDuration, setDuration, type Gig, type Song, type Venue } from '@setlist/core';
+import {
+  formatDate,
+  formatDuration,
+  formatTime,
+  setDuration,
+  type Gig,
+  type Song,
+  type Venue,
+} from '@setlist/core';
 import type { BlockWithEntries } from './useGigSetlist';
 
 /**
@@ -13,26 +21,18 @@ export function whatsappText({
   blocks,
   songsById,
   link,
-  locale,
 }: {
   gig: Gig;
   venue: Venue | null;
   blocks: readonly BlockWithEntries[];
   songsById: ReadonlyMap<string, Song>;
   link?: string | null;
-  /** For the date; the reader's own by default. */
-  locale?: string;
 }): string {
-  const [year, month, day] = gig.date.split('-').map(Number);
-  const date = new Date(year!, month! - 1, day!).toLocaleDateString(locale, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const date = formatDate(gig.date, 'full');
+  const time = gig.startTime && formatTime(gig.startTime);
   const where = venue && (venue.city ? `${venue.name}, ${venue.city}` : venue.name);
-  const lines = [`*${gig.title}*`, [date, gig.startTime, where].filter(Boolean).join(' · ')];
-  if (gig.status === 'cancelled') lines.push('_Cancelled_');
+  const lines = [`*${gig.title}*`, [date, time, where].filter(Boolean).join(' · ')];
+  if (gig.status === 'cancelled') lines.push('_Cancelado_');
 
   let number = 0;
   for (const { block, entries } of blocks) {
@@ -43,7 +43,7 @@ export function whatsappText({
     );
     for (const entry of entries) {
       if (entry.kind === 'break') {
-        lines.push(entry.label ? `— Break · ${entry.label} —` : '— Break —');
+        lines.push(entry.label ? `— Descanso · ${entry.label} —` : '— Descanso —');
       } else if (entry.kind === 'note') {
         lines.push(`_${entry.label}_`);
       } else {
@@ -56,9 +56,9 @@ export function whatsappText({
         );
       }
     }
-    if (entries.length === 0) lines.push('_No songs yet_');
+    if (entries.length === 0) lines.push('_Aún sin canciones_');
   }
 
-  if (link) lines.push('', `Live setlist: ${link}`);
+  if (link) lines.push('', `Setlist actualizado: ${link}`);
   return lines.join('\n');
 }

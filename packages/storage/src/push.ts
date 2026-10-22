@@ -20,7 +20,9 @@ export interface PushResult {
 /** The server refuses pushes from this app version; the user needs to update. */
 export class AppOutdatedError extends Error {
   constructor() {
-    super('This version of the app is too old to sync. Update it to keep sharing.');
+    super(
+      'Esta versión de la app es muy antigua para sincronizar. Actualízala para seguir compartiendo.',
+    );
     this.name = 'AppOutdatedError';
   }
 }

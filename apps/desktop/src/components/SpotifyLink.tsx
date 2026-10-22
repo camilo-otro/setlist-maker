@@ -10,12 +10,12 @@ import { currentPlatform } from '../storage/workspace';
  * 0003). The desktop app hands it to the system, which opens the Spotify app or the browser.
  */
 export function SpotifyLink({ spotifyId, title }: { spotifyId: string; title: string }) {
-  return <OpenSpotify href={spotifyTrackUrl(spotifyId)} label={`Open ${title} in Spotify`} />;
+  return <OpenSpotify href={spotifyTrackUrl(spotifyId)} label={`Abrir ${title} en Spotify`} />;
 }
 
 /** "Open Spotify" for a gig's playlist (ADR 0003). */
 export function SpotifyPlaylistLink({ url }: { url: string }) {
-  return <OpenSpotify href={url} label="Open the playlist in Spotify" />;
+  return <OpenSpotify href={url} label="Abrir la playlist en Spotify" />;
 }
 
 function OpenSpotify({ href, label }: { href: string; label: string }) {
@@ -43,7 +43,7 @@ function OpenSpotify({ href, label }: { href: string; label: string }) {
  * The logo file is white; it's drawn as a mask so it shows black on light screens and white on
  * dark ones, Spotify's two one-colour versions.
  */
-export function SpotifyAttribution({ label = 'Song details from' }: { label?: string }) {
+export function SpotifyAttribution({ label = 'Datos de canciones de' }: { label?: string }) {
   return (
     <p className="spotify-attribution">
       {label}

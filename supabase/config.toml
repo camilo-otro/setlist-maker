@@ -248,11 +248,11 @@ otp_expiry = 3600
 # Email codes for accounts (#51): adding an email to a sign-in, and signing in on another device.
 # The hosted project uses the same files, pasted into its dashboard (see README, "Accounts").
 [auth.email.template.email_change]
-subject = "Your Setlist Maker code"
+subject = "Tu código de Setlist Maker"
 content_path = "./supabase/templates/add_email_code.html"
 
 [auth.email.template.magic_link]
-subject = "Your Setlist Maker sign-in code"
+subject = "Tu código de acceso a Setlist Maker"
 content_path = "./supabase/templates/sign_in_code.html"
 
 # Uncomment to customize email template

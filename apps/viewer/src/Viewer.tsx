@@ -1,4 +1,4 @@
-import { formatDuration } from '@setlist/core';
+import { formatDate, formatDuration, formatTime } from '@setlist/core';
 import type { SharedEntry, SharedSetlist } from '@setlist/storage';
 import { useEffect, useState } from 'react';
 
@@ -13,17 +13,6 @@ type State =
   | { kind: 'failed' }
   | { kind: 'ready'; setlist: SharedSetlist; stale: boolean };
 
-/** A gig's date in its own calendar, e.g. "Friday, 23 October 2026", never shifted by time zone. */
-function formatDate(date: string): string {
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(year!, month! - 1, day!).toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
 const isSong = (entry: SharedEntry) => entry.kind === 'song';
 
 const totalSec = (entries: readonly SharedEntry[]) =>
@@ -33,7 +22,7 @@ function Entry({ entry, number }: { entry: SharedEntry; number: number | null })
   if (entry.kind === 'break') {
     return (
       <li className="entry entry--break">
-        <span>{entry.label ? `Break · ${entry.label}` : 'Break'}</span>
+        <span>{entry.label ? `Descanso · ${entry.label}` : 'Descanso'}</span>
       </li>
     );
   }
@@ -51,7 +40,7 @@ function Entry({ entry, number }: { entry: SharedEntry; number: number | null })
         <span className="entry__title">
           {entry.title}
           {entry.segueToNext && (
-            <span className="entry__segue" title="Goes straight into the next song">
+            <span className="entry__segue" title="Enlaza con la siguiente">
               {' '}
               →
             </span>
@@ -80,8 +69,9 @@ function Setlist({ setlist, stale }: { setlist: SharedSetlist; stale: boolean })
         <h1>{gig?.title ?? setlist.setlist?.name}</h1>
         {gig && (
           <p className="viewer__when">
-            {formatDate(gig.date)}
-            {gig.startTime && ` · ${gig.startTime}`}
+            {/* The gig's own calendar day, e.g. "viernes, 23 de octubre de 2026", never shifted by time zone. */}
+            {formatDate(gig.date, 'full')}
+            {gig.startTime && ` · ${formatTime(gig.startTime)}`}
             {gig.venue && (
               <>
                 <br />
@@ -91,15 +81,15 @@ function Setlist({ setlist, stale }: { setlist: SharedSetlist; stale: boolean })
             )}
           </p>
         )}
-        {gig?.status === 'cancelled' && <p className="viewer__notice">This gig was cancelled.</p>}
+        {gig?.status === 'cancelled' && <p className="viewer__notice">Este toque se canceló.</p>}
         {stale && (
           <p className="viewer__notice" role="status">
-            Can&apos;t reach the server: showing the last version loaded.
+            No hay conexión con el servidor: se muestra la última versión cargada.
           </p>
         )}
       </header>
 
-      {setlist.sets.length === 0 && <p className="viewer__empty">No sets yet.</p>}
+      {setlist.sets.length === 0 && <p className="viewer__empty">Aún no hay sets.</p>}
       {setlist.sets.map((set, index) => {
         const total = totalSec(set.entries);
         return (
@@ -109,7 +99,7 @@ function Setlist({ setlist, stale }: { setlist: SharedSetlist; stale: boolean })
               {total > 0 && <span className="set__time">{formatDuration(total)}</span>}
             </h2>
             {set.entries.length === 0 ? (
-              <p className="viewer__empty">No songs yet.</p>
+              <p className="viewer__empty">Aún no hay canciones.</p>
             ) : (
               <ol className="set__entries">
                 {set.entries.map((entry, i) => (
@@ -188,23 +178,24 @@ export function Viewer({ token, load }: { token: string | null; load: LoadSetlis
   if (!token) {
     return (
       <Message title="Setlist Maker">
-        Open a share link from your band to see their setlist here.
+        Abre el enlace que te compartió tu banda para ver su setlist aquí.
       </Message>
     );
   }
   switch (state.kind) {
     case 'loading':
-      return <Message title="Loading the setlist…">Just a moment.</Message>;
+      return <Message title="Cargando el setlist…">Un momento.</Message>;
     case 'missing':
       return (
-        <Message title="This link doesn't work">
-          It may have been turned off, or the gig was removed. Ask the band for a new link.
+        <Message title="Este enlace no funciona">
+          Puede que lo hayan desactivado o que el toque se haya eliminado. Pide a la banda un enlace
+          nuevo.
         </Message>
       );
     case 'failed':
       return (
-        <Message title="Couldn't load the setlist">
-          Check your internet connection. The page tries again every 30 seconds.
+        <Message title="No se pudo cargar el setlist">
+          Revisa tu conexión a internet. La página lo vuelve a intentar cada 30 segundos.
         </Message>
       );
     case 'ready':

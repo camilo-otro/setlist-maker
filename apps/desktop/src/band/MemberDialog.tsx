@@ -39,7 +39,7 @@ export function MemberDialog({
       onChanged();
       onClose();
     } catch (failure) {
-      setError(`Couldn't save that: ${String(failure)}`);
+      setError(`No se pudo guardar: ${String(failure)}`);
       setBusy(false);
     }
   }
@@ -49,7 +49,7 @@ export function MemberDialog({
     if (isMe) {
       const trimmed = name.trim();
       if (!trimmed) {
-        setError('Enter the name your bandmates know you by');
+        setError('Escribe el nombre con el que te conocen en la banda');
         return;
       }
       if (trimmed === member.displayName) return onClose();
@@ -74,12 +74,12 @@ export function MemberDialog({
       }),
     );
 
-  const title = isMe ? 'You' : member.displayName;
+  const title = isMe ? 'Tú' : member.displayName;
   return (
     <Modal title={title} onClose={onClose} busy={busy}>
       <form className="form-grid" onSubmit={save} noValidate>
         {isMe ? (
-          <Field id="member-name" label="Your name" error={error} wide>
+          <Field id="member-name" label="Tu nombre" error={error} wide>
             <input
               {...inputProps('member-name', error)}
               autoFocus
@@ -89,7 +89,7 @@ export function MemberDialog({
             />
           </Field>
         ) : (
-          <Field id="member-role" label="Role" wide>
+          <Field id="member-role" label="Rol" wide>
             <select
               id="member-role"
               className="sm-input"
@@ -97,9 +97,9 @@ export function MemberDialog({
               disabled={!isOwner || member.role === 'owner'}
               onChange={(e) => setRole(e.target.value as BandMember['role'])}
             >
-              {member.role === 'owner' && <option value="owner">Owner</option>}
-              <option value="editor">Editor: can change songs, gigs and setlists</option>
-              <option value="viewer">Viewer: can see everything, change nothing</option>
+              {member.role === 'owner' && <option value="owner">Administrador</option>}
+              <option value="editor">Editor: puede cambiar canciones, toques y setlists</option>
+              <option value="viewer">Solo lectura: puede ver todo, sin cambiar nada</option>
             </select>
           </Field>
         )}
@@ -111,25 +111,25 @@ export function MemberDialog({
 
         {confirming === 'owner' && (
           <div className="modal__confirm form-grid__wide" role="alert">
-            <span>Make {member.displayName} the owner? You&apos;ll become an editor.</span>
+            <span>¿Hacer administrador a {member.displayName}? Tú pasarás a ser editor.</span>
             <button
               type="button"
               className="sm-button sm-button--danger"
               disabled={busy}
               onClick={() => void handOver()}
             >
-              Make owner
+              Hacer administrador
             </button>
             <button type="button" className="sm-button" onClick={() => setConfirming('none')}>
-              Cancel
+              Cancelar
             </button>
           </div>
         )}
         {confirming === 'remove' && (
           <div className="modal__confirm form-grid__wide" role="alert">
             <span>
-              Remove {member.displayName} from the band? They keep what&apos;s on their device but
-              stop getting changes.
+              ¿Quitar a {member.displayName} de la banda? Conserva lo que tiene en su dispositivo,
+              pero deja de recibir cambios.
             </span>
             <button
               type="button"
@@ -137,10 +137,10 @@ export function MemberDialog({
               disabled={busy}
               onClick={() => void run(() => repository.bandMembers.remove(member.id))}
             >
-              Remove
+              Quitar
             </button>
             <button type="button" className="sm-button" onClick={() => setConfirming('none')}>
-              Cancel
+              Cancelar
             </button>
           </div>
         )}
@@ -149,19 +149,19 @@ export function MemberDialog({
           {isOwner && !isMe && member.role !== 'owner' && confirming === 'none' && (
             <div className="modal__actions-start">
               <button type="button" className="sm-button" onClick={() => setConfirming('owner')}>
-                Make owner
+                Hacer administrador
               </button>
               <button type="button" className="sm-button" onClick={() => setConfirming('remove')}>
-                Remove
+                Quitar
               </button>
             </div>
           )}
           <button type="button" className="sm-button" onClick={onClose} disabled={busy}>
-            Cancel
+            Cancelar
           </button>
           {(isMe || isOwner) && (
             <button type="submit" className="sm-button sm-button--primary" disabled={busy}>
-              Save
+              Guardar
             </button>
           )}
         </div>
