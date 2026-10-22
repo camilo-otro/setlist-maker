@@ -98,10 +98,10 @@ The first time someone shares, the app signs them in anonymously (no email or pa
 
 ## Accounts
 
-An anonymous sign-in only works on its own device. Under **Band → Your account** ([#51](https://github.com/camilo-otro/setlist-maker/issues/51)):
+An anonymous sign-in only works on its own device. Under **Banda → Tu cuenta** (Band → Your account, [#51](https://github.com/camilo-otro/setlist-maker/issues/51)):
 
-- **Add your email:** Supabase emails a 6-digit code, and entering it adds the email to the same user, so bands and data don't change.
-- **Sign in with email,** on another device: a code to that email signs the device in as that user. Its own earlier memberships in that user's bands (e.g. a phone that joined as "CamiPhone") are removed, and the bands download. Owners can also remove any member from the band page.
+- **Agregar tu correo** (add your email): Supabase emails a 6-digit code, and entering it adds the email to the same user, so bands and data don't change.
+- **Iniciar sesión con correo** (sign in with email), on another device: a code to that email signs the device in as that user. Its own earlier memberships in that user's bands (e.g. a phone that joined as "CamiPhone") are removed, and the bands download. Owners can also remove any member from the band page.
 
 Locally, codes land in the test mailbox at http://127.0.0.1:54324 (Mailpit), and `config.toml` uses the templates in `supabase/templates`.
 
@@ -125,7 +125,7 @@ Locally, codes land in the test mailbox at http://127.0.0.1:54324 (Mailpit), and
 
 ## Share links
 
-A gig's **Share** button gives a read-only link to its setlist, like `https://setlist.rockthehouse.app/viewer/#<token>`. Links made before the viewer moved to `/viewer/` (`https://setlist.rockthehouse.app/#<token>`) still work: the site's root sends them on. Anyone with it sees the setlist on any device, without an account, and it refreshes every 30 seconds. The first share asks for a display name, signs the device in anonymously (see Identity) and uploads the band; after that, the app uploads changes every few seconds while the band is shared.
+A gig's **Compartir** (Share) button gives a read-only link to its setlist, like `https://setlist.rockthehouse.app/viewer/#<token>`. Links made before the viewer moved to `/viewer/` (`https://setlist.rockthehouse.app/#<token>`) still work: the site's root sends them on. Anyone with it sees the setlist on any device, without an account, and it refreshes every 30 seconds. The first share asks for a display name, signs the device in anonymously (see Identity) and uploads the band; after that, the app uploads changes every few seconds while the band is shared.
 
 - **Server:** `public.share_links` stores each link's target and the SHA-256 hash of its token, never the token. `shared_setlist(token)` returns only that gig's public details (no notes, tags or load-in time); revoked links and deleted gigs return nothing.
 - **Tokens** are an HMAC of the link's ID with a secret kept in the device's keychain, so the app can show a link again while nobody else can rebuild one.
@@ -149,7 +149,7 @@ The same app runs in a browser at `https://setlist.rockthehouse.app/`, for editi
 
 - **Data:** SQLite compiled to WebAssembly (`@sqlite.org/sqlite-wasm`) in a Web Worker, kept in the browser's origin private file system (the "opfs-sahpool" mode, which needs no special server headers). It's the same repository, migrations and contract tests as desktop. That storage allows one tab at a time: a second tab works in memory and says so.
 - **Sign-in:** kept in the site's localStorage.
-- **Installing and offline:** a web app manifest and icons (`apps/desktop/public`), and a service worker that `build/serviceWorker.ts` writes into each web build listing that build's files. The app opens from the cache when offline and syncs when back online; a new version takes over once every window of the app is closed. The app asks the browser to keep its data, and suggests adding it to the home screen (Share, then Add to Home Screen on iPhone; an Install button where the browser offers one).
+- **Installing and offline:** a web app manifest and icons (`apps/desktop/public`), and a service worker that `build/serviceWorker.ts` writes into each web build listing that build's files. The app opens from the cache when offline and syncs when back online; a new version takes over once every window of the app is closed. The app asks the browser to keep its data, and suggests adding it to the home screen (on iPhone, Compartir then Agregar a inicio; an **Instalar** button where the browser offers one).
 
 The **Viewer** workflow builds the web app and the viewer together and publishes them as one Netlify site: the app at `/`, the viewer at `/viewer/`, plus the site's own files from [`site/`](site). Its `_headers` allow WebAssembly (`'wasm-unsafe-eval'`, which doesn't allow JavaScript `eval`) and Realtime's `wss://` connections.
 
@@ -192,7 +192,7 @@ When the catalog finds little, the `catalog-search` Edge Function (`supabase/fun
 
 ### Playlist account
 
-Exporting setlists as playlists (the **Spotify playlist** button on a gig) uses one Spotify account of the app's own, a free account that holds every band's public playlists ([ADR 0003](docs/adr/0003-spotify.md), playlist amendment). Bands never sign in to Spotify. The app owner signs the account in once, and its refresh token is kept in Supabase Vault.
+Exporting setlists as playlists (the **Playlist de Spotify** button on a gig) uses one Spotify account of the app's own, a free account that holds every band's public playlists ([ADR 0003](docs/adr/0003-spotify.md), playlist amendment). Bands never sign in to Spotify. The app owner signs the account in once, and its refresh token is kept in Supabase Vault.
 
 1. In Setlist Maker's Spotify app in the dashboard, add `http://127.0.0.1:8976/callback` as a redirect URI, and add the playlist account's email under User Management.
 2. Set `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SUPABASE_DB_URL` (the database that should keep the token) in your own terminal, or in a `.env` file at the repo's root, which git ignores. Then run `pnpm spotify:connect`. Sign in as the playlist account, not your own.

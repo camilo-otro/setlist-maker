@@ -3,13 +3,14 @@ import { Check, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { Sharing } from '../sharing/sharing';
 import { canShareSheet } from './shareSheet';
+import { ShareTile } from './ShareTile';
 import type { BlockWithEntries } from './useGigSetlist';
 import { whatsappText } from './whatsappText';
 
 /**
  * Puts the setlist, as WhatsApp-ready text, where it can be pasted (#83): the share sheet on a
  * phone (straight to WhatsApp), the clipboard elsewhere. Adds the gig's share link if this device
- * made one. Read-only, so viewers get it too.
+ * made one. Read-only, so viewers get it too. A tile in the share sheet.
  */
 export function CopyForWhatsApp({
   gig,
@@ -50,18 +51,17 @@ export function CopyForWhatsApp({
   }
 
   return (
-    <button
-      type="button"
-      className="sm-button"
-      onClick={() => void share()}
+    <ShareTile
+      icon={
+        done ? (
+          <Check size={22} aria-hidden="true" />
+        ) : (
+          <MessageCircle size={22} aria-hidden="true" />
+        )
+      }
+      label={done ? 'Copiado' : failed ? 'Intenta de nuevo' : 'WhatsApp'}
       title={failed ? 'No se pudo copiar el setlist' : 'Copia el setlist como texto para WhatsApp'}
-    >
-      {done ? (
-        <Check size={14} aria-hidden="true" />
-      ) : (
-        <MessageCircle size={14} aria-hidden="true" />
-      )}
-      {done ? 'Copiado' : failed ? 'Intenta de nuevo' : 'Copiar para WhatsApp'}
-    </button>
+      onClick={() => void share()}
+    />
   );
 }

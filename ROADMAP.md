@@ -51,12 +51,12 @@ setlist-maker/
 
 Each level is added only when someone needs it. Nobody sees a sign-up screen.
 
-| Level              | Who it's for                     | What the user does                                                            | Account                     |
-| ------------------ | -------------------------------- | ----------------------------------------------------------------------------- | --------------------------- |
-| **0. Solo**        | Just you                         | Use the app; everything stays on your machine                                 | None                        |
-| **1. View link**   | Bandmates, sound engineer, venue | **Share → Copy link**. The setlist opens live in any browser, no install      | None                        |
-| **2. Collaborate** | Band members                     | **Invite to band**. Bandmates open the link, type a display name and can edit | Anonymous, created silently |
-| **3. Secure**      | Anyone who wants it              | Add an email (sign-in codes) to use a second device or recover a lost one     | Real account, same data     |
+| Level              | Who it's for                     | What the user does                                                                                   | Account                     |
+| ------------------ | -------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------- |
+| **0. Solo**        | Just you                         | Use the app; everything stays on your machine                                                        | None                        |
+| **1. View link**   | Bandmates, sound engineer, venue | **Compartir → Copiar enlace** (Share → Copy link). The setlist opens live in any browser, no install | None                        |
+| **2. Collaborate** | Band members                     | **Banda → Invitar** (Band → Invite). Bandmates open the link, type a display name and can edit       | Anonymous, created silently |
+| **3. Secure**      | Anyone who wants it              | Add an email (sign-in codes) to use a second device or recover a lost one                            | Real account, same data     |
 
 - View links and invites use unguessable tokens (only a hash is stored) and can be revoked. Invites carry a role, an expiry date and a maximum number of uses.
 - An anonymous identity lives on one device. If that device is lost before the account is secured, the person loses access but the band keeps its data, and an owner can re-invite them. The app suggests securing the account once a second member joins.
@@ -174,7 +174,7 @@ Band data schema in Supabase with row-level security, our sync protocol (outbox,
 
 **Status:** started: marking a gig as played records its performances (#27), song statistics and hints in the builder (#29, #33), the stats dashboard (#31), each song's history (#30) and post-gig ratings (#32) are done. Left: importing past gigs (#28).
 
-"Mark gig as played" snapshots performances, per-song history timeline, stats dashboard (most and least played, staleness), rating songs after a gig, and highlights in the builder (for example "played at this venue last time").
+"Marcar como tocado" (mark gig as played) snapshots performances, per-song history timeline, stats dashboard (most and least played, staleness), rating songs after a gig, and highlights in the builder (for example "played at this venue last time").
 **Exit:** you can answer "what haven't we played in a while?" instantly.
 
 ### Phase 6 — Output and stage use

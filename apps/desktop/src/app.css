@@ -97,10 +97,15 @@ body {
   color: var(--sm-text-muted);
 }
 
+/* Long band names take a second line, then are cut off. */
 .sidebar__band-name span {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: left;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 /* The pencil only shows on hover or focus, so the name reads as a name. */
@@ -275,9 +280,17 @@ body {
 /* Library */
 .library-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 8px 16px;
   margin-bottom: 16px;
+}
+
+/* On a phone the search gets the whole row, so its hint isn't cut to a few letters. */
+@container (width < 520px) {
+  .library-toolbar .search-box {
+    flex-basis: 100%;
+  }
 }
 
 .library-toolbar__count {
@@ -324,6 +337,11 @@ body {
   color: var(--sm-text-muted);
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+/* "En práctica" stays on one line. */
+.song-table__status {
+  white-space: nowrap;
 }
 
 .song-table__numeric {
@@ -1139,6 +1157,7 @@ body {
 
 .set__footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px 12px;
 }
@@ -1200,6 +1219,20 @@ body {
 
 .entry > .entry__main {
   flex: 1 1 0;
+}
+
+/* A tag never shows half its name: the artist gives way first. */
+.entry__main .song-tags,
+.entry__main .tag {
+  flex: none;
+}
+
+/* In a narrow setlist, tags give way to the title. A tag the gig is missing still shows as the
+   row's warning icon and in the summary above the sets ("1 necesita piano"). */
+@container (width < 600px) {
+  .entry__main .song-tags {
+    display: none;
+  }
 }
 
 /* The title keeps priority: it never shrinks, so the artist and notes give up
@@ -2382,4 +2415,121 @@ body {
   border: 1px solid var(--sm-border);
   border-radius: var(--sm-radius);
   font-weight: 600;
+}
+
+/* The gig's actions: one main button, Compartir and a "⋯" menu */
+.action-menu {
+  position: relative;
+}
+
+.action-menu__trigger {
+  padding-inline: 10px;
+}
+
+.action-menu__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  background: var(--sm-surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 25%);
+}
+
+.action-menu__list--end {
+  right: 0;
+}
+
+.action-menu__list--start {
+  left: 0;
+}
+
+.action-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sm-text);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.action-menu__item:hover,
+.action-menu__item:focus-visible {
+  background: var(--sm-hover);
+  outline: none;
+}
+
+.action-menu__item svg {
+  flex: none;
+  color: var(--sm-text-muted);
+}
+
+/* The share sheet's tiles: three to a row, big enough to tap */
+.share-sheet {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.share-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 88px;
+  padding: 12px 6px;
+  border: 1px solid var(--sm-border);
+  border-radius: 10px;
+  background: var(--sm-surface);
+  color: var(--sm-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+}
+
+.share-tile:hover {
+  border-color: var(--sm-accent);
+  background: var(--sm-hover);
+}
+
+.share-tile:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.share-tile svg {
+  color: var(--sm-accent-text);
+}
+
+/* Undo and redo sit at the end of the setlist's summary line */
+.setlist-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.setlist-toolbar .setlist-summary {
+  margin: 0;
+}
+
+.setlist-toolbar__history {
+  display: flex;
+  flex: none;
 }

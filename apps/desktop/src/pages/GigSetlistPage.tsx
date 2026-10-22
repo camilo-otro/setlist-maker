@@ -12,18 +12,27 @@ import {
   setlistWarnings,
   type EntryWarning,
 } from '@setlist/core';
-import { ArrowLeft, CircleCheck, Copy, Pencil, Redo2, Share2, Star, Undo2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  CircleCheck,
+  Copy,
+  ListChecks,
+  Pencil,
+  Redo2,
+  Share2,
+  Star,
+  Undo2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu';
 import { GigDialog } from '../gigs/GigDialog';
 import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
 import { RatePlayedDialog } from '../gigs/RatePlayedDialog';
 import { setlistChanges } from '../setlist/changes';
-import { CopyForWhatsApp } from '../setlist/CopyForWhatsApp';
-import { PrintSetlist } from '../setlist/PrintSetlist';
 import { SetlistEditor } from '../setlist/SetlistEditor';
-import { ShareImage } from '../setlist/ShareImage';
-import { SpotifyPlaylist } from '../setlist/SpotifyPlaylist';
+import { ShareSetlistDialog } from '../setlist/ShareSetlistDialog';
+import { offersPlaylist, SpotifyPlaylistDialog, useGigPlaylist } from '../setlist/SpotifyPlaylist';
 import { StartFromDialog } from '../setlist/StartFromDialog';
 import { useGigSetlist } from '../setlist/useGigSetlist';
 import { useMembership } from '../sharing/MembershipProvider';
@@ -53,12 +62,15 @@ export function GigSetlistPage() {
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [playlistOpen, setPlaylistOpen] = useState(false);
   const [markingPlayed, setMarkingPlayed] = useState(false);
   /** Rating the songs played (#32): `just-played` straight after marking the gig as played. */
   const [rating, setRating] = useState<'just-played' | 'later' | null>(null);
   const [startingFrom, setStartingFrom] = useState(false);
   const [startedFrom, setStartedFrom] = useState<{ from: string; dropped: string[] } | null>(null);
   const { canEdit } = useMembership();
+  const gigPlaylist = useGigPlaylist(sharing, band.id, gigId);
 
   const songsById = useMemo(
     () => new Map((songs.rows ?? []).map((song) => [song.id, song])),
@@ -121,6 +133,62 @@ export function GigSetlistPage() {
     missing.length > 0 && `Faltan: ${missing.join(', ')}`,
   ].filter(Boolean);
 
+  // One main action for where the gig stands (owners and editors): marking it as played from its
+  // day on, then rating the songs. Before its day, sharing is what's next, so Compartir leads.
+  const due = gig.status === 'upcoming' && gig.date <= localDateString();
+  const main = !canEdit ? null : gig.status === 'played' ? (
+    <button
+      type="button"
+      className="sm-button sm-button--primary"
+      onClick={() => setRating('later')}
+    >
+      <Star size={14} aria-hidden="true" />
+      Calificar canciones
+    </button>
+  ) : due ? (
+    <button
+      type="button"
+      className="sm-button sm-button--primary"
+      onClick={() => setMarkingPlayed(true)}
+    >
+      <CircleCheck size={14} aria-hidden="true" />
+      Marcar como tocado
+    </button>
+  ) : null;
+  // Everything else owners and editors can do with the gig.
+  const more: ActionMenuItem[] = !canEdit
+    ? []
+    : [
+        {
+          label: 'Editar detalles',
+          icon: <Pencil size={16} aria-hidden="true" />,
+          onSelect: () => setEditingGig(true),
+        },
+        {
+          label: 'Empezar desde…',
+          icon: <Copy size={16} aria-hidden="true" />,
+          onSelect: () => setStartingFrom(true),
+        },
+        ...(gig.status === 'upcoming' && !due
+          ? [
+              {
+                label: 'Marcar como tocado',
+                icon: <CircleCheck size={16} aria-hidden="true" />,
+                onSelect: () => setMarkingPlayed(true),
+              },
+            ]
+          : []),
+        ...(gig.status === 'played'
+          ? [
+              {
+                label: 'Lo que tocamos',
+                icon: <ListChecks size={16} aria-hidden="true" />,
+                onSelect: () => setMarkingPlayed(true),
+              },
+            ]
+          : []),
+      ];
+
   return (
     <>
       {back}
@@ -138,115 +206,77 @@ export function GigSetlistPage() {
           <p className="muted gig-header__details">{details.join(' · ')}</p>
         </div>
         <div className="gig-header__actions">
-          {canEdit && (
-            <>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={history.undoLabel ? `Deshacer: ${history.undoLabel}` : 'Deshacer'}
-                title={
-                  history.undoLabel
-                    ? `Deshacer: ${history.undoLabel} (Ctrl+Z)`
-                    : 'Nada que deshacer'
-                }
-                disabled={!history.canUndo}
-                onClick={() => void history.undo()}
-              >
-                <Undo2 size={18} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={history.redoLabel ? `Rehacer: ${history.redoLabel}` : 'Rehacer'}
-                title={
-                  history.redoLabel ? `Rehacer: ${history.redoLabel} (Ctrl+Y)` : 'Nada que rehacer'
-                }
-                disabled={!history.canRedo}
-                onClick={() => void history.redo()}
-              >
-                <Redo2 size={18} aria-hidden="true" />
-              </button>
-              <button type="button" className="sm-button" onClick={() => setEditingGig(true)}>
-                <Pencil size={14} aria-hidden="true" />
-                Editar detalles
-              </button>
-              <button type="button" className="sm-button" onClick={() => setStartingFrom(true)}>
-                <Copy size={14} aria-hidden="true" />
-                Empezar desde…
-              </button>
-              {gig.status !== 'cancelled' && (
-                <button
-                  type="button"
-                  className={
-                    // Due once the day comes.
-                    gig.status === 'upcoming' && gig.date <= localDateString()
-                      ? 'sm-button sm-button--primary'
-                      : 'sm-button'
-                  }
-                  onClick={() => setMarkingPlayed(true)}
-                >
-                  <CircleCheck size={14} aria-hidden="true" />
-                  {gig.status === 'played' ? 'Lo que tocamos' : 'Marcar como tocado'}
-                </button>
-              )}
-              {gig.status === 'played' && (
-                <button type="button" className="sm-button" onClick={() => setRating('later')}>
-                  <Star size={14} aria-hidden="true" />
-                  Calificar canciones
-                </button>
-              )}
-              {sharing && (
-                <button type="button" className="sm-button" onClick={() => setSharingOpen(true)}>
-                  <Share2 size={14} aria-hidden="true" />
-                  Compartir
-                </button>
-              )}
-            </>
-          )}
-          <SpotifyPlaylist
-            bandId={band.id}
-            gig={gig}
-            blocks={blocks}
-            songsById={songsById}
-            sharing={sharing}
-            canEdit={canEdit}
-          />
-          <CopyForWhatsApp
-            gig={gig}
-            venue={venue}
-            blocks={blocks}
-            songsById={songsById}
-            sharing={sharing}
-          />
-          <ShareImage gig={gig} venue={venue} blocks={blocks} songsById={songsById} />
-          <PrintSetlist bandName={band.name} gig={gig} blocks={blocks} songsById={songsById} />
+          {main}
+          <button
+            type="button"
+            className={
+              main || !canEdit || gig.status === 'cancelled'
+                ? 'sm-button'
+                : 'sm-button sm-button--primary'
+            }
+            onClick={() => setSheetOpen(true)}
+          >
+            <Share2 size={14} aria-hidden="true" />
+            Compartir
+          </button>
+          {more.length > 0 && <ActionMenu label="Más acciones" items={more} />}
         </div>
       </header>
 
-      <p className="setlist-summary" aria-live="polite">
-        <span>
-          <strong>{formatDuration(total.totalSec)}</strong> en total · {total.songs}{' '}
-          {total.songs === 1 ? 'canción' : 'canciones'}
-        </span>
-        {summary.map((warning) => (
-          <span
-            key={warning}
-            className="setlist-summary__warning"
-            title={ENTRY_WARNING_LABELS[warning]}
-          >
-            {WARNING_SUMMARY[warning](counts[warning])}
+      <div className="setlist-toolbar">
+        <p className="setlist-summary" aria-live="polite">
+          <span>
+            <strong>{formatDuration(total.totalSec)}</strong> en total · {total.songs}{' '}
+            {total.songs === 1 ? 'canción' : 'canciones'}
           </span>
-        ))}
-        {needs.map(({ tag, count }) => (
-          <span
-            key={tag}
-            className="setlist-summary__warning"
-            title={`Falta en este toque: ${tag}`}
-          >
-            {count} {count === 1 ? 'necesita' : 'necesitan'} {tag}
-          </span>
-        ))}
-      </p>
+          {summary.map((warning) => (
+            <span
+              key={warning}
+              className="setlist-summary__warning"
+              title={ENTRY_WARNING_LABELS[warning]}
+            >
+              {WARNING_SUMMARY[warning](counts[warning])}
+            </span>
+          ))}
+          {needs.map(({ tag, count }) => (
+            <span
+              key={tag}
+              className="setlist-summary__warning"
+              title={`Falta en este toque: ${tag}`}
+            >
+              {count} {count === 1 ? 'necesita' : 'necesitan'} {tag}
+            </span>
+          ))}
+        </p>
+        {canEdit && (
+          <div className="setlist-toolbar__history">
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={history.undoLabel ? `Deshacer: ${history.undoLabel}` : 'Deshacer'}
+              title={
+                history.undoLabel ? `Deshacer: ${history.undoLabel} (Ctrl+Z)` : 'Nada que deshacer'
+              }
+              disabled={!history.canUndo}
+              onClick={() => void history.undo()}
+            >
+              <Undo2 size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={history.redoLabel ? `Rehacer: ${history.redoLabel}` : 'Rehacer'}
+              title={
+                history.redoLabel ? `Rehacer: ${history.redoLabel} (Ctrl+Y)` : 'Nada que rehacer'
+              }
+              disabled={!history.canRedo}
+              onClick={() => void history.redo()}
+            >
+              <Redo2 size={18} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
       {startedFrom && (
         <p className="muted start-from__done" role="status">
           Setlist copiado de {startedFrom.from}.
@@ -273,6 +303,41 @@ export function GigSetlistPage() {
         run={history.run}
       />
 
+      {sheetOpen && (
+        <ShareSetlistDialog
+          bandName={band.name}
+          gig={gig}
+          venue={venue}
+          blocks={blocks}
+          songsById={songsById}
+          sharing={sharing}
+          canMakeLink={canEdit && Boolean(sharing)}
+          showPlaylist={offersPlaylist(sharing, gigPlaylist, canEdit)}
+          onOpenLink={() => {
+            setSheetOpen(false);
+            setSharingOpen(true);
+          }}
+          onOpenPlaylist={() => {
+            setSheetOpen(false);
+            setPlaylistOpen(true);
+          }}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
+      {playlistOpen && sharing && (
+        <SpotifyPlaylistDialog
+          bandId={band.id}
+          gig={gig}
+          blocks={blocks}
+          songsById={songsById}
+          sharing={sharing}
+          shared={gigPlaylist.shared ?? false}
+          canEdit={canEdit}
+          playlist={gigPlaylist.playlist ?? null}
+          onPlaylist={gigPlaylist.setPlaylist}
+          onClose={() => setPlaylistOpen(false)}
+        />
+      )}
       {sharingOpen && sharing && (
         <ShareDialog
           sharing={sharing}

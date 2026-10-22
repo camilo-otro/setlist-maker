@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { saveFile } from './saveFile';
 import { makeSetlistPdf, pdfFileName } from './setlistPdf';
 import { canShareSheet } from './shareSheet';
+import { ShareTile } from './ShareTile';
 import type { BlockWithEntries } from './useGigSetlist';
 
 type Status =
@@ -12,7 +13,7 @@ type Status =
 /**
  * Print (#34): the setlist as a PDF for the stage, a page per set. The desktop app saves it to
  * Downloads and opens it, ready to print; phones get the share sheet, which can print or send
- * it; browsers download it. Read-only, so viewers get it too.
+ * it; browsers download it. Read-only, so viewers get it too. A tile in the share sheet.
  */
 export function PrintSetlist({
   bandName,
@@ -50,29 +51,30 @@ export function PrintSetlist({
   }
 
   return (
-    <button
-      type="button"
-      className="sm-button"
-      disabled={status.kind === 'busy'}
-      onClick={() => void print()}
+    <ShareTile
+      icon={
+        status.kind === 'done' ? (
+          <Check size={22} aria-hidden="true" />
+        ) : (
+          <Printer size={22} aria-hidden="true" />
+        )
+      }
+      label={
+        status.kind === 'done'
+          ? status.message
+          : status.kind === 'failed'
+            ? 'Intenta de nuevo'
+            : status.kind === 'busy'
+              ? 'Creando PDF…'
+              : 'Imprimir'
+      }
       title={
         status.kind === 'failed'
           ? 'No se pudo crear el PDF'
           : 'Un PDF del setlist para imprimir: el nombre de la banda y las canciones, una página por set'
       }
-    >
-      {status.kind === 'done' ? (
-        <Check size={14} aria-hidden="true" />
-      ) : (
-        <Printer size={14} aria-hidden="true" />
-      )}
-      {status.kind === 'done'
-        ? status.message
-        : status.kind === 'failed'
-          ? 'Intenta de nuevo'
-          : status.kind === 'busy'
-            ? 'Creando PDF…'
-            : 'Imprimir'}
-    </button>
+      disabled={status.kind === 'busy'}
+      onClick={() => void print()}
+    />
   );
 }

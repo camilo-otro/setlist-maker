@@ -3,6 +3,7 @@ import { Check, Download, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import { saveFile } from './saveFile';
 import { canShareSheet } from './shareSheet';
+import { ShareTile } from './ShareTile';
 import {
   activeImageTheme,
   canvasMeasure,
@@ -17,7 +18,8 @@ type Status = { kind: 'idle' } | { kind: 'done'; message: string } | { kind: 'fa
 /**
  * The setlist as a picture for a chat (#84). Phones get the share sheet, straight to WhatsApp;
  * elsewhere it copies to the clipboard (to paste into WhatsApp Desktop or Web) or saves a PNG.
- * A snapshot: the share link stays the way to follow later changes.
+ * A snapshot: the share link stays the way to follow later changes. One or two tiles in the
+ * share sheet: phones get one, since their share sheet can save the picture too.
  */
 export function ShareImage({
   gig,
@@ -81,55 +83,48 @@ export function ShareImage({
     status.kind === 'done' ? status.message : failed ? 'Intenta de nuevo' : idle;
   const icon =
     status.kind === 'done' ? (
-      <Check size={14} aria-hidden="true" />
+      <Check size={22} aria-hidden="true" />
     ) : (
-      <ImageIcon size={14} aria-hidden="true" />
+      <ImageIcon size={22} aria-hidden="true" />
     );
 
   if (canShareSheet()) {
     return (
-      <button
-        type="button"
-        className="sm-button"
-        onClick={() => void share()}
+      <ShareTile
+        icon={icon}
+        label={label('Compartir imagen')}
         title={failed ? 'No se pudo compartir la imagen' : 'Comparte el setlist como imagen'}
-      >
-        {icon}
-        {label('Compartir imagen')}
-      </button>
+        onClick={() => void share()}
+      />
     );
   }
   const canCopy = typeof ClipboardItem === 'function' && Boolean(navigator.clipboard?.write);
   return (
     <>
       {canCopy && (
-        <button
-          type="button"
-          className="sm-button"
-          onClick={() => void copy()}
+        <ShareTile
+          icon={icon}
+          label={label('Copiar imagen')}
           title={
             failed
               ? 'No se pudo copiar la imagen'
               : 'Copia el setlist como imagen, para pegarlo en un chat'
           }
-        >
-          {icon}
-          {label('Copiar imagen')}
-        </button>
+          onClick={() => void copy()}
+        />
       )}
-      <button
-        type="button"
-        className="icon-button"
-        aria-label={canCopy ? 'Guardar imagen' : label('Guardar imagen')}
+      <ShareTile
+        icon={
+          !canCopy && status.kind === 'done' ? (
+            <Check size={22} aria-hidden="true" />
+          ) : (
+            <Download size={22} aria-hidden="true" />
+          )
+        }
+        label={canCopy ? 'Descargar imagen' : label('Descargar imagen')}
         title={`Guarda el setlist como imagen (${name})`}
         onClick={() => void save()}
-      >
-        {!canCopy && status.kind === 'done' ? (
-          <Check size={18} aria-hidden="true" />
-        ) : (
-          <Download size={18} aria-hidden="true" />
-        )}
-      </button>
+      />
     </>
   );
 }

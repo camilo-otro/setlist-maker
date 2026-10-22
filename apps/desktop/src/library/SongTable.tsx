@@ -90,7 +90,7 @@ export function SongTable({
             <td className="song-table__numeric">
               {song.durationSec === null ? '' : formatDuration(song.durationSec)}
             </td>
-            <td>{SONG_STATUS_LABELS[song.status]}</td>
+            <td className="song-table__status">{SONG_STATUS_LABELS[song.status]}</td>
             <td>
               {song.tags.map((tag) => (
                 <span key={tag} className="tag">
