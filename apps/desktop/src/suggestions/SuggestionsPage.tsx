@@ -2,6 +2,7 @@ import {
   formatDate,
   orderSuggestions,
   summaryOf,
+  votersIn,
   type Suggestion,
   type SuggestionStatus,
 } from '@setlist/core';
@@ -172,6 +173,7 @@ export function SuggestionsPage() {
             membersById={membersById}
             me={me}
             canEdit={canEdit}
+            voters={votersIn(members)}
             song={songs.rows?.find((song) => song.id === selected.songId)}
             onChanged={() => {
               reload();

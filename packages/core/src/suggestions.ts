@@ -1,3 +1,4 @@
+import type { BandMember } from './schemas/band';
 import type { CatalogTrack } from './schemas/catalog';
 import type { Suggestion, SuggestionVote } from './schemas/suggestion';
 
@@ -53,6 +54,36 @@ export function orderSuggestions<T extends Pick<Suggestion, 'id' | 'status' | 'c
     return byRating || b.createdAt.localeCompare(a.createdAt);
   });
 }
+
+/** What a suggestion needs before it can be added to the repertorio. */
+export const ADD_RULE = { minAverage: 4 } as const;
+
+/** Whether a suggestion has the band's backing to be added, and if not, what it's missing. */
+export interface AddReadiness {
+  ready: boolean;
+  /** Votes still missing to reach half the band. */
+  votesMissing: number;
+  /** Half the band, rounded up: the votes it needs. */
+  votesNeeded: number;
+  /** Whether the average is high enough (false with no votes). */
+  averageReached: boolean;
+}
+
+/**
+ * The band decides, not whoever taps first (#89): a suggestion can be added to the repertorio once
+ * at least half of the members who can vote (owners and editors) have voted, and its average is
+ * at least 4 stars.
+ */
+export function readinessToAdd(summary: VoteSummary, voters: number): AddReadiness {
+  const votesNeeded = Math.max(1, Math.ceil(voters / 2));
+  const votesMissing = Math.max(0, votesNeeded - summary.count);
+  const averageReached = summary.average !== null && summary.average >= ADD_RULE.minAverage;
+  return { ready: votesMissing === 0 && averageReached, votesMissing, votesNeeded, averageReached };
+}
+
+/** How many of a band's members can vote on suggestions: owners and editors. */
+export const votersIn = (members: readonly Pick<BandMember, 'role' | 'deletedAt'>[]) =>
+  members.filter((m) => !m.deletedAt && m.role !== 'viewer').length;
 
 /** Open suggestions this member hasn't voted on yet: the Sugerencias badge. */
 export function awaitingMyVote(

@@ -1,4 +1,12 @@
-import { songFromSuggestion, type Song, type SuggestionVote } from '@setlist/core';
+import {
+  readinessToAdd,
+  songFromSuggestion,
+  summaryOf,
+  votersIn,
+  voteSummaries,
+  type Song,
+  type SuggestionVote,
+} from '@setlist/core';
 import type { Repository } from '../repository';
 import { NotFoundError } from '../rows';
 
@@ -29,9 +37,18 @@ export function castVote(
   });
 }
 
+/** A suggestion the band hasn't backed yet: too few votes, or too low an average (#89). */
+export class NotReadyToAddError extends Error {
+  constructor(suggestionId: string) {
+    super(`Suggestion ${suggestionId} needs votes from half the band and an average of 4 stars`);
+    this.name = 'NotReadyToAddError';
+  }
+}
+
 /**
  * Adds a suggestion to the repertorio: a new song, still being learned, with the suggestion's
- * details and note, and the suggestion marked as added, pointing at it. All or nothing.
+ * details and note, and the suggestion marked as added, pointing at it. All or nothing. Only once
+ * the band has backed it, by the votes this device has (`readinessToAdd`).
  */
 export function addSuggestionToRepertorio(
   repository: Repository,
@@ -43,6 +60,12 @@ export function addSuggestionToRepertorio(
     if (suggestion.status === 'accepted' && suggestion.songId) {
       const existing = await tx.songs.get(suggestion.songId);
       if (existing) return existing;
+    }
+    const members = await tx.bandMembers.list({ bandId: suggestion.bandId });
+    const votes = await tx.suggestionVotes.list({ suggestionId });
+    const summary = summaryOf(voteSummaries(votes, null), suggestionId);
+    if (!readinessToAdd(summary, votersIn(members)).ready) {
+      throw new NotReadyToAddError(suggestionId);
     }
     const song = await tx.songs.create(songFromSuggestion(suggestion));
     await tx.suggestions.update(suggestionId, { status: 'accepted', songId: song.id });

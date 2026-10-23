@@ -3,10 +3,12 @@ import type { CatalogTrack } from './schemas/catalog';
 import {
   awaitingMyVote,
   orderSuggestions,
+  readinessToAdd,
   songFromSuggestion,
   suggestionFromTrack,
   summaryOf,
   voteSummaries,
+  votersIn,
 } from './suggestions';
 
 const ME = 'me';
@@ -71,6 +73,49 @@ describe('orderSuggestions and awaitingMyVote', () => {
 
   it('counts the open ones waiting for my vote', () => {
     expect(awaitingMyVote(list, summaries)).toBe(2);
+  });
+});
+
+describe('readinessToAdd', () => {
+  const summary = (average: number | null, count: number) => ({ average, count, mine: null });
+
+  it('needs votes from at least half the band, rounded up, and an average of 4 or more', () => {
+    expect(readinessToAdd(summary(4, 2), 4)).toEqual({
+      ready: true,
+      votesMissing: 0,
+      votesNeeded: 2,
+      averageReached: true,
+    });
+    expect(readinessToAdd(summary(5, 2), 5)).toMatchObject({
+      ready: false,
+      votesMissing: 1,
+      votesNeeded: 3,
+    });
+    expect(readinessToAdd(summary(3.9, 4), 4)).toMatchObject({
+      ready: false,
+      votesMissing: 0,
+      averageReached: false,
+    });
+  });
+
+  it('never adds a suggestion nobody has voted on', () => {
+    expect(readinessToAdd(summary(null, 0), 0)).toMatchObject({ ready: false, votesMissing: 1 });
+    expect(readinessToAdd(summary(5, 1), 1).ready).toBe(true);
+  });
+
+  it('counts owners and editors who are still in the band as voters', () => {
+    const member = (role: 'owner' | 'editor' | 'viewer', deletedAt: string | null = null) => ({
+      role,
+      deletedAt,
+    });
+    expect(
+      votersIn([
+        member('owner'),
+        member('editor'),
+        member('viewer'),
+        member('editor', '2026-10-01T00:00:00Z'),
+      ]),
+    ).toBe(2);
   });
 });
 

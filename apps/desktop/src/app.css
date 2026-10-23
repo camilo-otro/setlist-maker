@@ -2674,6 +2674,13 @@ body {
   gap: 8px;
 }
 
+/* The rule for adding takes the whole row, above the buttons it explains. */
+.suggestion-detail__rule {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
 .comments {
   display: flex;
   flex-direction: column;

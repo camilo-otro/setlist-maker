@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryRepository } from '../memory';
-import { addSuggestionToRepertorio, castVote } from './suggestions';
+import type { Repository } from '../repository';
+import { addSuggestionToRepertorio, castVote, NotReadyToAddError } from './suggestions';
 
 const ME = '01900000-0000-7000-8000-0000000000a1';
 const ANA = '01900000-0000-7000-8000-0000000000a2';
@@ -50,8 +51,34 @@ describe('castVote', () => {
 });
 
 describe('addSuggestionToRepertorio', () => {
-  it('adds a song still being learned, and marks the suggestion as added', async () => {
+  // A band of four who can vote, and one viewer who can't.
+  async function band(repository: Repository, bandId: string) {
+    const roles = ['owner', 'editor', 'editor', 'editor', 'viewer'] as const;
+    return Promise.all(
+      roles.map((role, i) =>
+        repository.bandMembers.create({
+          bandId,
+          userId: `01900000-0000-7000-8000-00000000000${i}`,
+          displayName: `Member ${i}`,
+          role,
+        }),
+      ),
+    );
+  }
+  async function backed() {
     const { repository, bandId, suggestion } = await setup();
+    const members = await band(repository, bandId);
+    for (const [memberId, stars] of [
+      [members[0]!.id, 5],
+      [members[1]!.id, 4],
+    ] as const) {
+      await castVote(repository, { bandId, suggestionId: suggestion.id, memberId, stars });
+    }
+    return { repository, bandId, suggestion, members };
+  }
+
+  it('adds a song still being learned, and marks the suggestion as added', async () => {
+    const { repository, bandId, suggestion } = await backed();
     const song = await addSuggestionToRepertorio(repository, suggestion.id);
 
     expect(song).toMatchObject({
@@ -70,10 +97,36 @@ describe('addSuggestionToRepertorio', () => {
   });
 
   it('adds it once, even when asked twice', async () => {
-    const { repository, suggestion } = await setup();
+    const { repository, suggestion } = await backed();
     const first = await addSuggestionToRepertorio(repository, suggestion.id);
     const second = await addSuggestionToRepertorio(repository, suggestion.id);
     expect(second.id).toBe(first.id);
     expect(await repository.songs.list()).toHaveLength(1);
+  });
+
+  it('refuses until half the band has voted and the average is 4 stars or more', async () => {
+    const { repository, bandId, suggestion } = await setup();
+    const members = await band(repository, bandId);
+    const vote = (member: number, stars: number) =>
+      castVote(repository, {
+        bandId,
+        suggestionId: suggestion.id,
+        memberId: members[member]!.id,
+        stars,
+      });
+    const add = () => addSuggestionToRepertorio(repository, suggestion.id);
+
+    await expect(add()).rejects.toBeInstanceOf(NotReadyToAddError);
+    await vote(0, 5);
+    // One vote of the two needed: the viewer doesn't count towards the band.
+    await expect(add()).rejects.toBeInstanceOf(NotReadyToAddError);
+    await vote(1, 2);
+    // Half the band, but an average of 3.5.
+    await expect(add()).rejects.toBeInstanceOf(NotReadyToAddError);
+    expect(await repository.songs.list()).toHaveLength(0);
+    expect((await repository.suggestions.get(suggestion.id))?.status).toBe('open');
+
+    await vote(2, 5);
+    await expect(add()).resolves.toMatchObject({ title: 'Hey Jude' });
   });
 });
