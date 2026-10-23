@@ -171,6 +171,43 @@ export const MIGRATIONS: readonly Migration[] = [
       `ALTER TABLE "gigs" ADD COLUMN "missing_tags" TEXT NOT NULL DEFAULT '[]'`,
     ],
   },
+  {
+    version: 6,
+    name: 'Create song suggestions, votes and comments',
+    statements: [
+      // Songs proposed for the repertorio (#89).
+      `CREATE TABLE "suggestions" (${bandScoped},
+        "suggested_by" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "artist" TEXT,
+        "duration_sec" INTEGER,
+        "catalog_track_id" TEXT,
+        "spotify_id" TEXT,
+        "isrc" TEXT,
+        "artwork_url" TEXT,
+        "youtube_id" TEXT,
+        "note" TEXT,
+        "status" TEXT NOT NULL,
+        "song_id" TEXT
+      ) STRICT`,
+      `CREATE INDEX "suggestions_band" ON "suggestions" ("band_id")`,
+      `CREATE TABLE "suggestion_votes" (${bandScoped},
+        "suggestion_id" TEXT NOT NULL,
+        "member_id" TEXT NOT NULL,
+        "stars" INTEGER NOT NULL
+      ) STRICT`,
+      `CREATE INDEX "suggestion_votes_suggestion" ON "suggestion_votes" ("suggestion_id")`,
+      `CREATE TABLE "suggestion_comments" (${bandScoped},
+        "suggestion_id" TEXT NOT NULL,
+        "member_id" TEXT NOT NULL,
+        "body" TEXT NOT NULL
+      ) STRICT`,
+      `CREATE INDEX "suggestion_comments_suggestion" ON "suggestion_comments" ("suggestion_id")`,
+      // Older versions skipped these tables when pulling, but moved past them. Start over, so
+      // suggestions made before this update come down too.
+      `DELETE FROM "pull_cursors"`,
+    ],
+  },
 ];
 
 /**

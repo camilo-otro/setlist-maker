@@ -5,6 +5,9 @@ import {
   GigSchema,
   newId,
   PerformanceSchema,
+  SuggestionCommentSchema,
+  SuggestionSchema,
+  SuggestionVoteSchema,
   SetBlockSchema,
   SetEntrySchema,
   SetlistSchema,
@@ -39,6 +42,9 @@ export const SCHEMAS: Record<
   setBlocks: SetBlockSchema,
   setEntries: SetEntrySchema,
   performances: PerformanceSchema,
+  suggestions: SuggestionSchema,
+  suggestionVotes: SuggestionVoteSchema,
+  suggestionComments: SuggestionCommentSchema,
 };
 
 /** Every field of a table's rows, in schema order. These are also the database columns. */

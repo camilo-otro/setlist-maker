@@ -63,6 +63,18 @@ describe('SQLite schema', () => {
   });
 });
 
+describe('migration 6 (song suggestions)', () => {
+  it('starts every band’s downloads over, so suggestions made before the update come down', async () => {
+    const driver = createNodeSqliteDriver();
+    await migrate(driver, MIGRATIONS.slice(0, 5));
+    await driver.execute(
+      `INSERT INTO "pull_cursors" ("band_id", "after_xid", "after_seq") VALUES ('01900000-0000-7000-8000-00000000000a', '9', 40)`,
+    );
+    await migrate(driver);
+    expect(await driver.select('SELECT * FROM "pull_cursors"')).toEqual([]);
+  });
+});
+
 describe('migrate', () => {
   it('brings a new database to the latest version', async () => {
     const driver = createNodeSqliteDriver();

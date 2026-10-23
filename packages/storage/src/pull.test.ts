@@ -178,6 +178,75 @@ describe.each(implementations)('applyPulledChanges (%s)', (_, open) => {
     ]);
   });
 
+  it('stores suggestions with their votes and comments', async () => {
+    const { repository, bandId } = await setup();
+    const sync = (id: string) => ({
+      id,
+      band_id: bandId,
+      created_at: '2026-10-23T10:00:00+00:00',
+      updated_at: '2026-10-23T10:00:00+00:00',
+      updated_by: MEMBER,
+      deleted_at: null,
+      version: 1,
+    });
+    const suggestion = '01900000-0000-7000-8000-000000000c01';
+    const result = await applyPulledChanges(
+      repository,
+      bandId,
+      [
+        {
+          table: 'suggestions',
+          row: {
+            ...sync(suggestion),
+            suggested_by: MEMBER,
+            title: 'Hey Jude',
+            artist: 'The Beatles',
+            duration_sec: 431,
+            catalog_track_id: null,
+            spotify_id: '0aym2LBJBk9DAYuHHutrIl',
+            isrc: null,
+            artwork_url: null,
+            youtube_id: 'A_MjCqQoLLA',
+            note: 'Para cerrar',
+            status: 'open',
+            song_id: null,
+          },
+        },
+        {
+          table: 'suggestion_votes',
+          row: {
+            ...sync('01900000-0000-7000-8000-000000000d01'),
+            suggestion_id: suggestion,
+            member_id: MEMBER,
+            stars: 4,
+          },
+        },
+        {
+          table: 'suggestion_comments',
+          row: {
+            ...sync('01900000-0000-7000-8000-000000000e01'),
+            suggestion_id: suggestion,
+            member_id: MEMBER,
+            body: '¡Buenísima!',
+          },
+        },
+      ],
+      { xid: '9', seq: 4 },
+    );
+    expect(result).toEqual({ applied: 3, skipped: 0 });
+    expect(await repository.suggestions.get(suggestion)).toMatchObject({
+      title: 'Hey Jude',
+      youtubeId: 'A_MjCqQoLLA',
+      status: 'open',
+    });
+    expect(await repository.suggestionVotes.list({ suggestionId: suggestion })).toMatchObject([
+      { memberId: MEMBER, stars: 4 },
+    ]);
+    expect(await repository.suggestionComments.list({ suggestionId: suggestion })).toMatchObject([
+      { body: '¡Buenísima!' },
+    ]);
+  });
+
   it('takes band renames from the server', async () => {
     const { repository, bandId } = await setup();
     const band = (await repository.bands.get(bandId))!;

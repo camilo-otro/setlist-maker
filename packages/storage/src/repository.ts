@@ -15,6 +15,12 @@ import type {
   SetlistInput,
   Song,
   SongInput,
+  Suggestion,
+  SuggestionComment,
+  SuggestionCommentInput,
+  SuggestionInput,
+  SuggestionVote,
+  SuggestionVoteInput,
   Venue,
   VenueInput,
 } from '@setlist/core';
@@ -93,6 +99,10 @@ export interface Repository {
   setBlocks: Table<SetBlock, SetBlockInput>;
   setEntries: Table<SetEntry, SetEntryInput>;
   performances: Table<Performance, PerformanceInput>;
+  /** Songs proposed for the repertorio (#89), with their votes and comments. */
+  suggestions: Table<Suggestion, SuggestionInput>;
+  suggestionVotes: Table<SuggestionVote, SuggestionVoteInput>;
+  suggestionComments: Table<SuggestionComment, SuggestionCommentInput>;
 
   /** Changes to shared bands waiting to be pushed. Recorded in the same transaction as the write. */
   outbox: Outbox;
@@ -117,6 +127,9 @@ export const TABLE_NAMES: readonly TableName[] = [
   'setBlocks',
   'setEntries',
   'performances',
+  'suggestions',
+  'suggestionVotes',
+  'suggestionComments',
 ];
 
 export interface RepositoryOptions {
