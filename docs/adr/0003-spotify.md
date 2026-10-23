@@ -85,6 +85,7 @@ The existing `catalog_tracks.source = 'spotify'` value is no longer used for lon
 - **Metadata:** show titles and artists exactly as Spotify returns them in the results. Truncating to fit is allowed only if the full text can still be seen, for example in a tooltip.
 - **Artwork:** keep it unaltered, with rounded corners (4 px, or 8 px on large screens). It may be left out where space is tight.
 - **Links:** every song with a Spotify ID gets a link labelled **"Open Spotify"**, **"Play on Spotify"** or **"Listen on Spotify"**. It goes to `https://open.spotify.com/track/{id}`, which opens the Spotify app when it's installed.
+- **Embedded player (song suggestions, #89, 2026-10-23):** a suggestion can play in Spotify's own embedded player (`open.spotify.com/embed/track/{id}`). It's Spotify's widget, with its own branding, playing the full song for a signed-in Spotify listener and a preview otherwise; we store nothing from it. It loads only when someone taps "Escuchar en Spotify", and the "Open Spotify" link stays next to it. The site's and desktop app's Content Security Policy allow frames from `open.spotify.com` for it, and from `www.youtube-nocookie.com` for YouTube's player (YouTube's privacy-enhanced embed). YouTube's player is told the site's origin (`strict-origin-when-cross-origin` on its frame only), since it won't play for pages that send no referrer.
 
 ### Playlists (amendment)
 

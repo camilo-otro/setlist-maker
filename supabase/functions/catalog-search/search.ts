@@ -6,6 +6,10 @@
  * `?track=<Spotify ID>` looks up one track instead, for a pasted Spotify link (#89): the catalog
  * first, then Spotify, cached and budgeted the same way.
  *
+ * `?video=<YouTube ID>` gives a video's title and channel, from YouTube's public oEmbed lookup
+ * (no key), for guessing which song a pasted YouTube link is (#89). Asked here rather than from
+ * the app, so the app needn't be allowed to call YouTube.
+ *
  * Plain web APIs only (fetch, Request, Response, crypto), so it runs in Supabase's Deno runtime
  * and in Node for tests; index.ts wires it to Deno.
  */
@@ -319,6 +323,26 @@ export function createSearchHandler(config: SearchConfig): (request: Request) =>
     }
   }
 
+  /** A video's title and channel, or null when YouTube has no such public video. */
+  async function videoDetails(
+    youtubeId: string,
+  ): Promise<{ title: string; author: string } | null> {
+    const params = new URLSearchParams({
+      url: `https://www.youtube.com/watch?v=${youtubeId}`,
+      format: 'json',
+    });
+    const response = await fetchImpl(`https://www.youtube.com/oembed?${params}`, {
+      method: 'GET',
+    });
+    // Private, removed or not embeddable: nothing to read.
+    if ([400, 401, 403, 404].includes(response.status)) return null;
+    if (!response.ok) throw new Error(`YouTube oEmbed: HTTP ${response.status}`);
+    const body = (await response.json()) as { title?: unknown; author_name?: unknown };
+    const title = typeof body.title === 'string' ? body.title.slice(0, 300) : '';
+    const author = typeof body.author_name === 'string' ? body.author_name.slice(0, 200) : '';
+    return title ? { title, author } : null;
+  }
+
   async function fromSpotify(
     request: Request,
     query: string,
@@ -352,6 +376,18 @@ export function createSearchHandler(config: SearchConfig): (request: Request) =>
   return async (request) => {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (request.method !== 'GET') return reply(405, { error: 'Use GET' });
+
+    const video = new URL(request.url).searchParams.get('video');
+    if (video !== null) {
+      if (!/^[0-9A-Za-z_-]{11}$/.test(video))
+        return reply(400, { error: 'Not a YouTube video ID' });
+      try {
+        return reply(200, { video: await videoDetails(video) });
+      } catch (error) {
+        log(`catalog-search video lookup failed: ${String(error)}`);
+        return reply(502, { error: 'YouTube is unavailable right now' });
+      }
+    }
 
     const track = new URL(request.url).searchParams.get('track');
     if (track !== null) {

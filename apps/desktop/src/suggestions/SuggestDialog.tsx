@@ -1,5 +1,6 @@
 import {
   duplicateKey,
+  readYoutubeId,
   suggestionFromTrack,
   type CatalogTrack,
   type Song,
@@ -11,11 +12,12 @@ import { Field, inputProps } from '../components/forms';
 import { Modal } from '../components/Modal';
 import { CatalogPicker } from '../library/CatalogPicker';
 import { useWorkspace } from '../storage/WorkspaceProvider';
+import { VideoMatch, type VideoChoice } from './VideoMatch';
 
 /**
  * Suggesting a song (#89): search the catalog and Spotify by name, or paste a Spotify link, and
- * the details fill in; or type them. An optional note says why. Pasting a YouTube link comes with
- * the players (step 3).
+ * the details fill in; or type them. A pasted YouTube link offers the songs it's probably of, to
+ * confirm. A suggestion can have a YouTube video too, and an optional note says why.
  */
 export function SuggestDialog({
   memberId,
@@ -35,6 +37,10 @@ export function SuggestDialog({
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [note, setNote] = useState('');
+  // The YouTube video: from a link pasted in the search, or typed in its own field.
+  const [video, setVideo] = useState<string | null>(null);
+  const [videoLink, setVideoLink] = useState('');
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -42,6 +48,19 @@ export function SuggestDialog({
     setLinked(track);
     setTitle(track.title);
     setArtist(track.artists.join(', '));
+    setError(null);
+  }
+
+  function chooseFromVideo(choice: VideoChoice) {
+    if ('track' in choice) {
+      setLinked(choice.track);
+      setTitle(choice.track.title);
+      setArtist(choice.track.artists.join(', '));
+    } else {
+      setLinked(null);
+      setTitle(choice.guess.title);
+      setArtist(choice.guess.artist ?? '');
+    }
     setError(null);
   }
 
@@ -54,6 +73,11 @@ export function SuggestDialog({
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    const youtubeId = video ?? (videoLink.trim() ? readYoutubeId(videoLink) : null);
+    if (videoLink.trim() && !video && !youtubeId) {
+      setVideoError('Pega un enlace de YouTube, como youtube.com/watch?v=… o youtu.be/…');
+      return;
+    }
     if (!title.trim()) {
       setError('Ponle un título a la canción');
       return;
@@ -68,6 +92,7 @@ export function SuggestDialog({
         title,
         artist,
         note,
+        youtubeId,
       });
       onSuggested(suggestion);
       onClose();
@@ -80,10 +105,26 @@ export function SuggestDialog({
   return (
     <Modal title="Sugerir canción" busy={busy} onClose={onClose}>
       <form className="song-form" onSubmit={(event) => void save(event)} noValidate>
-        {catalog && !linked && (
-          <CatalogPicker catalog={catalog} librarySongs={songs} onPick={pick} />
+        {catalog && !linked && !video && (
+          <CatalogPicker
+            catalog={catalog}
+            librarySongs={songs}
+            onPick={pick}
+            onVideoLink={setVideo}
+          />
         )}
-        {linked && (
+        {catalog && video && (
+          <VideoMatch
+            catalog={catalog}
+            youtubeId={video}
+            onChoose={chooseFromVideo}
+            onCancel={() => {
+              setVideo(null);
+              setLinked(null);
+            }}
+          />
+        )}
+        {linked && !video && (
           <div className="catalog-link form-grid__wide" role="status">
             <Link2 size={16} aria-hidden="true" />
             <span>
@@ -118,6 +159,25 @@ export function SuggestDialog({
             onChange={(e) => setArtist(e.target.value)}
           />
         </Field>
+        {!video && (
+          <Field
+            id="suggest-video"
+            label="Video de YouTube (opcional)"
+            error={videoError ?? undefined}
+            wide
+          >
+            <input
+              {...inputProps('suggest-video', videoError ?? undefined)}
+              type="url"
+              placeholder="https://youtu.be/…"
+              value={videoLink}
+              onChange={(e) => {
+                setVideoLink(e.target.value);
+                setVideoError(null);
+              }}
+            />
+          </Field>
+        )}
         <Field id="suggest-note" label="Nota (opcional)" wide>
           <textarea
             {...inputProps('suggest-note', undefined)}

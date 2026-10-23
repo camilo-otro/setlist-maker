@@ -58,6 +58,8 @@ async function setup(
     suggestedBy: dave!.id,
     title: 'Wonderwall',
     artist: 'Oasis',
+    spotifyId: '7ygpwy2qP3NbrxVkHvUhXY',
+    youtubeId: '6hzrDeceEKc',
     note: 'Para el encore',
   });
   await repository.suggestionVotes.create({
@@ -77,6 +79,13 @@ async function setup(
   const catalog: CatalogSearch = {
     search: vi.fn(async (query: string) => (/hey/i.test(query) ? [HEY_JUDE] : [])),
     track: vi.fn(async (id: string) => (id === HEY_JUDE.spotifyId ? HEY_JUDE : null)),
+    video: vi.fn(async (id: string) =>
+      id === 'A_MjCqQoLLA'
+        ? { title: 'The Beatles - Hey Jude (Official Video)', author: 'The Beatles' }
+        : id === 'xxxxxxxxxxx'
+          ? { title: 'BEST JAM EVER!!! live at the park', author: 'Random Fan' }
+          : null,
+    ),
   };
   const identity = {
     current: async () => ({ userId: ME, displayName: 'Camilo' }),
@@ -250,5 +259,94 @@ describe('Sugerencias', () => {
     expect(detail().queryByRole('button', { name: 'Agregar al repertorio' })).toBeNull();
     // Nothing waits on a viewer.
     expect(rowTexts()[0]).not.toContain('Falta tu voto');
+  });
+
+  it('matches a pasted YouTube link to Spotify, ready to confirm', async () => {
+    const { repository, user } = await setup();
+    await user.click(await screen.findByRole('button', { name: 'Sugerir canción' }));
+    await user.type(
+      dialog().getByRole('searchbox', { name: 'Buscar una canción' }),
+      'https://youtu.be/A_MjCqQoLLA?si=abc',
+    );
+    // The video's title and channel, cleaned up, then the songs it may be.
+    expect(await dialog().findByText(/Video de YouTube:/)).toBeTruthy();
+    const choices = within(dialog().getByRole('group', { name: '¿Es alguna de estas?' }));
+    const match = choices.getByRole('radio', { name: /Hey Jude/ }) as HTMLInputElement;
+    // A clear match is chosen, and shown, but nothing is saved until Sugerir.
+    expect(match.checked).toBe(true);
+    expect(choices.getByText('Coincide')).toBeTruthy();
+    expect((dialog().getByLabelText('Título') as HTMLInputElement).value).toBe('Hey Jude');
+    expect(await repository.suggestions.list()).toHaveLength(1);
+
+    await user.click(dialog().getByRole('button', { name: 'Sugerir' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const stored = (await repository.suggestions.list()).find((x) => x.title === 'Hey Jude');
+    expect(stored).toMatchObject({
+      youtubeId: 'A_MjCqQoLLA',
+      spotifyId: HEY_JUDE.spotifyId,
+      artist: 'The Beatles',
+    });
+  });
+
+  it('lets the band type it when a video matches nothing', async () => {
+    const { repository, user } = await setup();
+    await user.click(await screen.findByRole('button', { name: 'Sugerir canción' }));
+    await user.type(
+      dialog().getByRole('searchbox', { name: 'Buscar una canción' }),
+      'https://www.youtube.com/watch?v=xxxxxxxxxxx',
+    );
+    const choices = within(await dialog().findByRole('group', { name: '¿Es alguna de estas?' }));
+    expect(choices.getAllByRole('radio')).toHaveLength(1);
+    await user.click(choices.getByRole('radio', { name: 'Ninguna, la escribo yo' }));
+    const title = dialog().getByLabelText('Título') as HTMLInputElement;
+    // The guess is a start; the band fixes it.
+    expect(title.value).toBe('BEST JAM EVER!!! live at the park');
+    await user.clear(title);
+    await user.type(title, 'Jam del parque');
+    await user.click(dialog().getByRole('button', { name: 'Sugerir' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const stored = (await repository.suggestions.list()).find((x) => x.title === 'Jam del parque');
+    expect(stored).toMatchObject({ youtubeId: 'xxxxxxxxxxx', spotifyId: null });
+  });
+
+  it('takes a YouTube video for a song found by name, and checks the link', async () => {
+    const { repository, user } = await setup();
+    await user.click(await screen.findByRole('button', { name: 'Sugerir canción' }));
+    await user.type(dialog().getByRole('searchbox', { name: 'Buscar una canción' }), 'hey');
+    await user.click(await dialog().findByRole('button', { name: /Hey Jude/ }));
+    const video = dialog().getByLabelText('Video de YouTube (opcional)');
+    await user.type(video, 'not a link');
+    await user.click(dialog().getByRole('button', { name: 'Sugerir' }));
+    expect(dialog().getByText(/Pega un enlace de YouTube/)).toBeTruthy();
+
+    await user.clear(video);
+    await user.type(video, 'https://www.youtube.com/watch?v=A_MjCqQoLLA');
+    await user.click(dialog().getByRole('button', { name: 'Sugerir' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const stored = (await repository.suggestions.list()).find((x) => x.title === 'Hey Jude');
+    expect(stored).toMatchObject({ youtubeId: 'A_MjCqQoLLA', spotifyId: HEY_JUDE.spotifyId });
+  });
+
+  it('plays a suggestion in Spotify’s or YouTube’s player, only when asked', async () => {
+    const { user } = await setup({ myRole: 'viewer' });
+    await user.click(await screen.findByRole('button', { name: /Wonderwall/ }));
+    const listen = within(detail().getByRole('region', { name: 'Escuchar' }));
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(listen.getByRole('link', { name: 'Abrir Wonderwall en Spotify' })).toBeTruthy();
+    expect(
+      listen.getByRole('link', { name: 'Abrir Wonderwall en YouTube' }).getAttribute('href'),
+    ).toBe('https://www.youtube.com/watch?v=6hzrDeceEKc');
+
+    await user.click(listen.getByRole('button', { name: 'Escuchar en Spotify' }));
+    expect(listen.getByTitle('Reproductor de Spotify: Wonderwall').getAttribute('src')).toBe(
+      'https://open.spotify.com/embed/track/7ygpwy2qP3NbrxVkHvUhXY',
+    );
+
+    await user.click(listen.getByRole('button', { name: 'Ver en YouTube' }));
+    const youtube = listen.getByTitle('Video de YouTube: Wonderwall');
+    expect(youtube.getAttribute('src')).toBe(
+      'https://www.youtube-nocookie.com/embed/6hzrDeceEKc?autoplay=1',
+    );
+    expect(youtube.getAttribute('referrerpolicy')).toBe('strict-origin-when-cross-origin');
   });
 });

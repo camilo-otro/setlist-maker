@@ -18,7 +18,26 @@ export function SpotifyPlaylistLink({ url }: { url: string }) {
   return <OpenSpotify href={url} label="Abrir la playlist en Spotify" />;
 }
 
-function OpenSpotify({ href, label }: { href: string; label: string }) {
+/** "Abrir en YouTube" for a suggestion's video (#89). */
+export function YoutubeLink({ youtubeId, title }: { youtubeId: string; title: string }) {
+  return (
+    <OpenSpotify
+      href={`https://www.youtube.com/watch?v=${youtubeId}`}
+      label={`Abrir ${title} en YouTube`}
+      text="Abrir en YouTube"
+    />
+  );
+}
+
+function OpenSpotify({
+  href,
+  label,
+  text = 'Open Spotify',
+}: {
+  href: string;
+  label: string;
+  text?: string;
+}) {
   return (
     <a
       className="spotify-link"
@@ -32,7 +51,7 @@ function OpenSpotify({ href, label }: { href: string; label: string }) {
         void openUrl(href);
       }}
     >
-      Open Spotify
+      {text}
       <ExternalLink size={12} aria-hidden="true" />
     </a>
   );

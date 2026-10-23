@@ -47,7 +47,7 @@ const spotifyTrack = (id: string, name: string, isrc = 'USUM71900764') => ({
 /** A fake Supabase (catalog, cache, budget) and Spotify, counting the calls each gets. */
 function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft = Infinity } = {}) {
   const cache = new Map<string, { results: TrackRow[]; expires_at: string }>();
-  const calls = { spotifySearch: 0, spotifyTrack: 0, token: 0, budget: 0 };
+  const calls = { spotifySearch: 0, spotifyTrack: 0, youtube: 0, token: 0, budget: 0 };
   let clock = NOW;
   let left = budgetLeft;
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -59,6 +59,13 @@ function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft =
     if (url.host === 'accounts.spotify.com') {
       calls.token += 1;
       return json({ access_token: `token-${calls.token}`, expires_in: 3600 });
+    }
+    if (url.host === 'www.youtube.com' && url.pathname === '/oembed') {
+      calls.youtube += 1;
+      const watched = new URL(url.searchParams.get('url')!).searchParams.get('v');
+      if (watched === 'gone0000000') return json({}, 404);
+      if (watched === 'broken00000') return json({}, 500);
+      return json({ title: 'Oasis - Wonderwall (Official Video)', author_name: 'OasisVEVO' });
     }
     if (url.host === 'api.spotify.com' && url.pathname.startsWith('/v1/tracks/')) {
       calls.spotifyTrack += 1;
@@ -138,9 +145,19 @@ function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft =
       ...((await response.json()) as { results: TrackRow[]; spotify: string }),
     };
   };
+  const video = async (id: string) => {
+    const response = await search(
+      new Request(`https://project.supabase.co/functions/v1/catalog-search?video=${id}`),
+    );
+    return {
+      status: response.status,
+      ...((await response.json()) as { video: { title: string; author: string } | null }),
+    };
+  };
   return {
     get,
     lookup,
+    video,
     calls,
     cache,
     later: (hours: number) => (clock = new Date(NOW.getTime() + hours * 3600_000)),
@@ -252,6 +269,24 @@ describe('catalog-search: one track by Spotify ID (#89)', () => {
       spotify: 'limited',
     });
     expect(calls.spotifyTrack).toBe(0);
+  });
+});
+
+describe('catalog-search: a YouTube video’s title and channel (#89)', () => {
+  it('reads them from YouTube’s public oEmbed lookup', async () => {
+    const { video, calls } = backend();
+    expect(await video('6hzrDeceEKc')).toEqual({
+      status: 200,
+      video: { title: 'Oasis - Wonderwall (Official Video)', author: 'OasisVEVO' },
+    });
+    expect(calls.youtube).toBe(1);
+  });
+
+  it('finds nothing for a missing video, and reports YouTube failing', async () => {
+    const { video } = backend();
+    expect(await video('gone0000000')).toEqual({ status: 200, video: null });
+    expect((await video('broken00000')).status).toBe(502);
+    expect((await video('not-an-id')).status).toBe(400);
   });
 });
 

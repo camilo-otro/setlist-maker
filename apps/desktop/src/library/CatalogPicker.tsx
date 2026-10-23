@@ -2,6 +2,7 @@ import {
   duplicateKey,
   formatDuration,
   readSpotifyId,
+  readYoutubeId,
   type CatalogTrack,
   type Song,
 } from '@setlist/core';
@@ -32,7 +33,8 @@ export function pastedSpotifyTrack(text: string): string | null {
 
 /**
  * Searches as you type: the shared catalog, and Spotify when the catalog has few matches (#58).
- * A pasted Spotify link looks up just that track (#89).
+ * A pasted Spotify link looks up just that track (#89). With `onVideoLink`, a pasted YouTube link
+ * is handed over instead of searched for.
  * Picking a result fills in the song. Spotify's results show as Spotify gives them, with its
  * artwork, an Open Spotify link and a credit (ADR 0003).
  */
@@ -40,10 +42,12 @@ export function CatalogPicker({
   catalog,
   librarySongs,
   onPick,
+  onVideoLink,
 }: {
   catalog: CatalogSearch;
   librarySongs: readonly Song[];
   onPick: (track: CatalogTrack) => void;
+  onVideoLink?: (youtubeId: string) => void;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ query: string; tracks: CatalogTrack[] } | null>(null);
@@ -52,6 +56,11 @@ export function CatalogPicker({
 
   useEffect(() => {
     if (trimmed.length < 2) return;
+    const youtubeId = onVideoLink ? readYoutubeId(trimmed) : null;
+    if (youtubeId) {
+      onVideoLink!(youtubeId);
+      return;
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => {
       const spotifyId = pastedSpotifyTrack(trimmed);
@@ -71,7 +80,7 @@ export function CatalogPicker({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [catalog, trimmed]);
+  }, [catalog, trimmed, onVideoLink]);
 
   const tracks = results?.query === trimmed ? results.tracks : null;
   const failed = failure?.query === trimmed ? failure.message : null;

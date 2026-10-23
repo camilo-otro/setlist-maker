@@ -9,10 +9,10 @@ import {
   type VoteSummary,
 } from '@setlist/core';
 import { addSuggestionToRepertorio, castVote } from '@setlist/storage';
-import { Archive, ExternalLink, ListPlus, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
+import { Archive, ListPlus, Pencil, Play, RotateCcw, Trash2, X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Stars } from '../components/Stars';
-import { SpotifyLink } from '../components/SpotifyLink';
+import { SpotifyLink, YoutubeLink } from '../components/SpotifyLink';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 import { averageLabel } from './format';
 
@@ -54,6 +54,8 @@ export function SuggestionDetail({
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState<{ id: string; body: string } | null>(null);
+  // Players load only when asked for, so opening a suggestion doesn't contact Spotify or YouTube.
+  const [player, setPlayer] = useState<'spotify' | 'youtube' | null>(null);
   const canTakePart = canEdit && me !== null;
   const open = suggestion.status === 'open';
   const nameOf = (memberId: string) =>
@@ -129,22 +131,51 @@ export function SuggestionDetail({
       {suggestion.note && <p className="song-detail__notes">{suggestion.note}</p>}
 
       {(suggestion.spotifyId || suggestion.youtubeId) && (
-        <div className="suggestion-detail__links">
-          {suggestion.spotifyId && (
-            <SpotifyLink spotifyId={suggestion.spotifyId} title={suggestion.title} />
+        <section className="song-detail__section" aria-label="Escuchar">
+          <h3>Escuchar</h3>
+          {player === 'spotify' && suggestion.spotifyId && (
+            <iframe
+              className="player player--spotify"
+              title={`Reproductor de Spotify: ${suggestion.title}`}
+              src={`https://open.spotify.com/embed/track/${suggestion.spotifyId}`}
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            />
           )}
-          {suggestion.youtubeId && (
-            <a
-              className="spotify-link"
-              href={`https://www.youtube.com/watch?v=${suggestion.youtubeId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Abrir en YouTube
-              <ExternalLink size={12} aria-hidden="true" />
-            </a>
+          {player === 'youtube' && suggestion.youtubeId && (
+            <div className="player player--youtube">
+              {/* YouTube's player won't play without knowing which site embeds it, and the
+                  site sends no referrer by default: this sends just its origin, to YouTube. */}
+              <iframe
+                title={`Video de YouTube: ${suggestion.title}`}
+                src={`https://www.youtube-nocookie.com/embed/${suggestion.youtubeId}?autoplay=1`}
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
           )}
-        </div>
+          <div className="suggestion-detail__links">
+            {suggestion.spotifyId && player !== 'spotify' && (
+              <button type="button" className="sm-button" onClick={() => setPlayer('spotify')}>
+                <Play size={14} aria-hidden="true" />
+                Escuchar en Spotify
+              </button>
+            )}
+            {suggestion.youtubeId && player !== 'youtube' && (
+              <button type="button" className="sm-button" onClick={() => setPlayer('youtube')}>
+                <Play size={14} aria-hidden="true" />
+                Ver en YouTube
+              </button>
+            )}
+            {suggestion.spotifyId && (
+              <SpotifyLink spotifyId={suggestion.spotifyId} title={suggestion.title} />
+            )}
+            {suggestion.youtubeId && (
+              <YoutubeLink youtubeId={suggestion.youtubeId} title={suggestion.title} />
+            )}
+          </div>
+        </section>
       )}
 
       <section className="song-detail__section" aria-label="Votación">

@@ -2711,3 +2711,90 @@ body {
   justify-content: flex-end;
   gap: 4px;
 }
+
+/* Suggestions: YouTube matches and the embedded players (#89) */
+.video-match {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.video-match__video {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0;
+}
+
+.video-match__video svg {
+  flex: none;
+  color: var(--sm-accent-text);
+}
+
+.video-match__other {
+  margin-left: auto;
+  padding: 3px 10px;
+  font-size: 0.8125rem;
+}
+
+.video-match__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+}
+
+.video-match__choices legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.video-match__choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: var(--sm-radius);
+  cursor: pointer;
+}
+
+.video-match__choice:hover {
+  background: var(--sm-hover);
+}
+
+.video-match__choice > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.player {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  border: 0;
+  border-radius: 12px;
+}
+
+.player--spotify {
+  height: 152px;
+}
+
+.player--youtube {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.player--youtube iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

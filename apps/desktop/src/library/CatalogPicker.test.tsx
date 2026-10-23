@@ -40,6 +40,7 @@ const TRACKS = [
 /** Matches titles containing the query, like the real search for simple cases. */
 const fakeCatalog = (fail = false): CatalogSearch => ({
   track: async () => null,
+  video: async () => null,
   search: async (query) => {
     if (fail) throw new Error('offline');
     return TRACKS.filter((t) => t.title.toLowerCase().includes(query.toLowerCase()));
@@ -99,7 +100,11 @@ describe('Add song from the catalog', () => {
       releaseYear: 1999,
       source: 'spotify',
     };
-    const spotify: CatalogSearch = { search: async () => [fromSpotify], track: async () => null };
+    const spotify: CatalogSearch = {
+      search: async () => [fromSpotify],
+      track: async () => null,
+      video: async () => null,
+    };
     const { user, workspace, dialog } = await setup(spotify);
     await user.type(dialog.getByRole('searchbox', { name: 'Buscar una canción' }), 'basurita');
 

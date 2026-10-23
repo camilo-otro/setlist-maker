@@ -18,6 +18,14 @@ export interface CatalogSearch {
    * neither has it; throws when the lookup itself fails.
    */
   track(spotifyId: string, options?: { signal?: unknown }): Promise<CatalogTrack | null>;
+  /**
+   * A YouTube video's title and channel, to guess which song a pasted link is (#89). Null when
+   * YouTube has no such public video; throws when the lookup itself fails.
+   */
+  video(
+    youtubeId: string,
+    options?: { signal?: unknown },
+  ): Promise<{ title: string; author: string } | null>;
 }
 
 /** Postgres timestamps come back with an offset (`+00:00`); the schema expects UTC with `Z`. */
@@ -91,6 +99,20 @@ export function createCatalogClient({
       );
       if (!response.ok) throw new Error(`Track lookup failed (HTTP ${response.status})`);
       return rows(((await response.json()) as { results?: unknown }).results)[0] ?? null;
+    },
+
+    async video(youtubeId, { signal } = {}) {
+      const response = await fetchImpl(
+        `${base}/functions/v1/catalog-search?video=${encodeURIComponent(youtubeId)}`,
+        { method: 'GET', headers, signal },
+      );
+      if (!response.ok) throw new Error(`Video lookup failed (HTTP ${response.status})`);
+      const { video } = (await response.json()) as {
+        video?: { title?: unknown; author?: unknown } | null;
+      };
+      return video && typeof video.title === 'string'
+        ? { title: video.title, author: typeof video.author === 'string' ? video.author : '' }
+        : null;
     },
 
     async search(query, { signal, limit = 20 } = {}) {

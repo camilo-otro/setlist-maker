@@ -138,3 +138,24 @@ describe('catalog.track', () => {
     await expect(client({ status: 502 }).catalog.track('x')).rejects.toThrow(/HTTP 502/);
   });
 });
+
+describe('catalog.video', () => {
+  it('reads a video’s title and channel through catalog-search', async () => {
+    const fake = fakeFetch(200, [], {
+      status: 200,
+      body: { video: { title: 'Oasis - Wonderwall', author: 'OasisVEVO' } },
+    });
+    const catalog = createCatalogClient({
+      url: 'https://abc.supabase.co',
+      key: 'pk',
+      fetch: fake.fetch,
+    });
+    expect(await catalog.video('6hzrDeceEKc')).toEqual({
+      title: 'Oasis - Wonderwall',
+      author: 'OasisVEVO',
+    });
+    expect(fake.calls[0]!.url).toBe(
+      'https://abc.supabase.co/functions/v1/catalog-search?video=6hzrDeceEKc',
+    );
+  });
+});
