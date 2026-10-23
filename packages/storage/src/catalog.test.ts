@@ -106,3 +106,35 @@ describe('createCatalogClient', () => {
     await expect(client.search('bye')).rejects.toThrow('HTTP 500');
   });
 });
+
+describe('catalog.track', () => {
+  const client = (edge: { status: number; body?: unknown }) => {
+    const fake = fakeFetch(200, [], edge);
+    return {
+      ...fake,
+      catalog: createCatalogClient({
+        url: 'https://abc.supabase.co',
+        key: 'pk',
+        fetch: fake.fetch,
+      }),
+    };
+  };
+
+  it('looks a pasted Spotify link’s track up through catalog-search', async () => {
+    const { catalog, calls } = client({
+      status: 200,
+      body: { results: [row], spotify: 'skipped' },
+    });
+    expect((await catalog.track('4r8lRYnoOGdEi6YyI5OC1o'))?.title).toBe('Bye Bye Bye');
+    expect(calls[0]!.url).toBe(
+      'https://abc.supabase.co/functions/v1/catalog-search?track=4r8lRYnoOGdEi6YyI5OC1o',
+    );
+  });
+
+  it('says when nobody has the track, and fails loudly when the lookup does', async () => {
+    expect(
+      await client({ status: 200, body: { results: [], spotify: 'used' } }).catalog.track('x'),
+    ).toBeNull();
+    await expect(client({ status: 502 }).catalog.track('x')).rejects.toThrow(/HTTP 502/);
+  });
+});

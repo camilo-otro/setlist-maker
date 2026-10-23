@@ -7,6 +7,7 @@ import { LibraryPage } from './pages/LibraryPage';
 import { StatsPage } from './pages/StatsPage';
 import { TemplatesPage } from './pages/TemplatesPage';
 import { VenuesPage } from './pages/VenuesPage';
+import { SuggestionsPage } from './suggestions/SuggestionsPage';
 
 /**
  * Where invite links opened on a phone land (`/#/join/<token>`, from the viewer's invitation
@@ -23,6 +24,7 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/library" replace />} />
         <Route path="library" element={<LibraryPage />} />
+        <Route path="library/suggestions" element={<SuggestionsPage />} />
         <Route path="gigs" element={<GigsPage />} />
         <Route path="gigs/:gigId" element={<GigSetlistPage />} />
         <Route path="venues" element={<VenuesPage />} />

@@ -21,4 +21,5 @@ export * from './schemas/setlist';
 export * from './schemas/performance';
 export * from './schemas/suggestion';
 export * from './songStats';
+export * from './suggestions';
 export * from './cloneSetlist';

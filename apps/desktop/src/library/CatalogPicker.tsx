@@ -1,4 +1,10 @@
-import { duplicateKey, formatDuration, type CatalogTrack, type Song } from '@setlist/core';
+import {
+  duplicateKey,
+  formatDuration,
+  readSpotifyId,
+  type CatalogTrack,
+  type Song,
+} from '@setlist/core';
 import type { CatalogSearch } from '@setlist/storage';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -17,8 +23,16 @@ function inLibrary(track: CatalogTrack, songs: readonly Song[]): boolean {
   );
 }
 
+/** The Spotify track ID in a pasted Spotify link or URI, or null for ordinary search text. */
+export function pastedSpotifyTrack(text: string): string | null {
+  if (!/spotify/i.test(text)) return null;
+  const read = readSpotifyId(text);
+  return 'value' in read ? read.value : null;
+}
+
 /**
  * Searches as you type: the shared catalog, and Spotify when the catalog has few matches (#58).
+ * A pasted Spotify link looks up just that track (#89).
  * Picking a result fills in the song. Spotify's results show as Spotify gives them, with its
  * artwork, an Open Spotify link and a credit (ADR 0003).
  */
@@ -40,7 +54,13 @@ export function CatalogPicker({
     if (trimmed.length < 2) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      catalog.search(trimmed, { signal: controller.signal, limit: 8 }).then(
+      const spotifyId = pastedSpotifyTrack(trimmed);
+      const found = spotifyId
+        ? catalog
+            .track(spotifyId, { signal: controller.signal })
+            .then((track) => (track ? [track] : []))
+        : catalog.search(trimmed, { signal: controller.signal, limit: 8 });
+      found.then(
         (tracks) => setResults({ query: trimmed, tracks }),
         (error: unknown) => {
           if (!controller.signal.aborted) setFailure({ query: trimmed, message: String(error) });
@@ -64,7 +84,7 @@ export function CatalogPicker({
           type="search"
           className="sm-input"
           autoFocus
-          placeholder="Busca una canción por título o artista"
+          placeholder="Busca por título o artista, o pega un enlace de Spotify"
           aria-label="Buscar una canción"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
