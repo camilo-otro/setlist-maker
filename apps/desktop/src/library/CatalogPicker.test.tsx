@@ -3,6 +3,7 @@ import { newId, type CatalogTrack } from '@setlist/core';
 import { createMemoryRepository, type CatalogSearch } from '@setlist/storage';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import { LibraryPage } from '../pages/LibraryPage';
 import { WorkspaceContextProvider } from '../storage/WorkspaceProvider';
@@ -38,6 +39,8 @@ const TRACKS = [
 
 /** Matches titles containing the query, like the real search for simple cases. */
 const fakeCatalog = (fail = false): CatalogSearch => ({
+  track: async () => null,
+  video: async () => null,
   search: async (query) => {
     if (fail) throw new Error('offline');
     return TRACKS.filter((t) => t.title.toLowerCase().includes(query.toLowerCase()));
@@ -56,7 +59,9 @@ async function setup(catalog: CatalogSearch | null, seed?: (w: Workspace) => Pro
   const user = userEvent.setup();
   render(
     <WorkspaceContextProvider workspace={workspace}>
-      <LibraryPage />
+      <MemoryRouter>
+        <LibraryPage />
+      </MemoryRouter>
     </WorkspaceContextProvider>,
   );
   await user.click(await screen.findByRole('button', { name: 'Agregar canción' }));
@@ -95,7 +100,11 @@ describe('Add song from the catalog', () => {
       releaseYear: 1999,
       source: 'spotify',
     };
-    const spotify: CatalogSearch = { search: async () => [fromSpotify] };
+    const spotify: CatalogSearch = {
+      search: async () => [fromSpotify],
+      track: async () => null,
+      video: async () => null,
+    };
     const { user, workspace, dialog } = await setup(spotify);
     await user.type(dialog.getByRole('searchbox', { name: 'Buscar una canción' }), 'basurita');
 

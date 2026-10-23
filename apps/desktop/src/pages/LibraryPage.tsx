@@ -13,6 +13,7 @@ import { EmptyState, PageHeader } from '@setlist/ui';
 import { FileUp, Library, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ImportDialog } from '../library/ImportDialog';
+import { LibraryTabs } from '../library/LibraryTabs';
 import { SongDetail, type HistoryEntry } from '../library/SongDetail';
 import { SongDialog } from '../library/SongDialog';
 import { SongFiltersPanel } from '../library/SongFiltersPanel';
@@ -20,6 +21,7 @@ import { SongTable, type SongSort } from '../library/SongTable';
 import { useSongs } from '../library/useSongs';
 import { useMembership } from '../sharing/MembershipProvider';
 import { useBandRows } from '../storage/useBandRows';
+import { useSuggestions } from '../suggestions/useSuggestions';
 
 /** `undefined` when no dialog is open, `null` while adding, or the song being edited. */
 type Editing = Song | null | undefined;
@@ -37,6 +39,7 @@ export function LibraryPage() {
   const performances = useBandRows('performances');
   const gigs = useBandRows('gigs');
   const venues = useBandRows('venues');
+  const { awaiting } = useSuggestions();
 
   const visible = useMemo(
     () =>
@@ -180,6 +183,7 @@ export function LibraryPage() {
         title="Repertorio"
         actions={canEdit && songs && songs.length > 0 ? addButtons : undefined}
       />
+      <LibraryTabs awaiting={awaiting} />
       {content}
       {canEdit && songs?.length === 0 && <div className="library-empty-action">{addButtons}</div>}
       {importing && (

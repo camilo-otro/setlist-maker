@@ -47,7 +47,7 @@ const spotifyTrack = (id: string, name: string, isrc = 'USUM71900764') => ({
 /** A fake Supabase (catalog, cache, budget) and Spotify, counting the calls each gets. */
 function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft = Infinity } = {}) {
   const cache = new Map<string, { results: TrackRow[]; expires_at: string }>();
-  const calls = { spotifySearch: 0, token: 0, budget: 0 };
+  const calls = { spotifySearch: 0, spotifyTrack: 0, youtube: 0, token: 0, budget: 0 };
   let clock = NOW;
   let left = budgetLeft;
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -59,6 +59,20 @@ function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft =
     if (url.host === 'accounts.spotify.com') {
       calls.token += 1;
       return json({ access_token: `token-${calls.token}`, expires_in: 3600 });
+    }
+    if (url.host === 'www.youtube.com' && url.pathname === '/oembed') {
+      calls.youtube += 1;
+      const watched = new URL(url.searchParams.get('url')!).searchParams.get('v');
+      if (watched === 'gone0000000') return json({}, 404);
+      if (watched === 'broken00000') return json({}, 500);
+      return json({ title: 'Oasis - Wonderwall (Official Video)', author_name: 'OasisVEVO' });
+    }
+    if (url.host === 'api.spotify.com' && url.pathname.startsWith('/v1/tracks/')) {
+      calls.spotifyTrack += 1;
+      if (spotifyStatus !== 200) return json({ error: { status: spotifyStatus } }, spotifyStatus);
+      const id = url.pathname.split('/').pop()!;
+      if (id === 'NotOnSpotify0000000000') return json({ error: { status: 404 } }, 404);
+      return json(spotifyTrack(id, 'Hey Jude', 'GBAYE0601690'));
     }
     if (url.host === 'api.spotify.com') {
       calls.spotifySearch += 1;
@@ -76,6 +90,10 @@ function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft =
     const path = url.pathname.replace('/rest/v1', '');
     if (path === '/rpc/search_catalog') {
       return json(catalog.filter((t) => normaliseQuery(t.title).includes(body.query)));
+    }
+    if (path === '/catalog_tracks') {
+      const id = url.searchParams.get('spotify_id')!.replace(/^eq\./, '');
+      return json(catalog.filter((t) => t.spotify_id === id));
     }
     if (path === '/rpc/take_spotify_search') {
       calls.budget += 1;
@@ -116,8 +134,30 @@ function backend({ catalog = [] as TrackRow[], spotifyStatus = 200, budgetLeft =
       ...((await response.json()) as { results: TrackRow[]; spotify: string }),
     };
   };
+  const lookup = async (track: string) => {
+    const response = await search(
+      new Request(`https://project.supabase.co/functions/v1/catalog-search?track=${track}`, {
+        headers: { 'x-forwarded-for': '203.0.113.7' },
+      }),
+    );
+    return {
+      status: response.status,
+      ...((await response.json()) as { results: TrackRow[]; spotify: string }),
+    };
+  };
+  const video = async (id: string) => {
+    const response = await search(
+      new Request(`https://project.supabase.co/functions/v1/catalog-search?video=${id}`),
+    );
+    return {
+      status: response.status,
+      ...((await response.json()) as { video: { title: string; author: string } | null }),
+    };
+  };
   return {
     get,
+    lookup,
+    video,
     calls,
     cache,
     later: (hours: number) => (clock = new Date(NOW.getTime() + hours * 3600_000)),
@@ -190,6 +230,63 @@ describe('catalog-search', () => {
     expect(calls.spotifySearch).toBe(1);
     expect(calls.budget).toBe(2);
     expect(BUDGET.calls).toBeGreaterThan(1);
+  });
+});
+
+describe('catalog-search: one track by Spotify ID (#89)', () => {
+  it('answers from the catalog when it has the track', async () => {
+    const { lookup, calls } = backend({
+      catalog: [row('Here Without You', { spotify_id: '2Foc5Q5nqNiosCNqttzHof' })],
+    });
+    const result = await lookup('2Foc5Q5nqNiosCNqttzHof');
+    expect(result.spotify).toBe('skipped');
+    expect(result.results.map((t) => t.title)).toEqual(['Here Without You']);
+    expect(calls.spotifyTrack).toBe(0);
+  });
+
+  it('asks Spotify otherwise, then serves the same link from the cache', async () => {
+    const { lookup, calls } = backend();
+    const first = await lookup('0aym2LBJBk9DAYuHHutrIl');
+    expect(first.spotify).toBe('used');
+    expect(first.results).toMatchObject([
+      { spotify_id: '0aym2LBJBk9DAYuHHutrIl', title: 'Hey Jude', source: 'spotify' },
+    ]);
+    const again = await lookup('0aym2LBJBk9DAYuHHutrIl');
+    expect(again.spotify).toBe('cached');
+    expect(calls.spotifyTrack).toBe(1);
+  });
+
+  it('finds nothing for a track Spotify doesn’t have, and refuses what isn’t an ID', async () => {
+    const { lookup } = backend();
+    expect(await lookup('NotOnSpotify0000000000')).toMatchObject({ results: [], spotify: 'used' });
+    expect((await lookup('not-an-id')).status).toBe(400);
+  });
+
+  it('counts lookups in the same budget as searches', async () => {
+    const { lookup, calls } = backend({ budgetLeft: 0 });
+    expect(await lookup('0aym2LBJBk9DAYuHHutrIl')).toMatchObject({
+      results: [],
+      spotify: 'limited',
+    });
+    expect(calls.spotifyTrack).toBe(0);
+  });
+});
+
+describe('catalog-search: a YouTube video’s title and channel (#89)', () => {
+  it('reads them from YouTube’s public oEmbed lookup', async () => {
+    const { video, calls } = backend();
+    expect(await video('6hzrDeceEKc')).toEqual({
+      status: 200,
+      video: { title: 'Oasis - Wonderwall (Official Video)', author: 'OasisVEVO' },
+    });
+    expect(calls.youtube).toBe(1);
+  });
+
+  it('finds nothing for a missing video, and reports YouTube failing', async () => {
+    const { video } = backend();
+    expect(await video('gone0000000')).toEqual({ status: 200, video: null });
+    expect((await video('broken00000')).status).toBe(502);
+    expect((await video('not-an-id')).status).toBe(400);
   });
 });
 

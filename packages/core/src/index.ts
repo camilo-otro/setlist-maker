@@ -19,5 +19,8 @@ export * from './schemas/song';
 export * from './schemas/gig';
 export * from './schemas/setlist';
 export * from './schemas/performance';
+export * from './schemas/suggestion';
 export * from './songStats';
+export * from './suggestions';
+export * from './youtube';
 export * from './cloneSetlist';

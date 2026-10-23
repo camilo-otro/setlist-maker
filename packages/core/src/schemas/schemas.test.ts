@@ -9,6 +9,7 @@ import { PerformanceSchema } from './performance';
 import { SetBlockSchema, SetEntrySchema, SetlistSchema } from './setlist';
 import { InviteSchema, ShareLinkSchema } from './sharing';
 import { SongSchema } from './song';
+import { SuggestionCommentSchema, SuggestionSchema, SuggestionVoteSchema } from './suggestion';
 
 const NOW = '2026-10-16T20:30:00.000Z';
 const bandId = newId();
@@ -259,5 +260,49 @@ describe('PerformanceSchema', () => {
   it('keeps ratings between 1 and 5 and positions from 1', () => {
     const paths = errorPaths(PerformanceSchema, { ...performance, rating: 6, positionInSet: 0 });
     expect(paths).toEqual(['positionInSet', 'rating']);
+  });
+});
+
+describe('SuggestionSchema, SuggestionVoteSchema and SuggestionCommentSchema', () => {
+  const suggestion = { ...scoped(), suggestedBy: newId(), title: 'Basurita' };
+
+  it('starts open, with optional fields null', () => {
+    expect(SuggestionSchema.parse(suggestion)).toMatchObject({
+      status: 'open',
+      artist: null,
+      spotifyId: null,
+      youtubeId: null,
+      note: null,
+      songId: null,
+    });
+  });
+
+  it('checks Spotify and YouTube IDs, and needs who suggested it', () => {
+    expect(SuggestionSchema.parse({ ...suggestion, youtubeId: 'dQw4w9WgXcQ' }).youtubeId).toBe(
+      'dQw4w9WgXcQ',
+    );
+    expect(
+      errorPaths(SuggestionSchema, {
+        ...suggestion,
+        spotifyId: 'nope',
+        youtubeId: 'https://youtu.be/dQw4w9WgXcQ',
+        status: 'maybe',
+        suggestedBy: undefined,
+      }).sort(),
+    ).toEqual(['spotifyId', 'status', 'suggestedBy', 'youtubeId']);
+  });
+
+  it('takes votes from 1 to 5 whole stars', () => {
+    const vote = { ...scoped(), suggestionId: newId(), memberId: newId() };
+    expect(SuggestionVoteSchema.parse({ ...vote, stars: 5 }).stars).toBe(5);
+    for (const stars of [0, 6, 2.5]) {
+      expect(errorPaths(SuggestionVoteSchema, { ...vote, stars })).toEqual(['stars']);
+    }
+  });
+
+  it('needs a comment to say something', () => {
+    const comment = { ...scoped(), suggestionId: newId(), memberId: newId() };
+    expect(SuggestionCommentSchema.parse({ ...comment, body: ' ¡Sí! ' }).body).toBe('¡Sí!');
+    expect(errorPaths(SuggestionCommentSchema, { ...comment, body: '   ' })).toEqual(['body']);
   });
 });

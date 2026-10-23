@@ -2,7 +2,15 @@ import type { Repository } from '@setlist/storage';
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkspace } from './WorkspaceProvider';
 
-type BandTable = 'songs' | 'venues' | 'gigs' | 'bandMembers' | 'performances';
+type BandTable =
+  | 'songs'
+  | 'venues'
+  | 'gigs'
+  | 'bandMembers'
+  | 'performances'
+  | 'suggestions'
+  | 'suggestionVotes'
+  | 'suggestionComments';
 type RowOf<K extends BandTable> = Awaited<ReturnType<Repository[K]['list']>>[number];
 
 /** Every (non-deleted) row of one table for the current band, and a way to reload after changes. */

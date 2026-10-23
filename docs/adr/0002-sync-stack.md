@@ -40,6 +40,8 @@ Build our own sync on Supabase: **local outbox → push RPC → pull by server s
   - The cursor is the pair (writing transaction ID, `server_seq`) of the last row received, not `server_seq` alone. `server_seq` is taken when a row is written, not when its transaction commits, so a push holding seq 9 can commit after one holding seq 10; a device that had already pulled 10 would never see 9.
   - So every write also records its transaction ID (`server_xid`), and a pull only returns rows from transactions older than every one still running. Nothing can then commit behind a device's cursor. (Added with #81, 2026-10-18.)
 - Row-level security still applies to all direct table access, as a second line of defence.
+- **`synced_tables()`** lists the synced tables for both functions. A new synced table is added there, with its columns, triggers and policies. (Added with #89, 2026-10-23.)
+- **Tables an app doesn't know yet:** older apps skip them when pulling, but their cursor moves past those rows. So the app's local migration that adds a table also resets its pull cursors, and the next pull starts over.
 
 ### Client
 

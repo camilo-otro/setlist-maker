@@ -1,39 +1,11 @@
 import type { Gig, Performance } from '@setlist/core';
 import { ratePerformances } from '@setlist/storage';
-import { Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../components/Modal';
+import { Stars } from '../components/Stars';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 
 type Rating = Pick<Performance, 'rating' | 'notes'>;
-
-/** 1 to 5 stars. Clicking the current rating again clears it. */
-function Stars({
-  title,
-  value,
-  onChange,
-}: {
-  title: string;
-  value: number | null;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <div className="stars" role="group" aria-label={`Calificación de ${title}`}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          className={value !== null && n <= value ? 'stars__star stars__star--on' : 'stars__star'}
-          aria-label={n === 1 ? '1 estrella' : `${n} estrellas`}
-          aria-pressed={value === n}
-          onClick={() => onChange(value === n ? null : n)}
-        >
-          <Star size={18} aria-hidden="true" />
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /**
  * "How did it go?" (#32): a quick 1–5 rating and a note for each song played at the gig, shown in
@@ -125,7 +97,7 @@ export function RatePlayedDialog({
                   <div key={p.id} className="rate-song">
                     <span className="rate-song__title">{p.songTitleSnapshot}</span>
                     <Stars
-                      title={p.songTitleSnapshot}
+                      label={`Calificación de ${p.songTitleSnapshot}`}
                       value={rating}
                       onChange={(value) => edit(p, { rating: value })}
                     />

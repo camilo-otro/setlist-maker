@@ -3,6 +3,13 @@
  * little, asks Spotify, with the app's own token (no user sign-in), and keeps Spotify's results
  * for 24 hours so repeat searches don't call it again. See docs/adr/0003-spotify.md.
  *
+ * `?track=<Spotify ID>` looks up one track instead, for a pasted Spotify link (#89): the catalog
+ * first, then Spotify, cached and budgeted the same way.
+ *
+ * `?video=<YouTube ID>` gives a video's title and channel, from YouTube's public oEmbed lookup
+ * (no key), for guessing which song a pasted YouTube link is (#89). Asked here rather than from
+ * the app, so the app needn't be allowed to call YouTube.
+ *
  * Plain web APIs only (fetch, Request, Response, crypto), so it runs in Supabase's Deno runtime
  * and in Node for tests; index.ts wires it to Deno.
  */
@@ -265,6 +272,77 @@ export function createSearchHandler(config: SearchConfig): (request: Request) =>
     throw new SpotifyUnavailable('Spotify search: unauthorised');
   }
 
+  /** One track from Spotify by its ID, or null if Spotify doesn't have it. */
+  async function trackFromSpotifyById(spotifyId: string): Promise<TrackRow | null> {
+    for (const fresh of [false, true]) {
+      const response = await fetchImpl(`https://api.spotify.com/v1/tracks/${spotifyId}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${await spotifyToken(fresh)}` },
+      });
+      if (response.status === 401 && !fresh) continue;
+      if (response.status === 404 || response.status === 400) return null;
+      if (!response.ok) throw new SpotifyUnavailable(`Spotify track: HTTP ${response.status}`);
+      return trackFromSpotify((await response.json()) as SpotifyTrack, now());
+    }
+    throw new SpotifyUnavailable('Spotify track: unauthorised');
+  }
+
+  async function lookUpTrack(
+    request: Request,
+    spotifyId: string,
+  ): Promise<{ results: TrackRow[]; spotify: SpotifyOutcome }> {
+    const params = new URLSearchParams({ select: '*', spotify_id: `eq.${spotifyId}`, limit: '1' });
+    const response = await fetchImpl(`${rest}/catalog_tracks?${params}`, {
+      method: 'GET',
+      headers: db,
+    });
+    if (!response.ok) throw new Error(`catalog_tracks failed (HTTP ${response.status})`);
+    const found = (await response.json()) as TrackRow[];
+    if (found.length > 0) return { results: found.slice(0, 1), spotify: 'skipped' };
+
+    // Cached under its own key, so it can't collide with a search for the same text.
+    const key = `track:${spotifyId}`;
+    const hit = await cached(key);
+    if (hit) return { results: hit, spotify: 'cached' };
+    if (!config.spotify) return { results: [], spotify: 'unavailable' };
+    const allowed = await rpc<boolean>('take_spotify_search', {
+      caller: await callerOf(request),
+      max_calls: BUDGET.calls,
+      window_seconds: BUDGET.windowSeconds,
+    });
+    if (!allowed) return { results: [], spotify: 'limited' };
+    try {
+      const track = await trackFromSpotifyById(spotifyId);
+      const results = track ? [track] : [];
+      await remember(key, results);
+      return { results, spotify: 'used' };
+    } catch (error) {
+      if (!(error instanceof SpotifyUnavailable)) throw error;
+      log(error.message);
+      return { results: [], spotify: 'unavailable' };
+    }
+  }
+
+  /** A video's title and channel, or null when YouTube has no such public video. */
+  async function videoDetails(
+    youtubeId: string,
+  ): Promise<{ title: string; author: string } | null> {
+    const params = new URLSearchParams({
+      url: `https://www.youtube.com/watch?v=${youtubeId}`,
+      format: 'json',
+    });
+    const response = await fetchImpl(`https://www.youtube.com/oembed?${params}`, {
+      method: 'GET',
+    });
+    // Private, removed or not embeddable: nothing to read.
+    if ([400, 401, 403, 404].includes(response.status)) return null;
+    if (!response.ok) throw new Error(`YouTube oEmbed: HTTP ${response.status}`);
+    const body = (await response.json()) as { title?: unknown; author_name?: unknown };
+    const title = typeof body.title === 'string' ? body.title.slice(0, 300) : '';
+    const author = typeof body.author_name === 'string' ? body.author_name.slice(0, 200) : '';
+    return title ? { title, author } : null;
+  }
+
   async function fromSpotify(
     request: Request,
     query: string,
@@ -298,6 +376,29 @@ export function createSearchHandler(config: SearchConfig): (request: Request) =>
   return async (request) => {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (request.method !== 'GET') return reply(405, { error: 'Use GET' });
+
+    const video = new URL(request.url).searchParams.get('video');
+    if (video !== null) {
+      if (!/^[0-9A-Za-z_-]{11}$/.test(video))
+        return reply(400, { error: 'Not a YouTube video ID' });
+      try {
+        return reply(200, { video: await videoDetails(video) });
+      } catch (error) {
+        log(`catalog-search video lookup failed: ${String(error)}`);
+        return reply(502, { error: 'YouTube is unavailable right now' });
+      }
+    }
+
+    const track = new URL(request.url).searchParams.get('track');
+    if (track !== null) {
+      if (!/^[0-9A-Za-z]{22}$/.test(track)) return reply(400, { error: 'Not a Spotify track ID' });
+      try {
+        return reply(200, await lookUpTrack(request, track));
+      } catch (error) {
+        log(`catalog-search track lookup failed: ${String(error)}`);
+        return reply(502, { error: 'Search is unavailable right now' });
+      }
+    }
 
     const raw = new URL(request.url).searchParams.get('q') ?? '';
     const query = normaliseQuery(raw).slice(0, 200);

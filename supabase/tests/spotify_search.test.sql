@@ -4,6 +4,10 @@
 begin;
 select plan(12);
 
+-- Start from an empty cache, whatever the local database holds (rolled back at the end).
+delete from public.spotify_search_cache;
+delete from public.spotify_search_budget;
+
 -- Clients can't see or call any of it.
 set local role anon;
 select throws_ok('select * from public.spotify_search_cache', '42501', null, 'anon can''t read the cache');
