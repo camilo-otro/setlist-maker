@@ -1,7 +1,10 @@
 import {
+  ADD_RULE,
   formatClock,
   formatDate,
   formatDuration,
+  readinessToAdd,
+  type AddReadiness,
   type BandMember,
   type Song,
   type Suggestion,
@@ -15,6 +18,16 @@ import { Stars } from '../components/Stars';
 import { SpotifyLink, YoutubeLink } from '../components/SpotifyLink';
 import { useWorkspace } from '../storage/WorkspaceProvider';
 import { averageLabel } from './format';
+
+/** Why "Agregar al repertorio" is off: the band decides (#89), by votes and their average. */
+function addRuleHint(readiness: AddReadiness, voters: number): string {
+  const average = `el promedio tiene que ser de ${ADD_RULE.minAverage} estrellas o más`;
+  if (readiness.votesMissing === 0) return `Para agregarla, ${average}.`;
+  const missing =
+    readiness.votesMissing === 1 ? 'Falta 1 voto' : `Faltan ${readiness.votesMissing} votos`;
+  const half = voters > 0 ? ` (${readiness.votesNeeded} de ${voters})` : '';
+  return `Para agregarla, tiene que votar al menos la mitad de la banda${half} y ${average}. ${missing}.`;
+}
 
 const when = (timestamp: string) => {
   const date = new Date(timestamp);
@@ -33,6 +46,7 @@ export function SuggestionDetail({
   membersById,
   me,
   canEdit,
+  voters,
   song,
   onChanged,
   onClose,
@@ -44,6 +58,8 @@ export function SuggestionDetail({
   /** This device's member; null for viewers' devices before members sync, and solo bands. */
   me: BandMember | null;
   canEdit: boolean;
+  /** How many members can vote: owners and editors. */
+  voters: number;
   /** The song it became, once added. */
   song: Song | undefined;
   onChanged: () => void;
@@ -58,6 +74,7 @@ export function SuggestionDetail({
   const [player, setPlayer] = useState<'spotify' | 'youtube' | null>(null);
   const canTakePart = canEdit && me !== null;
   const open = suggestion.status === 'open';
+  const readiness = readinessToAdd(summary, voters);
   const nameOf = (memberId: string) =>
     membersById.get(memberId)?.displayName ?? 'Alguien que ya no está en la banda';
 
@@ -318,10 +335,17 @@ export function SuggestionDetail({
         <div className="suggestion-detail__decide">
           {open && (
             <>
+              {!readiness.ready && (
+                <p id="suggestion-add-rule" className="muted suggestion-detail__rule">
+                  {addRuleHint(readiness, voters)}
+                </p>
+              )}
+              {/* Off until the band backs it, so it stands out only once it can be used. */}
               <button
                 type="button"
-                className="sm-button sm-button--primary"
-                disabled={busy}
+                className={readiness.ready ? 'sm-button sm-button--primary' : 'sm-button'}
+                disabled={busy || !readiness.ready}
+                aria-describedby={readiness.ready ? undefined : 'suggestion-add-rule'}
                 onClick={() => void run(() => addSuggestionToRepertorio(repository, suggestion.id))}
               >
                 <ListPlus size={16} aria-hidden="true" />

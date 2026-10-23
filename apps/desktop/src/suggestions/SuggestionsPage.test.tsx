@@ -42,9 +42,11 @@ const HEY_JUDE: CatalogTrack = {
  * has suggested Wonderwall and voted it 5 stars, and commented.
  */
 async function setup(
-  { myRole = 'editor', shared = true } = {} as {
+  { myRole = 'editor', shared = true, bandmates = 0 } = {} as {
     myRole?: MemberRole;
     shared?: boolean;
+    /** More editors, who haven't voted. */
+    bandmates?: number;
   },
 ) {
   const repository = createMemoryRepository();
@@ -52,6 +54,12 @@ async function setup(
   const [me, dave] = await repository.bandMembers.createMany([
     { bandId: band.id, userId: ME, displayName: 'Camilo', role: myRole },
     { bandId: band.id, userId: DAVE, displayName: 'Dave', role: 'editor' },
+    ...Array.from({ length: bandmates }, (_, i) => ({
+      bandId: band.id,
+      userId: `7b2e8f5c-0c74-4159-a0e7-5d9e8a4b3c0${i}`,
+      displayName: `Bandmate ${i}`,
+      role: 'editor' as const,
+    })),
   ]);
   const wonderwall = await repository.suggestions.create({
     bandId: band.id,
@@ -246,6 +254,34 @@ describe('Sugerencias', () => {
     await user.click(detail().getByRole('button', { name: 'Reabrir' }));
     await waitFor(async () =>
       expect((await repository.suggestions.get(other.id))!.status).toBe('open'),
+    );
+  });
+
+  it('waits to add a suggestion until half the band votes it 4 stars or more', async () => {
+    // Three who can vote: two votes are needed, and Dave's is the only one so far.
+    const { repository, wonderwall, user } = await setup({ bandmates: 1 });
+    await user.click(await screen.findByRole('button', { name: /Wonderwall/ }));
+    const add = detail().getByRole('button', { name: 'Agregar al repertorio' });
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+    expect(add.getAttribute('aria-describedby')).toBe('suggestion-add-rule');
+    expect(
+      detail().getByText(/al menos la mitad de la banda \(2 de 3\).*Falta 1 voto\./),
+    ).toBeTruthy();
+
+    const votes = within(detail().getByRole('region', { name: 'Votación' }));
+    await user.click(votes.getByRole('button', { name: '2 estrellas' }));
+    await waitFor(() => expect(votes.getByText('★ 3,5 · 2 votos')).toBeTruthy());
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      detail().getByText('Para agregarla, el promedio tiene que ser de 4 estrellas o más.'),
+    ).toBeTruthy();
+
+    await user.click(votes.getByRole('button', { name: '3 estrellas' }));
+    await waitFor(() => expect((add as HTMLButtonElement).disabled).toBe(false));
+    expect(detail().queryByText(/Para agregarla/)).toBeNull();
+    await user.click(add);
+    await waitFor(async () =>
+      expect((await repository.suggestions.get(wonderwall.id))!.status).toBe('accepted'),
     );
   });
 
