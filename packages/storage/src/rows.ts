@@ -91,11 +91,16 @@ export function writeContext(options: RepositoryOptions) {
 
 export type WriteContext = ReturnType<typeof writeContext>;
 
-export function buildNewRow(table: TableName, values: object, ctx: WriteContext): StoredRow {
+export function buildNewRow(
+  table: TableName,
+  values: object,
+  ctx: WriteContext,
+  id?: string,
+): StoredRow {
   const now = ctx.now();
   return SCHEMAS[table].parse({
     ...clean(values, SYSTEM_FIELDS),
-    id: newId(Date.parse(now)),
+    id: id ?? newId(Date.parse(now)),
     createdAt: now,
     updatedAt: now,
     updatedBy: ctx.actorId(),

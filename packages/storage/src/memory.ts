@@ -2,6 +2,7 @@ import { assembleRepository } from './assemble';
 import { bandOf, outboxOp, START_CURSOR, type OutboxOp, type PullCursor } from './outbox';
 import {
   TABLE_NAMES,
+  type CreateOptions,
   type ReadOptions,
   type Repository,
   type RepositoryOptions,
@@ -77,7 +78,14 @@ export function createMemoryRepository(options: RepositoryOptions = {}): Reposit
               .sort(compareRows)
               .map((row) => copyRow(row));
           }),
-        create: (values: object) => run(() => save(buildNewRow(name, values, ctx))),
+        create: (values: object, options?: CreateOptions) =>
+          run(() => {
+            // As SQLite's primary key does: a chosen ID can't replace a row.
+            if (options?.id && rows().has(options.id)) {
+              throw new Error(`${name} already has a row ${options.id}`);
+            }
+            return save(buildNewRow(name, values, ctx, options?.id));
+          }),
         createMany: (values: readonly object[]) =>
           run(() => values.map((v) => buildNewRow(name, v, ctx)).map(save)),
         update: (id: string, patch: object) =>

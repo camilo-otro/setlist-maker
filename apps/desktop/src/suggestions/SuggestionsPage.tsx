@@ -8,7 +8,8 @@ import {
 } from '@setlist/core';
 import { EmptyState, PageHeader } from '@setlist/ui';
 import { Lightbulb, MessageCircle, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { LibraryTabs } from '../library/LibraryTabs';
 import { useMembership } from '../sharing/MembershipProvider';
 import { useSync } from '../sharing/SyncProvider';
@@ -36,7 +37,15 @@ export function SuggestionsPage() {
   const shared = useSync()?.shared ?? false;
   const [filter, setFilter] = useState<SuggestionStatus>('open');
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [suggesting, setSuggesting] = useState(false);
+  // Canciones sends here to suggest a song (#89): the dialog opens straight away.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const sentToSuggest = (location.state as { suggest?: boolean } | null)?.suggest === true;
+  const [suggesting, setSuggesting] = useState(sentToSuggest);
+  useEffect(() => {
+    // Once is enough: going back or reloading shouldn't open it again.
+    if (sentToSuggest) void navigate(location.pathname, { replace: true, state: null });
+  }, [sentToSuggest, navigate, location.pathname]);
 
   const live = useMemo(() => (suggestions ?? []).filter((s) => !s.deletedAt), [suggestions]);
   const visible = useMemo(

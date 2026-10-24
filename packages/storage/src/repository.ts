@@ -32,6 +32,11 @@ export type SystemField = 'id' | 'createdAt' | 'updatedAt' | 'updatedBy' | 'dele
 /** Values for a new row: the entity's input without system fields. */
 export type NewRow<TInput> = Omit<TInput, SystemField>;
 
+export interface CreateOptions {
+  /** A fresh ID (from `newId`) for the row, instead of one made here. */
+  id?: string;
+}
+
 /** Changes to an existing row. A row can't move to another band. */
 export type RowPatch<TInput> = Partial<Omit<TInput, SystemField | 'bandId'>>;
 
@@ -59,7 +64,11 @@ export interface Table<T, TInput> {
    */
   list(where?: Where<T>, options?: ReadOptions): Promise<T[]>;
 
-  create(values: NewRow<TInput>): Promise<T>;
+  /**
+   * `options.id` names the new row, for a change that has to point at a row before it exists: a
+   * suggestion names the song it becomes, so the server sees the suggestion first (#89).
+   */
+  create(values: NewRow<TInput>, options?: CreateOptions): Promise<T>;
 
   /**
    * Creates many rows at once, much faster than calling `create` in a loop (SQLite writes them in a

@@ -1,4 +1,4 @@
-import { IdSchema, keysBetween } from '@setlist/core';
+import { IdSchema, keysBetween, newId } from '@setlist/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TABLE_NAMES, type Repository, type RepositoryOptions } from '../repository';
 import { NotFoundError } from '../rows';
@@ -51,6 +51,15 @@ export function describeRepositoryContract(
           version: 1,
         });
         expect(await repo.songs.get(song.id)).toEqual(song);
+      });
+
+      it('can be given the new row’s ID, but never one that’s taken', async () => {
+        const id = newId();
+        const song = await repo.songs.create({ bandId, title: 'Named' }, { id });
+        expect(song.id).toBe(id);
+        expect((await repo.songs.get(id))?.title).toBe('Named');
+        await expect(repo.songs.create({ bandId, title: 'Again' }, { id })).rejects.toThrow();
+        expect((await repo.songs.get(id))?.title).toBe('Named');
       });
 
       it('records the acting band member', async () => {

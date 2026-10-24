@@ -98,7 +98,9 @@ export function MemberDialog({
               onChange={(e) => setRole(e.target.value as BandMember['role'])}
             >
               {member.role === 'owner' && <option value="owner">Administrador</option>}
-              <option value="editor">Editor: puede cambiar canciones, toques y setlists</option>
+              <option value="editor">
+                Editor: puede cambiar canciones, toques y setlists, y sugerir canciones nuevas
+              </option>
               <option value="viewer">Solo lectura: puede ver todo, sin cambiar nada</option>
             </select>
           </Field>

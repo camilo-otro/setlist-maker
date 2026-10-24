@@ -1,4 +1,5 @@
 import {
+  newId,
   readinessToAdd,
   songFromSuggestion,
   summaryOf,
@@ -49,6 +50,9 @@ export class NotReadyToAddError extends Error {
  * Adds a suggestion to the repertorio: a new song, still being learned, with the suggestion's
  * details and note, and the suggestion marked as added, pointing at it. All or nothing. Only once
  * the band has backed it, by the votes this device has (`readinessToAdd`).
+ *
+ * The suggestion is marked first, naming the song it becomes: editors can't add songs of their
+ * own, and the server lets them add this one because an accepted suggestion points at it.
  */
 export function addSuggestionToRepertorio(
   repository: Repository,
@@ -67,8 +71,8 @@ export function addSuggestionToRepertorio(
     if (!readinessToAdd(summary, votersIn(members)).ready) {
       throw new NotReadyToAddError(suggestionId);
     }
-    const song = await tx.songs.create(songFromSuggestion(suggestion));
-    await tx.suggestions.update(suggestionId, { status: 'accepted', songId: song.id });
-    return song;
+    const songId = newId();
+    await tx.suggestions.update(suggestionId, { status: 'accepted', songId });
+    return tx.songs.create(songFromSuggestion(suggestion), { id: songId });
   });
 }
