@@ -5,6 +5,7 @@ import {
   performancesOf,
   searchSongs,
   sortSongs,
+  votersIn,
   type Song,
   type SongFilters,
   type SongSortKey,
@@ -12,14 +13,17 @@ import {
 import { EmptyState, PageHeader } from '@setlist/ui';
 import { FileUp, Library, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { ImportDialog } from '../library/ImportDialog';
 import { LibraryTabs } from '../library/LibraryTabs';
 import { SongDetail, type HistoryEntry } from '../library/SongDetail';
 import { SongDialog } from '../library/SongDialog';
 import { SongFiltersPanel } from '../library/SongFiltersPanel';
 import { SongTable, type SongSort } from '../library/SongTable';
+import { addsWithoutAsking, SuggestFirstDialog } from '../library/SuggestFirstDialog';
 import { useSongs } from '../library/useSongs';
 import { useMembership } from '../sharing/MembershipProvider';
+import { useSync } from '../sharing/SyncProvider';
 import { useBandRows } from '../storage/useBandRows';
 import { useSuggestions } from '../suggestions/useSuggestions';
 
@@ -34,8 +38,11 @@ export function LibraryPage() {
   const [sort, setSort] = useState<SongSort>({ key: 'title', direction: 'asc' });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<Editing>(undefined);
-  const { canEdit } = useMembership();
+  const { canEdit, isOwner, members } = useMembership();
+  const shared = useSync()?.shared ?? false;
+  const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
+  const [asking, setAsking] = useState(false);
   const performances = useBandRows('performances');
   const gigs = useBandRows('gigs');
   const venues = useBandRows('venues');
@@ -70,21 +77,29 @@ export function LibraryPage() {
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
     }));
 
-  const addButtons = (
+  // Only owners add songs directly (#89): editors suggest them, and the band votes. In a band with
+  // others voting, owners are asked whether they meant to suggest it, unless they said not to.
+  const suggest = () => void navigate('/library/suggestions', { state: { suggest: true } });
+  const add = () => {
+    if (shared && votersIn(members) > 1 && !addsWithoutAsking()) setAsking(true);
+    else setEditing(null);
+  };
+  const addButtons = isOwner ? (
     <>
       <button type="button" className="sm-button" onClick={() => setImporting(true)}>
         <FileUp size={16} aria-hidden="true" />
         Importar CSV
       </button>
-      <button
-        type="button"
-        className="sm-button sm-button--primary"
-        onClick={() => setEditing(null)}
-      >
+      <button type="button" className="sm-button sm-button--primary" onClick={add}>
         <Plus size={16} aria-hidden="true" />
         Agregar canción
       </button>
     </>
+  ) : (
+    <button type="button" className="sm-button sm-button--primary" onClick={suggest}>
+      <Plus size={16} aria-hidden="true" />
+      Sugerir canción
+    </button>
   );
 
   let content;
@@ -99,8 +114,9 @@ export function LibraryPage() {
   } else if (songs.length === 0) {
     content = (
       <EmptyState icon={<Library size={24} />} title="Aún no hay canciones">
-        Agrega las canciones que toca tu banda: búscalas con Agregar canción, escríbelas o
-        impórtalas desde una hoja de cálculo.
+        {isOwner
+          ? 'Agrega las canciones que toca tu banda: búscalas con Agregar canción, escríbelas o impórtalas desde una hoja de cálculo.'
+          : 'Propón canciones con Sugerir canción: la banda las vota antes de agregarlas al repertorio.'}
       </EmptyState>
     );
   } else {
@@ -191,6 +207,19 @@ export function LibraryPage() {
           existing={songs ?? []}
           onClose={() => setImporting(false)}
           onImported={reload}
+        />
+      )}
+      {asking && (
+        <SuggestFirstDialog
+          onSuggest={() => {
+            setAsking(false);
+            suggest();
+          }}
+          onAdd={() => {
+            setAsking(false);
+            setEditing(null);
+          }}
+          onClose={() => setAsking(false)}
         />
       )}
       {editing !== undefined && (

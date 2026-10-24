@@ -96,6 +96,19 @@ describe('addSuggestionToRepertorio', () => {
     });
   });
 
+  it('tells the server about the suggestion before the song it becomes', async () => {
+    // Editors may only add a song an accepted suggestion points at, so the order matters.
+    const { repository, bandId, suggestion } = await backed();
+    await repository.outbox.shareBand(bandId);
+    const song = await addSuggestionToRepertorio(repository, suggestion.id);
+    const ops = await repository.outbox.pending(10);
+    expect(ops.map((op) => [op.table, op.rowId])).toEqual([
+      ['suggestions', suggestion.id],
+      ['songs', song.id],
+    ]);
+    expect(ops[0]!.fields).toMatchObject({ status: 'accepted', song_id: song.id });
+  });
+
   it('adds it once, even when asked twice', async () => {
     const { repository, suggestion } = await backed();
     const first = await addSuggestionToRepertorio(repository, suggestion.id);

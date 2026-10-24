@@ -3,7 +3,7 @@
 -- they sync like the other band tables.
 -- Run with: pnpm exec supabase test db
 begin;
-select plan(32);
+select plan(36);
 
 -- Alice owns The Alphas, with Dave as editor and Carol as viewer. Bob owns The Betas.
 \set alice '\'a0000000-0000-4000-8000-000000000001\''
@@ -28,6 +28,12 @@ create function pg_temp.suggest(id uuid, band uuid, by uuid, title text) returns
   select format(
     'insert into public.suggestions (id, band_id, created_at, updated_at, version, suggested_by, title, spotify_id)
      values (%L, %L, now(), now(), 1, %L, %L, %L)', id, band, by, title, '0aym2LBJBk9DAYuHHutrIl')
+$$;
+
+create function pg_temp.song(id uuid, band uuid, title text) returns text language sql as $$
+  select format(
+    'insert into public.songs (id, band_id, created_at, updated_at, version, title, is_original, tags, status)
+     values (%L, %L, now(), now(), 1, %L, false, ''{}'', ''learning'')', id, band, title)
 $$;
 
 create function pg_temp.vote(id uuid, band uuid, suggestion uuid, member uuid, stars int) returns text
@@ -118,9 +124,18 @@ select pg_temp.act_as(:alice);
 select throws_ok(format('update public.suggestions set suggested_by = %L where id = %L', :m_dave, :sugg),
   '23514', null, 'Who suggested a song can''t change');
 select pg_temp.act_as(:dave);
+select throws_ok(pg_temp.song('01900000-0000-7000-8000-000000000f01', :alphas, 'Hey Jude'),
+  '42501', null, 'Editors don''t add songs directly, not even a suggestion''s before it''s accepted');
 select lives_ok(format('update public.suggestions set status = %L, song_id = %L where id = %L',
                        'accepted', '01900000-0000-7000-8000-000000000f01', :sugg),
   'An editor adds a suggestion to the repertorio');
+select lives_ok(pg_temp.song('01900000-0000-7000-8000-000000000f01', :alphas, 'Hey Jude'),
+  'and then its song');
+select throws_ok(pg_temp.song('01900000-0000-7000-8000-000000000f02', :alphas, 'Something else'),
+  '42501', null, 'but no other');
+select pg_temp.act_as(:alice);
+select lives_ok(pg_temp.song('01900000-0000-7000-8000-000000000f03', :alphas, 'Basurita'),
+  'Owners add songs directly');
 
 -- Other bands see nothing.
 select pg_temp.act_as(:bob);

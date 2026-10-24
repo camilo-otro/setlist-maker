@@ -2,7 +2,7 @@
 -- viewers only read, and nobody outside a band (or signed out) gets anything.
 -- Run with: pnpm exec supabase test db
 begin;
-select plan(26);
+select plan(27);
 
 -- Alice owns The Alphas, Bob owns The Betas. Carol is a viewer and Dave an editor of The Alphas.
 \set alice '\'a0000000-0000-4000-8000-000000000001\''
@@ -84,11 +84,13 @@ select throws_ok(
            values ('01900000-0000-7000-8000-0000000000a4', %L, now(), now(), 1, %L, 'Bob', 'viewer')$$, :alphas, :bob),
   '42501', null, 'A viewer can''t add members');
 
--- Editors write songs but don't manage members or the band.
+-- Editors change songs but don't add them (they suggest them, #89), nor manage members or the band.
 select pg_temp.act_as(:dave);
 select lives_ok(
   $$update public.songs set title = 'Alpha song (live)', deleted_at = null$$,
   'An editor changes songs');
+select throws_ok(pg_temp.song('01900000-0000-7000-8000-000000000e01', :alphas, 'Editor song'),
+  '42501', null, 'An editor can''t add songs directly');
 select throws_ok(format($$update public.band_members set role = 'owner' where user_id = %L$$, :dave),
   '42501', 'Only owners can change roles', 'An editor can''t promote themselves');
 update public.bands set name = 'Dave''s band';

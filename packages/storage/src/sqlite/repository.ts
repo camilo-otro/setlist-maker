@@ -1,6 +1,12 @@
 import { assembleRepository } from '../assemble';
 import { bandOf, outboxOp, snakeCase, START_CURSOR, type OutboxOp } from '../outbox';
-import type { ReadOptions, Repository, RepositoryOptions, TableName } from '../repository';
+import type {
+  CreateOptions,
+  ReadOptions,
+  Repository,
+  RepositoryOptions,
+  TableName,
+} from '../repository';
 import {
   buildDeletedRow,
   buildNewRow,
@@ -158,8 +164,8 @@ export async function openSqliteRepository(
           }),
 
         // Writes are atomic: the row and its outbox operation are stored together or not at all.
-        create: (values: object) =>
-          atomic(async () => (await insert([buildNewRow(name, values, ctx)]))[0]!),
+        create: (values: object, options?: CreateOptions) =>
+          atomic(async () => (await insert([buildNewRow(name, values, ctx, options?.id)]))[0]!),
         // Every row is built (and so validated) before anything is written.
         createMany: (values: readonly object[]) =>
           atomic(() => insert(values.map((v) => buildNewRow(name, v, ctx)))),

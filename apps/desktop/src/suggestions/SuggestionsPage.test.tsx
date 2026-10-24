@@ -17,7 +17,10 @@ import { SyncProvider } from '../sharing/SyncProvider';
 import { WorkspaceContextProvider } from '../storage/WorkspaceProvider';
 import { ensureBand, type Workspace } from '../storage/workspace';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 const ME = '5f0c6d3a-8a52-4f37-9d55-3c0b7f2f6e11';
 const DAVE = '6a1d7e4b-9b63-4048-8e66-4d1c8a3a7f22';
@@ -42,9 +45,11 @@ const HEY_JUDE: CatalogTrack = {
  * has suggested Wonderwall and voted it 5 stars, and commented.
  */
 async function setup(
-  { myRole = 'editor', shared = true, bandmates = 0 } = {} as {
+  { myRole = 'editor', shared = true, bandmates = 0, path = '/library/suggestions' } = {} as {
     myRole?: MemberRole;
     shared?: boolean;
+    /** Where the app opens. */
+    path?: string;
     /** More editors, who haven't voted. */
     bandmates?: number;
   },
@@ -112,7 +117,7 @@ async function setup(
     <WorkspaceContextProvider workspace={workspace}>
       <SyncProvider>
         <MembershipProvider>
-          <MemoryRouter initialEntries={['/library/suggestions']}>
+          <MemoryRouter initialEntries={[path]}>
             <AppRoutes />
           </MemoryRouter>
         </MembershipProvider>
@@ -283,6 +288,54 @@ describe('Sugerencias', () => {
     await waitFor(async () =>
       expect((await repository.suggestions.get(wonderwall.id))!.status).toBe('accepted'),
     );
+  });
+
+  it('has editors suggest songs from Canciones instead of adding them', async () => {
+    const { user } = await setup({ path: '/library' });
+    expect(
+      await screen.findByText(
+        'Propón canciones con Sugerir canción: la banda las vota antes de agregarlas al repertorio.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Agregar canción' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Importar CSV' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Sugerir canción' }));
+    expect(await screen.findByRole('dialog', { name: 'Sugerir canción' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Sugerencias/ }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+  });
+
+  it('asks owners whether they meant to suggest a song, until told not to', async () => {
+    const { user } = await setup({ myRole: 'owner', path: '/library' });
+    // Once the band shows as shared: Wonderwall waits for my vote.
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /Sugerencias/ }).textContent).toContain('1'),
+    );
+    const add = screen.getByRole('button', { name: 'Agregar canción' });
+    expect(screen.getByRole('button', { name: 'Importar CSV' })).toBeTruthy();
+
+    await user.click(add);
+    const asked = within(await screen.findByRole('dialog', { name: '¿Querías sugerirla?' }));
+    await user.click(asked.getByRole('button', { name: 'Sugerir canción' }));
+    expect(await screen.findByRole('dialog', { name: 'Sugerir canción' })).toBeTruthy();
+    await user.click(dialog().getByRole('button', { name: 'Cancelar' }));
+
+    await user.click(screen.getByRole('link', { name: 'Canciones' }));
+    await user.click(await screen.findByRole('button', { name: 'Agregar canción' }));
+    const again = within(await screen.findByRole('dialog', { name: '¿Querías sugerirla?' }));
+    await user.click(
+      again.getByRole('checkbox', { name: 'No volver a preguntar en este dispositivo' }),
+    );
+    await user.click(again.getByRole('button', { name: 'Agregar directamente' }));
+    expect(await screen.findByRole('dialog', { name: 'Agregar canción' })).toBeTruthy();
+    await user.click(dialog().getByRole('button', { name: 'Cancelar' }));
+
+    // Not asked again on this device.
+    await user.click(screen.getByRole('button', { name: 'Agregar canción' }));
+    expect(await screen.findByRole('dialog', { name: 'Agregar canción' })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: '¿Querías sugerirla?' })).toBeNull();
   });
 
   it('lets viewers read and listen, but not suggest, vote, comment or decide', async () => {
