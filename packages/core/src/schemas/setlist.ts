@@ -7,6 +7,7 @@ import {
   nullable,
   optionalText,
   PositionSchema,
+  TempoBpmSchema,
   text,
 } from './common';
 
@@ -37,7 +38,7 @@ export const SetEntryKindSchema = z.enum(['song', 'break', 'note']);
 
 /**
  * One line in a set: a song, a break (optional label such as "15 min") or a note (label required).
- * Only songs can have a key override or segue into the next entry.
+ * Only songs can have a key or tempo for this gig, or segue into the next entry.
  */
 export const SetEntrySchema = BandScopedSchema.extend({
   setBlockId: IdSchema,
@@ -47,6 +48,8 @@ export const SetEntrySchema = BandScopedSchema.extend({
   label: optionalText(200),
   segueToNext: z.boolean().default(false),
   keyOverride: nullable(MusicalKeySchema),
+  /** The song's tempo at this gig, when it isn't the usual one (BPM). */
+  tempoOverride: nullable(TempoBpmSchema),
   notes: optionalText(1000),
 }).superRefine((entry, ctx) => {
   const fail = (field: string, message: string) =>
@@ -58,6 +61,7 @@ export const SetEntrySchema = BandScopedSchema.extend({
   }
   if (entry.songId) fail('songId', `A ${entry.kind} can't reference a song`);
   if (entry.keyOverride) fail('keyOverride', 'Only songs can override the key');
+  if (entry.tempoOverride !== null) fail('tempoOverride', 'Only songs can override the tempo');
   if (entry.segueToNext) fail('segueToNext', 'Only songs can segue');
   if (entry.kind === 'note' && !entry.label) fail('label', 'Notes need a label');
 });

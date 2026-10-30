@@ -23,7 +23,7 @@ import {
   Star,
   Undo2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu';
 import { GigDialog } from '../gigs/GigDialog';
@@ -58,7 +58,13 @@ export function GigSetlistPage() {
   const venues = useBandRows('venues');
   const performances = useBandRows('performances');
   const gigs = useBandRows('gigs');
-  const history = useHistory(reload);
+  // A change can set a song's usual key or tempo too (from the gig), so songs reload with it.
+  const reloadSongs = songs.reload;
+  const reloadAll = useCallback(() => {
+    reload();
+    reloadSongs();
+  }, [reload, reloadSongs]);
+  const history = useHistory(reloadAll);
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
@@ -301,6 +307,7 @@ export function GigSetlistPage() {
         history={songHistory}
         changes={changes}
         run={history.run}
+        onSongsChanged={reloadSongs}
       />
 
       {sheetOpen && (

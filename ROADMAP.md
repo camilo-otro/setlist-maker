@@ -113,8 +113,8 @@ Setlist     { bandId, gigId?, name, isTemplate, clonedFromId?, notes? }
 SetBlock    { bandId, setlistId, name, position, targetDurationSec? }   // "Set 1", "Set 2", "Encore"
 
 SetEntry    { bandId, setBlockId, position, kind: 'song' | 'break' | 'note',
-              songId?, label?, segueToNext: boolean, keyOverride?, notes? }
-              // songs need songId; notes need a label; only songs can segue or override the key
+              songId?, label?, segueToNext: boolean, keyOverride?, tempoOverride?, notes? }
+              // songs need songId; notes need a label; only songs can segue or override the key and tempo
 
 Performance { bandId, gigId, songId, playedAt, setName, positionInSet,
               songTitleSnapshot, keySnapshot?, rating?: 1..5, notes? }

@@ -208,6 +208,11 @@ export const MIGRATIONS: readonly Migration[] = [
       `DELETE FROM "pull_cursors"`,
     ],
   },
+  {
+    version: 7,
+    name: "Add a setlist song's tempo for the gig",
+    statements: [`ALTER TABLE "set_entries" ADD COLUMN "tempo_override" INTEGER`],
+  },
 ];
 
 /**

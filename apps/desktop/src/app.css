@@ -1281,6 +1281,27 @@ body {
   font-weight: 650;
 }
 
+.entry__tempo {
+  width: 60px;
+  color: var(--sm-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.entry__tempo--override {
+  color: var(--sm-accent-text);
+  font-weight: 650;
+}
+
+/* On a phone the title needs the room more; the tempo is in the song's dialog and the PDF. */
+@container (width < 480px) {
+  .entry__tempo {
+    display: none;
+  }
+}
+
 .entry__segue {
   display: inline-flex;
   color: var(--sm-accent-text);
@@ -2810,4 +2831,18 @@ body {
 .suggest-first__body {
   margin: 0 0 12px;
   line-height: 1.5;
+}
+
+.sm-field__hint {
+  font-size: 0.75rem;
+}
+
+/* The song a setlist entry plays, with a way to edit the song itself. */
+.entry-dialog__song {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
 }

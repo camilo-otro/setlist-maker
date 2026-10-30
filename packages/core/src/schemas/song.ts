@@ -9,6 +9,7 @@ import {
   nullable,
   optionalText,
   TagsSchema,
+  TempoBpmSchema,
   text,
 } from './common';
 
@@ -27,7 +28,7 @@ export const SongSchema = BandScopedSchema.extend({
   artist: optionalText(200),
   isOriginal: z.boolean().default(false),
   key: nullable(MusicalKeySchema),
-  tempoBpm: nullable(z.int().min(20).max(400)),
+  tempoBpm: nullable(TempoBpmSchema),
   durationSec: nullable(DurationSecSchema),
   tuning: optionalText(50),
   tags: TagsSchema.default([]),

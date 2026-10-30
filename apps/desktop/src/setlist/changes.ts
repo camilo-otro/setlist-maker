@@ -5,6 +5,8 @@ import {
   type SetBlockInput,
   type SetEntry,
   type SetEntryInput,
+  type Song,
+  type SongInput,
 } from '@setlist/core';
 import { removeSetBlock, restoreSetBlock, type Repository, type RowPatch } from '@setlist/storage';
 import type { Change } from './useHistory';
@@ -71,12 +73,29 @@ export function setlistChanges(repository: Repository, bandId: string) {
       };
     },
 
-    updateEntry(label: string, entry: SetEntry, patch: RowPatch<SetEntryInput>): Change {
+    /**
+     * Changes an entry, and with `song`, its song's own fields too (a usual key or tempo set from
+     * the gig): one change, so undo reverts both.
+     */
+    updateEntry(
+      label: string,
+      entry: SetEntry,
+      patch: RowPatch<SetEntryInput>,
+      song?: { song: Song; patch: RowPatch<SongInput> },
+    ): Change {
       const previous = before(entry, patch);
+      const changesEntry = Object.keys(patch).length > 0;
+      const songBefore = song ? before(song.song, song.patch) : null;
       return {
         label,
-        apply: () => repository.setEntries.update(entry.id, patch),
-        revert: () => repository.setEntries.update(entry.id, previous),
+        apply: async () => {
+          if (changesEntry) await repository.setEntries.update(entry.id, patch);
+          if (song) await repository.songs.update(song.song.id, song.patch);
+        },
+        revert: async () => {
+          if (song && songBefore) await repository.songs.update(song.song.id, songBefore);
+          if (changesEntry) await repository.setEntries.update(entry.id, previous);
+        },
       };
     },
 
