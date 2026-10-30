@@ -3,6 +3,8 @@ import type {
   BandInput,
   BandMember,
   BandMemberInput,
+  ChangeLogEntry,
+  ChangeLogEntryInput,
   Gig,
   GigInput,
   Performance,
@@ -112,6 +114,8 @@ export interface Repository {
   suggestions: Table<Suggestion, SuggestionInput>;
   suggestionVotes: Table<SuggestionVote, SuggestionVoteInput>;
   suggestionComments: Table<SuggestionComment, SuggestionCommentInput>;
+  /** Who changed what in each gig (#50). Written by the server only; devices read it. */
+  changeLog: Table<ChangeLogEntry, ChangeLogEntryInput>;
 
   /** Changes to shared bands waiting to be pushed. Recorded in the same transaction as the write. */
   outbox: Outbox;
@@ -139,6 +143,7 @@ export const TABLE_NAMES: readonly TableName[] = [
   'suggestions',
   'suggestionVotes',
   'suggestionComments',
+  'changeLog',
 ];
 
 export interface RepositoryOptions {

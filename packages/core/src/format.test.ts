@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   collator,
+  formatAgo,
   formatClock,
   formatDate,
+  formatList,
   formatMonth,
   formatNumber,
   formatTime,
@@ -45,5 +47,22 @@ describe('Colombian formats', () => {
       'Ñu',
       'zeta',
     ]);
+  });
+
+  it('joins lists with "y"', () => {
+    expect(formatList(['el tono'])).toBe('el tono');
+    expect(formatList(['el tono', 'el tempo'])).toBe('el tono y el tempo');
+    expect(formatList(['A', 'B', 'C'])).toBe('A, B y C');
+  });
+
+  it('says how long ago something happened, then the date', () => {
+    const now = new Date(2026, 9, 30, 18, 0);
+    const ago = (minutes: number) => formatAgo(new Date(now.getTime() - minutes * 60_000), now);
+    expect(ago(0.5)).toBe('hace un momento');
+    expect(ago(5)).toBe('hace 5 minutos');
+    expect(ago(120)).toBe('hace 2 horas');
+    expect(ago(24 * 60)).toBe('ayer');
+    expect(ago(3 * 24 * 60)).toBe('hace 3 días');
+    expect(ago(10 * 24 * 60)).toBe('20 de oct');
   });
 });

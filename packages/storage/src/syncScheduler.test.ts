@@ -30,6 +30,34 @@ function setup(behaviour: { fail?: () => Error | null; slow?: number } = {}) {
 }
 
 describe('createSyncScheduler', () => {
+  it('syncs now on request, waiting for a sync that starts after asking', async () => {
+    const { scheduler, runs } = setup({ slow: 100 });
+    scheduler.request('start');
+    await vi.advanceTimersByTimeAsync(250);
+    // A sync is under way; it may have pulled already, so syncNow waits for the next one.
+    const done = scheduler.syncNow();
+    let result: boolean | null = null;
+    void done.then((ok) => (result = ok));
+    // The sync under way ends at 300 ms; the next one starts straight after and ends at 401 ms.
+    await vi.advanceTimersByTimeAsync(100);
+    expect(runs).toHaveLength(2);
+    expect(result).toBeNull();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(result).toBe(true);
+    scheduler.stop();
+  });
+
+  it("doesn't wait when offline, and says when the sync failed", async () => {
+    const { scheduler } = setup({ fail: () => new Error('network down') });
+    scheduler.setOnline(false);
+    expect(await scheduler.syncNow()).toBe(false);
+    scheduler.setOnline(true);
+    const done = scheduler.syncNow();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await done).toBe(false);
+    scheduler.stop();
+  });
+
   it('syncs soon after start, a signal or reconnecting', async () => {
     const { scheduler, runs, at } = setup();
     scheduler.request('start');

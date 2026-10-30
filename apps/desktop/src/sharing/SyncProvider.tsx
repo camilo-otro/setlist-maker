@@ -17,6 +17,8 @@ interface SyncState {
   status: SyncStatus;
   /** Asks for a sync soon, e.g. right after the band is first shared. */
   requestSync(): void;
+  /** Syncs now and waits: true once done, false when offline or it failed. */
+  syncNow(): Promise<boolean>;
 }
 
 const SyncContext = createContext<SyncState | null>(null);
@@ -43,6 +45,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const scheduler = useRef<SyncScheduler | null>(null);
   // Stable, so components can depend on it without re-running on every status change.
   const requestSync = useCallback(() => scheduler.current?.request('start'), []);
+  const syncNow = useCallback(() => scheduler.current?.syncNow() ?? Promise.resolve(false), []);
 
   useEffect(() => {
     if (!sharing) return;
@@ -96,8 +99,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [repository, sharing, notifyRemoteChanges]);
 
   const value = useMemo<SyncState | null>(
-    () => (sharing ? { shared, status, requestSync } : null),
-    [sharing, shared, status, requestSync],
+    () => (sharing ? { shared, status, requestSync, syncNow } : null),
+    [sharing, shared, status, requestSync, syncNow],
   );
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
 }

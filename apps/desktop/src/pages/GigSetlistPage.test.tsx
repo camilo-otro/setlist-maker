@@ -475,6 +475,34 @@ describe('GigSetlistPage', () => {
     expect(set('Set 1').getByText('Enlaza con la siguiente canción')).toBeTruthy();
   });
 
+  it('leaves a bandmate’s later change alone when undoing, and says so', async () => {
+    const { user, workspace } = await setup();
+    await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));
+    await user.click(await set('Set 1').findByRole('button', { name: 'Editar Basurita' }));
+    await user.selectOptions(dialog().getByLabelText('Tono para este toque'), 'C');
+    await user.click(dialog().getByLabelText('Enlazar con la siguiente canción'));
+    await user.click(dialog().getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(set('Set 1').getByText('Enlaza con la siguiente canción')).toBeTruthy(),
+    );
+
+    // Meanwhile, from another device, the key changes again.
+    const [entry] = await workspace.repository.setEntries.list();
+    await workspace.repository.setEntries.update(entry!.id, { keyOverride: 'D' });
+
+    await user.click(screen.getByRole('button', { name: 'Deshacer: editar Basurita' }));
+    expect(
+      await screen.findByText(
+        'No se deshizo todo en «editar Basurita»: Alguien cambió el tono después.',
+      ),
+    ).toBeTruthy();
+    // The bandmate's key stays; the segue, only ever changed here, is undone.
+    expect(await workspace.repository.setEntries.get(entry!.id)).toMatchObject({
+      keyOverride: 'D',
+      segueToNext: false,
+    });
+  });
+
   it('keeps a different tempo for this gig only', async () => {
     const { user, workspace } = await setup();
     await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));

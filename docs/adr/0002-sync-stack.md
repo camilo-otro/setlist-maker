@@ -56,6 +56,8 @@ Build our own sync on Supabase: **local outbox → push RPC → pull by server s
 - **Deletes are soft** (`deleted_at`). An edit to a deleted row doesn't bring it back.
 - **Ordering** uses fractional index keys. If two devices generate the same key, ties are broken by row ID, so all devices show the same order.
 - **Performance records** (gig history) are insert-only and never conflict.
+- **Undo never overwrites a bandmate (2026-10-30, #50).** Undo and redo stay on each device and work offline. Before reverting a field, they check it still holds the value this change set; a field someone changed since keeps their value, and the app says so ("No se deshizo todo en «editar Basurita»: Dave cambió el tono después"). Device clocks play no part.
+- **Change log (2026-10-30, #50).** The server records who changed what in each gig, its setlist, sets and entries, as it applies changes: a trigger writes `change_log` rows with each field's old and new value and the member, numbered in the order applied. The log syncs down like band data (read-only: only the server writes it), every member can read it under the gig's ⋯ → Cambios, and it's cleared when the gig is marked as played. It starts once a band has a second member, which also keeps the first share's upload out of it. Templates, songs and the rest of the band's data aren't logged.
 
 ### Edge cases
 

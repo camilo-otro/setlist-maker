@@ -9,7 +9,7 @@ import {
   type SongInput,
 } from '@setlist/core';
 import { removeSetBlock, restoreSetBlock, type Repository, type RowPatch } from '@setlist/storage';
-import type { Change } from './useHistory';
+import type { Change, KeptField, Outcome } from './useHistory';
 
 type NewEntry = Pick<SetEntryInput, 'kind' | 'songId' | 'label'>;
 
@@ -24,6 +24,69 @@ function before<T extends object>(row: T, patch: object): Partial<T> {
   return Object.fromEntries(
     Object.keys(patch).map((key) => [key, (row as Record<string, unknown>)[key]]),
   ) as Partial<T>;
+}
+
+/** Where an entry is: its set and its place in it, kept or changed as one. */
+const PLACE = ['setBlockId', 'position'];
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** A table's reads and updates, as `updateIfUnchanged` needs them. */
+interface RowStore {
+  get(id: string): Promise<object | null>;
+  update(id: string, patch: never): Promise<unknown>;
+}
+
+/**
+ * Sets `to` on a row, but only the fields that still hold `expected`: what this change left them
+ * as. A field someone changed since keeps their value and is reported, so undo and redo never
+ * overwrite a bandmate's later change. Fields in `together` are kept or changed as one.
+ */
+async function updateIfUnchanged(
+  table: RowStore,
+  id: string,
+  expected: object,
+  to: object,
+  together: readonly string[] = [],
+): Promise<Outcome> {
+  const row = (await table.get(id)) as Record<string, unknown> | null;
+  if (!row) return { kept: [] };
+  const was = expected as Record<string, unknown>;
+  const changed = (field: string) => !same(row[field], was[field]);
+  const groupChanged = together.some((field) => field in was && changed(field));
+  const patch: Record<string, unknown> = {};
+  const kept: KeptField[] = [];
+  for (const [field, value] of Object.entries(to)) {
+    if (together.includes(field) ? groupChanged : changed(field)) {
+      kept.push({ field, by: (row.updatedBy as string | null | undefined) ?? null });
+    } else {
+      patch[field] = value;
+    }
+  }
+  if (Object.keys(patch).length > 0) await table.update(id, patch as never);
+  return { kept };
+}
+
+/** Updates a row undoably. The first apply always goes through; redoing it checks, like undo. */
+function updateChange(
+  label: string,
+  table: RowStore,
+  id: string,
+  current: object,
+  patch: object,
+  together?: readonly string[],
+): Change {
+  const previous = before(current, patch);
+  let applied = false;
+  return {
+    label,
+    apply: async () => {
+      if (applied) return updateIfUnchanged(table, id, previous, patch, together);
+      applied = true;
+      await table.update(id, patch as never);
+    },
+    revert: () => updateIfUnchanged(table, id, patch, previous, together),
+  };
 }
 
 /**
@@ -61,16 +124,14 @@ export function setlistChanges(repository: Repository, bandId: string) {
     },
 
     moveEntry(entry: SetEntry, to: { blockId: string; position: string }): Change {
-      return {
-        label: 'mover',
-        apply: () =>
-          repository.setEntries.update(entry.id, { setBlockId: to.blockId, position: to.position }),
-        revert: () =>
-          repository.setEntries.update(entry.id, {
-            setBlockId: entry.setBlockId,
-            position: entry.position,
-          }),
-      };
+      return updateChange(
+        'mover',
+        repository.setEntries,
+        entry.id,
+        entry,
+        { setBlockId: to.blockId, position: to.position },
+        PLACE,
+      );
     },
 
     /**
@@ -83,19 +144,25 @@ export function setlistChanges(repository: Repository, bandId: string) {
       patch: RowPatch<SetEntryInput>,
       song?: { song: Song; patch: RowPatch<SongInput> },
     ): Change {
-      const previous = before(entry, patch);
-      const changesEntry = Object.keys(patch).length > 0;
-      const songBefore = song ? before(song.song, song.patch) : null;
+      const parts = [
+        ...(Object.keys(patch).length > 0
+          ? [updateChange(label, repository.setEntries, entry.id, entry, patch, PLACE)]
+          : []),
+        ...(song
+          ? [updateChange(label, repository.songs, song.song.id, song.song, song.patch)]
+          : []),
+      ];
+      const each = async (step: (part: Change) => Promise<unknown>): Promise<Outcome> => {
+        const kept: KeptField[] = [];
+        for (const part of parts) {
+          kept.push(...(((await step(part)) as Outcome | undefined)?.kept ?? []));
+        }
+        return { kept };
+      };
       return {
         label,
-        apply: async () => {
-          if (changesEntry) await repository.setEntries.update(entry.id, patch);
-          if (song) await repository.songs.update(song.song.id, song.patch);
-        },
-        revert: async () => {
-          if (song && songBefore) await repository.songs.update(song.song.id, songBefore);
-          if (changesEntry) await repository.setEntries.update(entry.id, previous);
-        },
+        apply: () => each((part) => part.apply()),
+        revert: () => each((part) => part.revert()),
       };
     },
 
@@ -122,12 +189,7 @@ export function setlistChanges(repository: Repository, bandId: string) {
     },
 
     updateBlock(label: string, block: SetBlock, patch: RowPatch<SetBlockInput>): Change {
-      const previous = before(block, patch);
-      return {
-        label,
-        apply: () => repository.setBlocks.update(block.id, patch),
-        revert: () => repository.setBlocks.update(block.id, previous),
-      };
+      return updateChange(label, repository.setBlocks, block.id, block, patch);
     },
 
     removeBlock(block: SetBlock): Change {

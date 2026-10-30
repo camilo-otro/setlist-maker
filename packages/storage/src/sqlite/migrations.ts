@@ -213,6 +213,25 @@ export const MIGRATIONS: readonly Migration[] = [
     name: "Add a setlist song's tempo for the gig",
     statements: [`ALTER TABLE "set_entries" ADD COLUMN "tempo_override" INTEGER`],
   },
+  {
+    version: 8,
+    name: "Create the gigs' change log",
+    statements: [
+      `CREATE TABLE "change_log" (${bandScoped},
+        "seq" INTEGER NOT NULL,
+        "gig_id" TEXT NOT NULL,
+        "member_id" TEXT,
+        "table_name" TEXT NOT NULL,
+        "row_id" TEXT NOT NULL,
+        "action" TEXT NOT NULL,
+        "changes" TEXT NOT NULL
+      ) STRICT`,
+      `CREATE INDEX "change_log_gig" ON "change_log" ("gig_id")`,
+      // Older versions skipped the log when pulling, but moved past it. Start over, so changes
+      // logged before this update come down too.
+      `DELETE FROM "pull_cursors"`,
+    ],
+  },
 ];
 
 /**

@@ -66,3 +66,27 @@ export function formatClock(moment: Date): string {
 export function formatNumber(value: number): string {
   return numberFormat.format(value);
 }
+
+const listFormat = new Intl.ListFormat(LOCALE, { type: 'conjunction' });
+const relativeFormat = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
+
+/** Items joined the Spanish way: "el tono y el tempo", "A, B y C". */
+export function formatList(items: readonly string[]): string {
+  return listFormat.format(items);
+}
+
+/**
+ * How long ago a moment was, for recent activity: "hace un momento", "hace 5 minutos", "hace 2
+ * horas", "ayer". Older than a week, the date itself ("23 de oct").
+ */
+export function formatAgo(moment: Date, now: Date = new Date()): string {
+  const seconds = Math.round((now.getTime() - moment.getTime()) / 1000);
+  if (seconds < 60) return 'hace un momento';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return relativeFormat.format(-minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return relativeFormat.format(-hours, 'hour');
+  const days = Math.round(hours / 24);
+  if (days < 7) return relativeFormat.format(-days, 'day');
+  return formatDate(moment, 'short');
+}

@@ -2846,3 +2846,42 @@ body {
   gap: 8px;
   margin: 0;
 }
+
+/* Undo or redo that left a bandmate's later change alone (#50). */
+.setlist-notice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-surface);
+  border: 1px solid var(--sm-border);
+  font-size: 0.875rem;
+}
+
+/* A gig's change log (#50). */
+.change-log {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh;
+  margin: 0 0 12px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.change-log__line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  overflow-wrap: anywhere;
+}
+
+.change-log__when {
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.change-log__note {
+  font-size: 0.8125rem;
+}

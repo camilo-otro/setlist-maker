@@ -165,7 +165,7 @@ Clone any setlist (from a past gig, another upcoming gig, or a template) into a 
 
 ### Phase 4 — Sharing and collaboration
 
-**Status:** done, apart from the activity feed (#50), offline and concurrency tests (#52) and clean-up of old deletions (#82). Song suggestions (#89) are done: owners and editors propose songs by name, Spotify link or YouTube link, listen in the embedded players, vote 1 to 5 stars and comment. A suggestion can be added to the repertorio once at least half of them have voted and the average is 4 stars or more. Only owners add songs directly; editors suggest them.
+**Status:** done, apart from offline and concurrency tests (#52) and clean-up of old deletions (#82). The activity feed (#50) is done for gigs: each gig's Cambios lists who changed what, and undo leaves bandmates' later changes alone; a "changed since you last looked" marker isn't built. Song suggestions (#89) are done: owners and editors propose songs by name, Spotify link or YouTube link, listen in the embedded players, vote 1 to 5 stars and comment. A suggestion can be added to the repertorio once at least half of them have voted and the average is 4 stars or more. Only owners add songs directly; editors suggest them.
 
 Band data schema in Supabase with row-level security, our sync protocol (outbox, push, pull, Realtime signal, first-share upload), silent anonymous identity, read-only share links with a web viewer, band invites with roles, live updates and an activity feed, song suggestions the band votes on, and optional account securing (email).
 **Exit:** a bandmate opens an invite link, edits the next gig's setlist, and you see the change within seconds, with nobody signing up.

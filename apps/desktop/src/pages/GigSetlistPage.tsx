@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   CircleCheck,
   Copy,
+  History,
   ListChecks,
   Pencil,
   Redo2,
@@ -30,7 +31,10 @@ import { GigDialog } from '../gigs/GigDialog';
 import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
 import { RatePlayedDialog } from '../gigs/RatePlayedDialog';
 import { setlistChanges } from '../setlist/changes';
+import { keptMessage } from '../setlist/keptNotice';
 import { SetlistEditor } from '../setlist/SetlistEditor';
+import { ChangeLogDialog } from '../gigs/ChangeLogDialog';
+import { useSync } from '../sharing/SyncProvider';
 import { ShareSetlistDialog } from '../setlist/ShareSetlistDialog';
 import { offersPlaylist, SpotifyPlaylistDialog, useGigPlaylist } from '../setlist/SpotifyPlaylist';
 import { StartFromDialog } from '../setlist/StartFromDialog';
@@ -64,18 +68,36 @@ export function GigSetlistPage() {
     reload();
     reloadSongs();
   }, [reload, reloadSongs]);
-  const history = useHistory(reloadAll);
+  // Undo checks against bandmates' latest changes: sync first, but never wait long for it.
+  const sync = useSync();
+  const syncNow = sync?.syncNow;
+  const catchUp = useCallback(
+    () =>
+      syncNow && sync?.shared
+        ? Promise.race([syncNow(), new Promise((resolve) => setTimeout(resolve, 4000))])
+        : Promise.resolve(),
+    [syncNow, sync?.shared],
+  );
+  const history = useHistory(reloadAll, catchUp);
   const changes = useMemo(() => setlistChanges(repository, band.id), [repository, band.id]);
   const [editingGig, setEditingGig] = useState(false);
   const [sharingOpen, setSharingOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [markingPlayed, setMarkingPlayed] = useState(false);
+  const [showingChanges, setShowingChanges] = useState(false);
+  const shared = sync?.shared ?? false;
   /** Rating the songs played (#32): `just-played` straight after marking the gig as played. */
   const [rating, setRating] = useState<'just-played' | 'later' | null>(null);
   const [startingFrom, setStartingFrom] = useState(false);
   const [startedFrom, setStartedFrom] = useState<{ from: string; dropped: string[] } | null>(null);
-  const { canEdit } = useMembership();
+  const { canEdit, members } = useMembership();
+  const nameOf = useCallback(
+    (memberId: string) =>
+      members.find((member) => member.id === memberId)?.displayName ??
+      'Alguien que ya no está en la banda',
+    [members],
+  );
   const gigPlaylist = useGigPlaylist(sharing, band.id, gigId);
 
   const songsById = useMemo(
@@ -161,9 +183,20 @@ export function GigSetlistPage() {
       Marcar como tocado
     </button>
   ) : null;
+  // Who changed what (#50): for every member, while there's a log to show.
+  const changesItem: ActionMenuItem[] =
+    shared && gig.status !== 'played'
+      ? [
+          {
+            label: 'Cambios',
+            icon: <History size={16} aria-hidden="true" />,
+            onSelect: () => setShowingChanges(true),
+          },
+        ]
+      : [];
   // Everything else owners and editors can do with the gig.
   const more: ActionMenuItem[] = !canEdit
-    ? []
+    ? changesItem
     : [
         {
           label: 'Editar detalles',
@@ -193,6 +226,7 @@ export function GigSetlistPage() {
               },
             ]
           : []),
+        ...changesItem,
       ];
 
   return (
@@ -295,6 +329,11 @@ export function GigSetlistPage() {
           Ese cambio no se guardó: {history.failure}
         </p>
       )}
+      {history.notice && (
+        <p className="setlist-notice" role="status">
+          {keptMessage(history.notice, nameOf)}
+        </p>
+      )}
 
       <SetlistEditor
         readOnly={!canEdit}
@@ -365,6 +404,13 @@ export function GigSetlistPage() {
             setStartedFrom({ from, dropped });
             reload();
           }}
+        />
+      )}
+      {showingChanges && (
+        <ChangeLogDialog
+          gigId={gig.id}
+          setlistId={setlist.id}
+          onClose={() => setShowingChanges(false)}
         />
       )}
       {markingPlayed && (
