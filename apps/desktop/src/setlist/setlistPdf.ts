@@ -91,13 +91,16 @@ export function layoutSetlistPdf({
     },
   ];
 
-  // Each set's songs, leaving out deleted ones; breaks and notes aren't printed yet.
+  // Each set's songs, leaving out deleted ones, at this gig's tempo where it has its own; breaks
+  // and notes aren't printed yet.
   const sets = blocks
     .map(({ block, entries }) => ({
       name: block.name,
       songs: entries.flatMap((entry) => {
         const song = entry.kind === 'song' && entry.songId ? songsById.get(entry.songId) : null;
-        return song && !song.deletedAt ? [song] : [];
+        return song && !song.deletedAt
+          ? [{ ...song, tempoBpm: entry.tempoOverride ?? song.tempoBpm }]
+          : [];
       }),
     }))
     .filter((set) => set.songs.length > 0);

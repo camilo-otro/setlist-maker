@@ -250,7 +250,7 @@ export function StartFromDialog({
               ))}
               <div className="start-from__options" role="group" aria-label="Opciones de copia">
                 {option('dropRetired', 'Dejar por fuera las canciones archivadas')}
-                {option('resetKeys', 'Usar el tono de cada canción')}
+                {option('resetKeys', 'Usar el tono y el tempo de cada canción')}
                 {option('keepNotes', 'Conservar las notas')}
               </div>
             </>

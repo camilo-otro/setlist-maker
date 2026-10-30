@@ -6,7 +6,7 @@ import type { Song } from './schemas/song';
 export interface CloneOptions {
   /** Leave out archived (retired) songs. Deleted songs are always left out. */
   dropRetired: boolean;
-  /** Use each song's own key instead of the source's key changes. */
+  /** Use each song's own key and tempo instead of the source's ones for its gig. */
   resetKeys: boolean;
   /** Keep note entries and entries' notes. */
   keepNotes: boolean;
@@ -21,7 +21,14 @@ export const DEFAULT_CLONE_OPTIONS: CloneOptions = {
 type BlockCopy = Pick<SetBlock, 'name' | 'position' | 'targetDurationSec'>;
 type EntryCopy = Pick<
   SetEntry,
-  'position' | 'kind' | 'songId' | 'label' | 'segueToNext' | 'keyOverride' | 'notes'
+  | 'position'
+  | 'kind'
+  | 'songId'
+  | 'label'
+  | 'segueToNext'
+  | 'keyOverride'
+  | 'tempoOverride'
+  | 'notes'
 >;
 
 /** What to create for the copy: each set with its entries, in order, without IDs. */
@@ -66,6 +73,7 @@ export function cloneSetlist(
         label: entry.label,
         segueToNext: entry.segueToNext,
         keyOverride: options.resetKeys ? null : entry.keyOverride,
+        tempoOverride: options.resetKeys ? null : entry.tempoOverride,
         notes: options.keepNotes ? entry.notes : null,
       });
     }

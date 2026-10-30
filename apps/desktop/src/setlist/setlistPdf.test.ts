@@ -59,6 +59,25 @@ describe('layoutSetlistPdf', () => {
     expect(bpm[0]!.x).toBeGreaterThan(first.x + measure('Song 1', first.size, true) / 2);
   });
 
+  it('prints the tempo set for this gig over the song’s usual one', async () => {
+    const set = await setOf(2);
+    const [first, second] = set.blocks[0]!.entries;
+    const blocks = [
+      {
+        block: set.blocks[0]!.block,
+        entries: [
+          { ...first!, tempoOverride: 140 },
+          { ...second!, tempoOverride: 96 },
+        ],
+      },
+    ];
+    const pages = layoutSetlistPdf({ ...set, blocks, bandName: 'Band', measure });
+    expect(pages[0]!.items.filter((item) => item.text.endsWith('bpm')).map((i) => i.text)).toEqual([
+      '140 bpm',
+      '96 bpm',
+    ]);
+  });
+
   it('shrinks a long title to fit its line instead of cutting it', async () => {
     const long = 'A very long song title that goes on and on '.repeat(2).trim();
     const pages = layoutSetlistPdf({

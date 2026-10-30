@@ -25,8 +25,9 @@ export function startSharing(repository: Repository, bandId: string): Promise<nu
     await tx.outbox.shareBand(bandId);
     const ops: OutboxOp[] = [];
     // The band row itself is created on the server by create_band. Deleted rows are left out:
-    // the server has never seen them, so there's nothing to delete.
-    for (const table of TABLE_NAMES.filter((name) => name !== 'bands')) {
+    // the server has never seen them, so there's nothing to delete. The change log is the
+    // server's own.
+    for (const table of TABLE_NAMES.filter((name) => name !== 'bands' && name !== 'changeLog')) {
       const rows = (await tx[table].list({ bandId } as never)) as unknown as StoredRow[];
       for (const row of rows) ops.push(outboxOp(table, null, row)!);
     }

@@ -55,6 +55,43 @@ describe.each(implementations)('applyPulledChanges (%s)', (_, open) => {
     return { repository, bandId: band.id };
   }
 
+  it('stores the server’s change log, with each field’s old and new value', async () => {
+    const { repository, bandId } = await setup();
+    const gigId = '01900000-0000-7000-8000-000000000601';
+    const entryId = '01900000-0000-7000-8000-000000000701';
+    const logged: RemoteChange = {
+      table: 'change_log',
+      row: {
+        id: '01900000-0000-7000-8000-000000000801',
+        band_id: bandId,
+        created_at: '2026-10-30T18:00:00.25+00:00',
+        updated_at: '2026-10-30T18:00:00.25+00:00',
+        updated_by: null,
+        deleted_at: null,
+        version: 1,
+        seq: 41,
+        gig_id: gigId,
+        member_id: MEMBER,
+        table_name: 'set_entries',
+        row_id: entryId,
+        action: 'change',
+        changes: { key_override: { old: null, new: 'C' } },
+      },
+    };
+    await applyPulledChanges(repository, bandId, [logged], { xid: '9', seq: 5 });
+
+    expect(await repository.changeLog.list({ gigId })).toEqual([
+      expect.objectContaining({
+        memberId: MEMBER,
+        tableName: 'set_entries',
+        rowId: entryId,
+        action: 'change',
+        changes: { key_override: { old: null, new: 'C' } },
+      }),
+    ]);
+    expect(await repository.outbox.pending(10)).toEqual([]);
+  });
+
   it("stores new rows in the app's format, and the cursor, without queuing uploads", async () => {
     const { repository, bandId } = await setup();
     const result = await applyPulledChanges(repository, bandId, [serverSong(bandId, ID)], {

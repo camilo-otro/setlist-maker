@@ -24,7 +24,7 @@ import { migrate } from './migrations';
 /** Fields stored as INTEGER 0/1. */
 const BOOLEAN_FIELDS = new Set(['isOriginal', 'isTemplate', 'segueToNext']);
 /** Fields stored as JSON text. */
-const JSON_FIELDS = new Set(['tags', 'missingTags']);
+const JSON_FIELDS = new Set(['tags', 'missingTags', 'changes']);
 
 /** camelCase field → snake_case column, e.g. `setBlockId` → `set_block_id`. */
 export const columnName = snakeCase;

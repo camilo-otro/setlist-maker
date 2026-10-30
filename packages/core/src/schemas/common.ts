@@ -30,6 +30,9 @@ export const MusicalKeySchema = z
   .string()
   .regex(/^[A-G][#b]?m?$/, 'Expected a key like C, F#, Bb or Ebm');
 
+/** A tempo in beats per minute: a song's usual one, or a gig's. */
+export const TempoBpmSchema = z.int().min(20).max(400);
+
 /** A length in whole seconds, up to four hours. */
 export const DurationSecSchema = z
   .int()

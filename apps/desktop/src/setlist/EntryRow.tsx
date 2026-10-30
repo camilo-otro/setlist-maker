@@ -55,6 +55,7 @@ export function EntryRow({
   } = useSortable({ id: entry.id, data: { type: 'entry', blockId: entry.setBlockId } });
   const title = entryTitle(entry, song);
   const key = entry.keyOverride ?? song?.key ?? null;
+  const tempo = entry.tempoOverride ?? song?.tempoBpm ?? null;
 
   return (
     <li
@@ -108,6 +109,14 @@ export function EntryRow({
         {key}
         {entry.keyOverride && song?.key && song.key !== entry.keyOverride && (
           <span className="visually-hidden"> (normalmente {song.key})</span>
+        )}
+      </span>
+      <span
+        className={entry.tempoOverride ? 'entry__tempo entry__tempo--override' : 'entry__tempo'}
+      >
+        {tempo !== null && `${tempo} bpm`}
+        {entry.tempoOverride && song?.tempoBpm && song.tempoBpm !== entry.tempoOverride && (
+          <span className="visually-hidden"> (normalmente {song.tempoBpm})</span>
         )}
       </span>
       <span className="entry__length">

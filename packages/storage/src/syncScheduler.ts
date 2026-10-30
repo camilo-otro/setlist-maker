@@ -24,6 +24,11 @@ export type SyncReason = 'start' | 'edit' | 'signal' | 'online' | 'interval' | '
 export interface SyncScheduler {
   /** Asks for a sync. Edits wait for a pause in editing; everything else goes almost at once. */
   request(reason: SyncReason): void;
+  /**
+   * Syncs now and waits for it: true once a sync that started after the call has finished, false
+   * when offline, stopped, or it failed. For checks that need the band's latest, such as undo.
+   */
+  syncNow(): Promise<boolean>;
   /** While the window is focused, the scheduler also syncs every minute. */
   setFocused(focused: boolean): void;
   setOnline(online: boolean): void;
@@ -72,6 +77,15 @@ export function createSyncScheduler({
   let online = true;
   let stopped = false;
   let ticker: Timer | null = null;
+  // Runs so far, and who waits for one that starts after a given run.
+  let started = 0;
+  let waiters: { after: number; resolve: (ok: boolean) => void }[] = [];
+
+  function settle(run: number, ok: boolean) {
+    const done = waiters.filter((waiter) => waiter.after < run);
+    waiters = waiters.filter((waiter) => waiter.after >= run);
+    for (const waiter of done) waiter.resolve(ok);
+  }
 
   const publish = (next: SyncStatus) => {
     current = next;
@@ -98,12 +112,15 @@ export function createSyncScheduler({
       return;
     }
     running = true;
+    const id = ++started;
     publish({ ...current, state: 'syncing' });
     try {
       await sync();
       failures = 0;
       publish({ state: 'synced', pending: await pending(), lastSyncedAt: now().toISOString() });
+      settle(id, true);
     } catch (error) {
+      settle(id, false);
       const waiting = await pending().catch(() => current.pending);
       const reason =
         error instanceof AppOutdatedError
@@ -138,6 +155,13 @@ export function createSyncScheduler({
         schedule(soonDelayMs, false);
       }
     },
+    syncNow() {
+      if (stopped || !online || current.state === 'stopped') return Promise.resolve(false);
+      return new Promise<boolean>((resolve) => {
+        waiters.push({ after: started, resolve });
+        schedule(0, false);
+      });
+    },
     setFocused(focused) {
       if (ticker !== null) timers.clearInterval(ticker);
       ticker =
@@ -158,6 +182,7 @@ export function createSyncScheduler({
     status: () => current,
     stop() {
       stopped = true;
+      settle(Infinity, false);
       if (timer !== null) timers.clearTimeout(timer);
       if (ticker !== null) timers.clearInterval(ticker);
     },

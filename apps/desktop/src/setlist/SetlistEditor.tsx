@@ -21,7 +21,8 @@ import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BlockDialog } from './BlockDialog';
 import { AT_END, type SetlistChanges } from './changes';
-import { EntryDialog, type EntryValues } from './EntryDialog';
+import { SongDialog } from '../library/SongDialog';
+import { EntryDialog, type EntryValues, type SongDefaults } from './EntryDialog';
 import { entryTitle } from './EntryRow';
 import { LibraryPanel } from './LibraryPanel';
 import type { SongHistory } from './songHistory';
@@ -32,6 +33,8 @@ import type { EntryWarning } from '@setlist/core';
 
 type Editing =
   | { kind: 'entry'; entry: SetEntry }
+  // The song's own form, opened from its entry: back to the entry when it closes.
+  | { kind: 'song'; entry: SetEntry; song: Song }
   | { kind: 'new-note'; blockId: string }
   | { kind: 'block'; block: SetBlock }
   | null;
@@ -89,6 +92,7 @@ export function SetlistEditor({
   history,
   changes,
   run,
+  onSongsChanged,
   readOnly = false,
 }: {
   setlistId: string;
@@ -102,6 +106,8 @@ export function SetlistEditor({
   history?: SongHistory;
   changes: SetlistChanges;
   run: (change: Change) => Promise<void>;
+  /** After a song is edited from the setlist, to show its new details. */
+  onSongsChanged?: () => void;
   /** For viewers: shows the setlist without any way to change it. */
   readOnly?: boolean;
 }) {
@@ -193,7 +199,7 @@ export function SetlistEditor({
     }
   }
 
-  function saveEntry(values: EntryValues) {
+  function saveEntry(values: EntryValues, songDefaults: SongDefaults) {
     if (!editing) return;
     if (editing.kind === 'new-note') {
       void run(
@@ -204,15 +210,18 @@ export function SetlistEditor({
       );
     } else if (editing.kind === 'entry') {
       const { entry } = editing;
+      const song = entry.songId ? songsById.get(entry.songId) : undefined;
       const patch = Object.fromEntries(
         Object.entries(values).filter(([key, value]) => entry[key as keyof EntryValues] !== value),
       );
-      if (Object.keys(patch).length > 0)
+      const songPatch = song && Object.keys(songDefaults).length > 0 ? songDefaults : null;
+      if (Object.keys(patch).length > 0 || songPatch)
         void run(
           changes.updateEntry(
-            `editar ${entryTitle(entry, entry.songId ? songsById.get(entry.songId) : undefined)}`,
+            `editar ${entryTitle(entry, song)}`,
             entry,
             patch,
+            song && songPatch ? { song, patch: songPatch } : undefined,
           ),
         );
     }
@@ -326,6 +335,20 @@ export function SetlistEditor({
           }
           onClose={() => setEditing(null)}
           onSave={saveEntry}
+          onEditSong={(() => {
+            if (editing.kind !== 'entry' || !editing.entry.songId) return undefined;
+            const song = songsById.get(editing.entry.songId);
+            const { entry } = editing;
+            return song ? () => setEditing({ kind: 'song', entry, song }) : undefined;
+          })()}
+        />
+      )}
+      {editing?.kind === 'song' && (
+        <SongDialog
+          song={editing.song}
+          librarySongs={songs}
+          onClose={() => setEditing({ kind: 'entry', entry: editing.entry })}
+          onChanged={() => onSongsChanged?.()}
         />
       )}
     </DndContext>

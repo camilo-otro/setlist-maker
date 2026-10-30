@@ -27,7 +27,7 @@ async function setup({ history = [] as string[], date = '2026-10-23' } = {}) {
     startTime: '21:00',
   });
   await repository.songs.createMany([
-    { bandId, title: 'Basurita', artist: '1280 Almas', key: 'A', durationSec: 225 },
+    { bandId, title: 'Basurita', artist: '1280 Almas', key: 'A', tempoBpm: 120, durationSec: 225 },
     {
       bandId,
       title: 'Here Without You',
@@ -473,6 +473,100 @@ describe('GigSetlistPage', () => {
       expect(set('Set 1').getByText('(normalmente A)', { exact: false })).toBeTruthy(),
     );
     expect(set('Set 1').getByText('Enlaza con la siguiente canción')).toBeTruthy();
+  });
+
+  it('leaves a bandmate’s later change alone when undoing, and says so', async () => {
+    const { user, workspace } = await setup();
+    await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));
+    await user.click(await set('Set 1').findByRole('button', { name: 'Editar Basurita' }));
+    await user.selectOptions(dialog().getByLabelText('Tono para este toque'), 'C');
+    await user.click(dialog().getByLabelText('Enlazar con la siguiente canción'));
+    await user.click(dialog().getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(set('Set 1').getByText('Enlaza con la siguiente canción')).toBeTruthy(),
+    );
+
+    // Meanwhile, from another device, the key changes again.
+    const [entry] = await workspace.repository.setEntries.list();
+    await workspace.repository.setEntries.update(entry!.id, { keyOverride: 'D' });
+
+    await user.click(screen.getByRole('button', { name: 'Deshacer: editar Basurita' }));
+    expect(
+      await screen.findByText(
+        'No se deshizo todo en «editar Basurita»: Alguien cambió el tono después.',
+      ),
+    ).toBeTruthy();
+    // The bandmate's key stays; the segue, only ever changed here, is undone.
+    expect(await workspace.repository.setEntries.get(entry!.id)).toMatchObject({
+      keyOverride: 'D',
+      segueToNext: false,
+    });
+  });
+
+  it('keeps a different tempo for this gig only', async () => {
+    const { user, workspace } = await setup();
+    await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));
+    await waitFor(() => expect(set('Set 1').getByText('120 bpm')).toBeTruthy());
+    await user.click(set('Set 1').getByRole('button', { name: 'Editar Basurita' }));
+    const tempo = dialog().getByLabelText('Tempo para este toque (BPM)');
+    expect(tempo.getAttribute('placeholder')).toBe('Habitual: 120');
+
+    await user.type(tempo, '5');
+    await user.click(dialog().getByRole('button', { name: 'Guardar' }));
+    expect(dialog().getByText('Usa un tempo entre 20 y 400, p. ej. 120')).toBeTruthy();
+    await user.clear(tempo);
+    await user.type(tempo, '132');
+    await user.click(dialog().getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(set('Set 1').getByText('132 bpm')).toBeTruthy());
+    expect(set('Set 1').getByText('(normalmente 120)', { exact: false })).toBeTruthy();
+    const [entry] = await workspace.repository.setEntries.list();
+    expect(entry!.tempoOverride).toBe(132);
+    const basurita = (await workspace.repository.songs.list()).find((s) => s.title === 'Basurita');
+    expect(basurita!.tempoBpm).toBe(120);
+  });
+
+  it('sets a song’s usual key and tempo from the gig when it has none, undoably', async () => {
+    const { user, workspace } = await setup();
+    const untimed = async () =>
+      (await workspace.repository.songs.list()).find((s) => s.title === 'Untimed')!;
+    await user.click(library().getByRole('button', { name: 'Agregar Untimed' }));
+    await user.click(await set('Set 1').findByRole('button', { name: 'Editar Untimed' }));
+    expect(dialog().getByText('Se guarda como el tono habitual de la canción.')).toBeTruthy();
+    expect(dialog().getByText('Se guarda como el tempo habitual de la canción.')).toBeTruthy();
+    await user.selectOptions(dialog().getByLabelText('Tono'), 'D');
+    await user.type(dialog().getByLabelText('Tempo (BPM)'), '100');
+    await user.click(dialog().getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(set('Set 1').getByText('100 bpm')).toBeTruthy());
+    expect(await untimed()).toMatchObject({ key: 'D', tempoBpm: 100 });
+    // The song's own now, so nothing special for this gig.
+    const [entry] = await workspace.repository.setEntries.list();
+    expect(entry).toMatchObject({ keyOverride: null, tempoOverride: null });
+    expect(document.querySelector('.entry__tempo--override')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Deshacer: editar Untimed' }));
+    await waitFor(async () => expect(await untimed()).toMatchObject({ key: null, tempoBpm: null }));
+    await waitFor(() => expect(set('Set 1').queryByText('100 bpm')).toBeNull());
+  });
+
+  it('edits the song itself from its place in the setlist', async () => {
+    const { user, workspace } = await setup();
+    await user.click(library().getByRole('button', { name: 'Agregar Basurita' }));
+    await user.click(await set('Set 1').findByRole('button', { name: 'Editar Basurita' }));
+    await user.click(dialog().getByRole('button', { name: 'Editar canción' }));
+    const artist = await screen.findByLabelText('Artista');
+    await user.clear(artist);
+    await user.type(artist, '1280 Almas (en vivo)');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    // Back to the song's place in this gig, with the song's new details.
+    expect(await screen.findByRole('dialog', { name: 'Editar Basurita' })).toBeTruthy();
+    await waitFor(() =>
+      expect(set('Set 1').getByText('· 1280 Almas (en vivo)', { exact: false })).toBeTruthy(),
+    );
+    const basurita = (await workspace.repository.songs.list()).find((s) => s.title === 'Basurita');
+    expect(basurita!.artist).toBe('1280 Almas (en vivo)');
   });
 
   it('removes entries with undo and redo, by button and keyboard', async () => {

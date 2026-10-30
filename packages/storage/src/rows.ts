@@ -1,6 +1,7 @@
 import {
   BandMemberSchema,
   BandSchema,
+  ChangeLogEntrySchema,
   comparePositioned,
   GigSchema,
   newId,
@@ -45,6 +46,7 @@ export const SCHEMAS: Record<
   suggestions: SuggestionSchema,
   suggestionVotes: SuggestionVoteSchema,
   suggestionComments: SuggestionCommentSchema,
+  changeLog: ChangeLogEntrySchema,
 };
 
 /** Every field of a table's rows, in schema order. These are also the database columns. */

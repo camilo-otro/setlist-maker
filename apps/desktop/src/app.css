@@ -1281,6 +1281,27 @@ body {
   font-weight: 650;
 }
 
+.entry__tempo {
+  width: 60px;
+  color: var(--sm-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.entry__tempo--override {
+  color: var(--sm-accent-text);
+  font-weight: 650;
+}
+
+/* On a phone the title needs the room more; the tempo is in the song's dialog and the PDF. */
+@container (width < 480px) {
+  .entry__tempo {
+    display: none;
+  }
+}
+
 .entry__segue {
   display: inline-flex;
   color: var(--sm-accent-text);
@@ -2810,4 +2831,57 @@ body {
 .suggest-first__body {
   margin: 0 0 12px;
   line-height: 1.5;
+}
+
+.sm-field__hint {
+  font-size: 0.75rem;
+}
+
+/* The song a setlist entry plays, with a way to edit the song itself. */
+.entry-dialog__song {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Undo or redo that left a bandmate's later change alone (#50). */
+.setlist-notice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-surface);
+  border: 1px solid var(--sm-border);
+  font-size: 0.875rem;
+}
+
+/* A gig's change log (#50). */
+.change-log {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh;
+  margin: 0 0 12px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.change-log__line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  overflow-wrap: anywhere;
+}
+
+.change-log__when {
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.change-log__note {
+  font-size: 0.8125rem;
 }

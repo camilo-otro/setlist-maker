@@ -19,6 +19,7 @@ export * from './schemas/song';
 export * from './schemas/gig';
 export * from './schemas/setlist';
 export * from './schemas/performance';
+export * from './schemas/changeLog';
 export * from './schemas/suggestion';
 export * from './songStats';
 export * from './suggestions';

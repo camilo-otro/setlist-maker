@@ -28,6 +28,7 @@ const entry = (id: string, position: string, values: Partial<SetEntry>): SetEntr
   label: null,
   segueToNext: false,
   keyOverride: null,
+  tempoOverride: null,
   notes: null,
   ...values,
 });
@@ -48,6 +49,7 @@ const source = [
       entry('e1', 'a0', {
         songId: 'opener',
         keyOverride: 'B',
+        tempoOverride: 132,
         segueToNext: true,
         notes: 'count in',
       }),
@@ -75,10 +77,20 @@ describe('cloneSetlist', () => {
     });
     // Copies carry no IDs or sync fields: they're created fresh.
     expect(Object.keys(copy.blocks[0]!.entries[0]!).sort()).toEqual(
-      ['keyOverride', 'kind', 'label', 'notes', 'position', 'segueToNext', 'songId'].sort(),
+      [
+        'keyOverride',
+        'kind',
+        'label',
+        'notes',
+        'position',
+        'segueToNext',
+        'songId',
+        'tempoOverride',
+      ].sort(),
     );
     expect(copy.blocks[0]!.entries[0]).toMatchObject({
       keyOverride: 'B',
+      tempoOverride: 132,
       segueToNext: true,
       notes: 'count in',
     });
@@ -90,9 +102,9 @@ describe('cloneSetlist', () => {
     expect(copy.dropped).toEqual(['Gone']);
   });
 
-  it("can reset key changes to each song's own key", () => {
+  it("can reset the gig's keys and tempos to each song's own", () => {
     const copy = cloneSetlist(source, songs, { ...DEFAULT_CLONE_OPTIONS, resetKeys: true });
-    expect(copy.blocks[0]!.entries[0]!.keyOverride).toBeNull();
+    expect(copy.blocks[0]!.entries[0]).toMatchObject({ keyOverride: null, tempoOverride: null });
   });
 
   it('can leave out notes', () => {
