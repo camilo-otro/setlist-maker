@@ -2897,3 +2897,85 @@ body {
 .change-log__note {
   font-size: 0.8125rem;
 }
+
+/* The setlist in rehearsal order: what to practise first (never or long ago played) on top. */
+.setlist-view {
+  margin-bottom: 8px;
+}
+
+.setlist-view__note {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+}
+
+.rehearsal-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  background: var(--sm-surface);
+  list-style: none;
+}
+
+.rehearsal-list__song {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--sm-border);
+}
+
+.rehearsal-list__song:first-child {
+  border-top: none;
+}
+
+.rehearsal-list__main {
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rehearsal-list__title {
+  font-weight: 600;
+}
+
+.rehearsal-list__history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 2px;
+  font-size: 0.75rem;
+}
+
+.rehearsal-list__place,
+.rehearsal-list__facts {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* In a set, a mark never gives way to the artist; in a narrow set it's a dot (filled: never
+   played; a ring: not in a while), so the title keeps its room. Its words stay for screen
+   readers and as a tooltip. */
+.entry__main .history-mark {
+  flex: none;
+}
+
+@container (width < 600px) {
+  .entry__main .history-mark {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    font-size: 0;
+  }
+
+  .entry--marked .entry__title {
+    max-width: calc(100% - 32px);
+  }
+}

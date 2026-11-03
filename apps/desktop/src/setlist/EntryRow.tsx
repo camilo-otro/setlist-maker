@@ -17,6 +17,8 @@ import {
   X,
 } from 'lucide-react';
 import { SongTags } from '../components/SongTags';
+import { HistoryMarks } from './HistoryMarks';
+import { historyHint, type SongHistory } from './songHistory';
 
 /** What an entry is called: the song title, the break's label, or the note. */
 export function entryTitle(entry: SetEntry, song: Song | undefined): string {
@@ -31,6 +33,7 @@ export function EntryRow({
   song,
   warnings,
   missing = [],
+  history,
   onEdit,
   onRemove,
 }: {
@@ -41,6 +44,8 @@ export function EntryRow({
   warnings: readonly EntryWarning[];
   /** The gig's missing tags, to mark the song's tags that need them. */
   missing?: readonly string[];
+  /** The band's history, to mark songs worth rehearsing. */
+  history?: SongHistory;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -54,6 +59,7 @@ export function EntryRow({
     isDragging,
   } = useSortable({ id: entry.id, data: { type: 'entry', blockId: entry.setBlockId } });
   const title = entryTitle(entry, song);
+  const hint = entry.kind === 'song' && song && history ? historyHint(song.id, history) : null;
   const key = entry.keyOverride ?? song?.key ?? null;
   const tempo = entry.tempoOverride ?? song?.tempoBpm ?? null;
 
@@ -61,7 +67,14 @@ export function EntryRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={`entry entry--${entry.kind}${isDragging ? ' entry--dragging' : ''}`}
+      className={[
+        'entry',
+        `entry--${entry.kind}`,
+        isDragging && 'entry--dragging',
+        (hint?.never || hint?.stale) && 'entry--marked',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <button
         type="button"
@@ -83,6 +96,7 @@ export function EntryRow({
         {entry.kind === 'song' && song?.artist && (
           <span className="entry__artist muted">· {song.artist}</span>
         )}
+        {hint && <HistoryMarks hint={hint} />}
         {entry.notes && <span className="entry__notes muted">{entry.notes}</span>}
         {entry.kind === 'song' && song && (
           <SongTags tags={song.tags} missing={missing} className="entry__tags" />

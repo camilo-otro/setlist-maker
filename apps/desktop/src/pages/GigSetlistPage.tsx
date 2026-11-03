@@ -32,6 +32,7 @@ import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
 import { RatePlayedDialog } from '../gigs/RatePlayedDialog';
 import { setlistChanges } from '../setlist/changes';
 import { keptMessage } from '../setlist/keptNotice';
+import { RehearsalList } from '../setlist/RehearsalList';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ChangeLogDialog } from '../gigs/ChangeLogDialog';
 import { useSync } from '../sharing/SyncProvider';
@@ -86,6 +87,8 @@ export function GigSetlistPage() {
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [markingPlayed, setMarkingPlayed] = useState(false);
   const [showingChanges, setShowingChanges] = useState(false);
+  // Rehearsing: the gig's songs in the order worth practising them, without changing the setlist.
+  const [rehearsing, setRehearsing] = useState(false);
   const shared = sync?.shared ?? false;
   /** Rating the songs played (#32): `just-played` straight after marking the gig as played. */
   const [rating, setRating] = useState<'just-played' | 'later' | null>(null);
@@ -335,19 +338,49 @@ export function GigSetlistPage() {
         </p>
       )}
 
-      <SetlistEditor
-        readOnly={!canEdit}
-        setlistId={setlist.id}
-        blocks={blocks}
-        songs={songs.rows}
-        songsById={songsById}
-        warnings={warnings}
-        missing={missing}
-        history={songHistory}
-        changes={changes}
-        run={history.run}
-        onSongsChanged={reloadSongs}
-      />
+      {songHistory && total.songs > 1 && (
+        <div className="suggestion-filters setlist-view" role="group" aria-label="Ver">
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={!rehearsing}
+            onClick={() => setRehearsing(false)}
+          >
+            Orden del toque
+          </button>
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={rehearsing}
+            onClick={() => setRehearsing(true)}
+          >
+            Por repasar primero
+          </button>
+        </div>
+      )}
+      {rehearsing && songHistory ? (
+        <>
+          <p className="muted setlist-view__note">
+            Primero las que nunca se han tocado y las que hace rato no se tocan. El orden del toque
+            no cambia.
+          </p>
+          <RehearsalList blocks={blocks} songsById={songsById} history={songHistory} />
+        </>
+      ) : (
+        <SetlistEditor
+          readOnly={!canEdit}
+          setlistId={setlist.id}
+          blocks={blocks}
+          songs={songs.rows}
+          songsById={songsById}
+          warnings={warnings}
+          missing={missing}
+          history={songHistory}
+          changes={changes}
+          run={history.run}
+          onSongsChanged={reloadSongs}
+        />
+      )}
 
       {sheetOpen && (
         <ShareSetlistDialog

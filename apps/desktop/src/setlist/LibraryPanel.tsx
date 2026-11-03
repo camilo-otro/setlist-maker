@@ -14,6 +14,7 @@ import {
 import { Check, GripVertical, Plus, Search } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { SongTags } from '../components/SongTags';
+import { HistoryMarks } from './HistoryMarks';
 import { historyHint, type SongHistory } from './songHistory';
 
 const SHOWN = 100;
@@ -61,12 +62,7 @@ function LibrarySong({
         {hint && (
           <span className="library-song__history">
             {hint.text && <span className="muted">{hint.text}</span>}
-            {hint.never && (
-              <span className="history-mark history-mark--never">Nunca se ha tocado</span>
-            )}
-            {hint.stale && (
-              <span className="history-mark history-mark--stale">Hace rato no se toca</span>
-            )}
+            <HistoryMarks hint={hint} />
             {hint.hereLastTime && (
               <span className="history-mark history-mark--here">Se tocó aquí la última vez</span>
             )}
