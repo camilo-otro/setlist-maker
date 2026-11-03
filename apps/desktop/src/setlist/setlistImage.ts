@@ -354,7 +354,7 @@ export function canvasMeasure(): Measure {
 }
 
 /** A file name for the picture: the gig's title and date. */
-export function imageFileName(gig: Pick<Gig, 'title' | 'date'>): string {
+export function imageFileName(gig: Pick<Gig, 'title' | 'date'>, rehearsal = false): string {
   const slug = gig.title
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
@@ -362,5 +362,5 @@ export function imageFileName(gig: Pick<Gig, 'title' | 'date'>): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 60);
-  return `${slug || 'setlist'}-${gig.date}.png`;
+  return `${slug || 'setlist'}${rehearsal ? '-ensayo' : ''}-${gig.date}.png`;
 }

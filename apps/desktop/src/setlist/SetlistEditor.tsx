@@ -102,7 +102,7 @@ export function SetlistEditor({
   warnings: ReadonlyMap<string, readonly EntryWarning[]>;
   /** Tags the band can't cover at this gig (#88): flagged in the sets, hideable in the library. */
   missing?: readonly string[];
-  /** The band's history, for hints in the library panel (#33). */
+  /** The band's history, for hints in the library panel (#33) and marks in the sets. */
   history?: SongHistory;
   changes: SetlistChanges;
   run: (change: Change) => Promise<void>;
@@ -262,6 +262,7 @@ export function SetlistEditor({
                 songsById={songsById}
                 warnings={warnings}
                 missing={missing}
+                history={history}
                 onEditBlock={() => setEditing({ kind: 'block', block: item.block })}
                 onRemoveBlock={() => void run(changes.removeBlock(item.block))}
                 onAddBreak={() =>

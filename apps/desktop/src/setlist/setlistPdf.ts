@@ -224,7 +224,7 @@ export async function makeSetlistPdf(
 }
 
 /** A file name for the PDF: the gig's title and date, like the picture's. */
-export function pdfFileName(gig: Pick<Gig, 'title' | 'date'>): string {
+export function pdfFileName(gig: Pick<Gig, 'title' | 'date'>, rehearsal = false): string {
   const slug = gig.title
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
@@ -232,5 +232,5 @@ export function pdfFileName(gig: Pick<Gig, 'title' | 'date'>): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 60);
-  return `${slug || 'setlist'}-${gig.date}.pdf`;
+  return `${slug || 'setlist'}${rehearsal ? '-ensayo' : ''}-${gig.date}.pdf`;
 }

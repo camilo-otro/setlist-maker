@@ -25,6 +25,7 @@ describe('historyHint', () => {
     const h = history([play('a', '2026-10-10'), play('a', '2026-10-03'), play('a', '2026-08-01')]);
     expect(historyHint('a', h)).toEqual({
       text: '2× este mes · 3× este trimestre',
+      never: false,
       stale: false,
       hereLastTime: false,
     });
@@ -36,9 +37,19 @@ describe('historyHint', () => {
     expect(historyHint('a', h).stale).toBe(true);
   });
 
-  it('says when a song was never played, and when it was played here last time', () => {
+  it('marks a song never played, once the band has played a gig', () => {
+    expect(historyHint('b', history([play('a', '2026-10-10')]))).toEqual({
+      text: '',
+      never: true,
+      stale: false,
+      hereLastTime: false,
+    });
+  });
+
+  it('only says never played before any gig, and when it was played here last time', () => {
     expect(historyHint('b', history([], ['b']))).toEqual({
       text: 'Nunca se ha tocado',
+      never: false,
       stale: false,
       hereLastTime: true,
     });

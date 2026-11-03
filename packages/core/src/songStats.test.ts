@@ -111,6 +111,22 @@ describe('sortByHistory', () => {
   it('sorts by longest since played, never-played first', () => {
     expect(ids(sortByHistory(songs, stats, 'longest-ago'))).toEqual(['never', 'c', 'a', 'b']);
   });
+
+  it('puts what to rehearse first: never played, then not played in a while, then the rest', () => {
+    // c was last played on 4 jul, over 90 days before; a and b on 10 oct keep their order.
+    const old = { id: 'older' };
+    const withOlder = songStatistics(
+      [...performances, ...play('g0', '2026-05-01', 'Set 1', ['older'])],
+      gigs,
+    );
+    expect(ids(sortByHistory([...songs, old], withOlder, 'to-review', TODAY))).toEqual([
+      'never',
+      'older',
+      'c',
+      'a',
+      'b',
+    ]);
+  });
 });
 
 describe('performancesOf', () => {

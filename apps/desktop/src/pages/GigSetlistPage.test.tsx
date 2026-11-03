@@ -302,7 +302,8 @@ describe('GigSetlistPage', () => {
   });
 
   it("shows each song's history in the library, and sorts by it", async () => {
-    const { user } = await setup({ history: ['Here Without You'] });
+    // Today's gig: the earlier one, 10 days ago at the same venue, counts as "here last time".
+    const { user } = await setup({ history: ['Here Without You'], date: localDateString() });
     const row = (title: string) =>
       within(
         library()
@@ -311,13 +312,64 @@ describe('GigSetlistPage', () => {
       );
     expect(row('Here Without You').getByText('1× este mes · 1× este trimestre')).toBeTruthy();
     expect(row('Here Without You').getByText('Se tocó aquí la última vez')).toBeTruthy();
-    expect(row('Basurita').getByText('Nunca se ha tocado')).toBeTruthy();
+    expect(row('Basurita').getByText('Nunca se ha tocado').className).toContain('history-mark');
 
-    await user.selectOptions(library().getByRole('combobox', { name: 'Ordenar' }), 'Más tocadas');
-    const titles = [...document.querySelectorAll('.library-song__title')].map(
-      (el) => el.textContent,
+    const titles = () =>
+      [...document.querySelectorAll('.library-song__title')].map((el) => el.textContent);
+    const sortBy = (option: string) =>
+      user.selectOptions(library().getByRole('combobox', { name: 'Ordenar' }), option);
+    await sortBy('Más tocadas');
+    expect(titles()[0]).toBe('Here Without You');
+    // What's worth rehearsing first: the songs never played at a gig.
+    await sortBy('Por repasar primero');
+    expect(titles()).toEqual(['Basurita', 'Untimed', 'Here Without You']);
+  });
+
+  it('shows the setlist in rehearsal order, without changing it', async () => {
+    const { user } = await setup({ history: ['Here Without You'], date: localDateString() });
+    for (const title of ['Here Without You', 'Basurita', 'Untimed']) {
+      await user.click(library().getByRole('button', { name: `Agregar ${title}` }));
+    }
+    await waitFor(() =>
+      expect(songsIn('Set 1')).toEqual(['Here Without You', 'Basurita', 'Untimed']),
     );
-    expect(titles[0]).toBe('Here Without You');
+    // The songs never played at a gig are marked in the set.
+    expect(set('Set 1').getAllByText('Nunca se ha tocado')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'Orden de ensayo' }));
+    const rehearsal = within(screen.getByRole('list', { name: 'Canciones por repasar' }));
+    expect(
+      rehearsal
+        .getAllByRole('listitem')
+        .map((item) => item.querySelector('.rehearsal-list__title')!.textContent),
+    ).toEqual(['Basurita', 'Untimed', 'Here Without You']);
+    expect(rehearsal.getByText('Set 1 · 2')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Orden del toque' }));
+    expect(songsIn('Set 1')).toEqual(['Here Without You', 'Basurita', 'Untimed']);
+  });
+
+  it('shares the rehearsal order as WhatsApp text, the link keeping the gig order', async () => {
+    const { user } = await setup({ history: ['Here Without You'], date: localDateString() });
+    for (const title of ['Here Without You', 'Basurita', 'Untimed']) {
+      await user.click(library().getByRole('button', { name: `Agregar ${title}` }));
+    }
+    await waitFor(() => expect(songsIn('Set 1')).toHaveLength(3));
+    await user.click(screen.getByRole('button', { name: 'Orden de ensayo' }));
+
+    await user.click(header().getByRole('button', { name: 'Compartir' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'Compartir el orden de ensayo' }));
+    expect(
+      sheet.getByText(
+        'WhatsApp, la imagen y la impresión van en orden de ensayo. El enlace y la playlist siguen el orden del toque.',
+      ),
+    ).toBeTruthy();
+    await user.click(sheet.getByRole('button', { name: 'WhatsApp' }));
+    expect(await sheet.findByRole('button', { name: 'Copiado' })).toBeTruthy();
+    const text = await navigator.clipboard.readText();
+    expect(text).toContain(
+      '*Orden de ensayo* (7:43)\n1. Basurita · A\n2. Untimed\n3. Here Without You · Bb',
+    );
   });
 
   it('starts the setlist from a past gig, after saying it replaces what is there', async () => {

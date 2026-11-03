@@ -26,14 +26,17 @@ export function ShareImage({
   venue,
   blocks,
   songsById,
+  rehearsal = false,
 }: {
   gig: Gig;
   venue: Venue | null;
   blocks: readonly BlockWithEntries[];
   songsById: ReadonlyMap<string, Song>;
+  /** The blocks are the rehearsal order: the file says so. */
+  rehearsal?: boolean;
 }) {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
-  const name = imageFileName(gig);
+  const name = imageFileName(gig, rehearsal);
   const picture = () =>
     drawSetlistImage(
       layoutSetlistImage({

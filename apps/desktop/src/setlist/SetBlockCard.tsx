@@ -10,6 +10,7 @@ import {
 } from '@setlist/core';
 import { Coffee, GripVertical, Pencil, Plus, StickyNote, Trash2 } from 'lucide-react';
 import { EntryRow } from './EntryRow';
+import type { SongHistory } from './songHistory';
 import type { BlockWithEntries } from './useGigSetlist';
 
 export function SetBlockCard({
@@ -17,6 +18,7 @@ export function SetBlockCard({
   songsById,
   warnings,
   missing,
+  history,
   onEditBlock,
   onRemoveBlock,
   onAddBreak,
@@ -30,6 +32,8 @@ export function SetBlockCard({
   warnings: ReadonlyMap<string, readonly EntryWarning[]>;
   /** The gig's missing tags (#88). */
   missing: readonly string[];
+  /** The band's history, to mark songs worth rehearsing. */
+  history?: SongHistory;
   onEditBlock: () => void;
   onRemoveBlock: () => void;
   onAddBreak: () => void;
@@ -136,6 +140,7 @@ export function SetBlockCard({
                 song={song}
                 warnings={warnings.get(entry.id) ?? []}
                 missing={missing}
+                history={history}
                 onEdit={() => onEditEntry(entry)}
                 onRemove={() => onRemoveEntry(entry)}
               />

@@ -14,6 +14,7 @@ import {
 import { Check, GripVertical, Plus, Search } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { SongTags } from '../components/SongTags';
+import { HistoryMarks } from './HistoryMarks';
 import { historyHint, type SongHistory } from './songHistory';
 
 const SHOWN = 100;
@@ -60,8 +61,8 @@ function LibrarySong({
         </span>
         {hint && (
           <span className="library-song__history">
-            <span className="muted">{hint.text}</span>
-            {hint.stale && <span className="history-mark">Hace rato no se toca</span>}
+            {hint.text && <span className="muted">{hint.text}</span>}
+            <HistoryMarks hint={hint} />
             {hint.hereLastTime && (
               <span className="history-mark history-mark--here">Se tocó aquí la última vez</span>
             )}
@@ -152,7 +153,9 @@ export function LibraryPanel({
       return wanted.every((tag) => own.includes(tag));
     });
     const byTitle = sortSongs(searchSongs(shown, query), 'title');
-    return sort === 'title' || !history ? byTitle : sortByHistory(byTitle, history.stats, sort);
+    return sort === 'title' || !history
+      ? byTitle
+      : sortByHistory(byTitle, history.stats, sort, history.today);
   }, [playable, query, tags, showMissing, missing, sort, history]);
 
   const toggleTag = (tag: string) =>
@@ -220,6 +223,7 @@ export function LibraryPanel({
             onChange={(e) => setSort(e.target.value as 'title' | HistorySort)}
           >
             <option value="title">Título</option>
+            <option value="to-review">Por repasar primero</option>
             <option value="most-played">Más tocadas</option>
             <option value="least-played">Menos tocadas</option>
             <option value="longest-ago">Más tiempo sin tocar</option>
