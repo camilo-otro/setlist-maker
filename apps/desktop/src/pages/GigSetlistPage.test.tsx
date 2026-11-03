@@ -336,7 +336,7 @@ describe('GigSetlistPage', () => {
     // The songs never played at a gig are marked in the set.
     expect(set('Set 1').getAllByText('Nunca se ha tocado')).toHaveLength(2);
 
-    await user.click(screen.getByRole('button', { name: 'Por repasar primero' }));
+    await user.click(screen.getByRole('button', { name: 'Orden de ensayo' }));
     const rehearsal = within(screen.getByRole('list', { name: 'Canciones por repasar' }));
     expect(
       rehearsal

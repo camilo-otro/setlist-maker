@@ -354,7 +354,7 @@ export function GigSetlistPage() {
             aria-pressed={rehearsing}
             onClick={() => setRehearsing(true)}
           >
-            Por repasar primero
+            Orden de ensayo
           </button>
         </div>
       )}
