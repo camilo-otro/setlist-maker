@@ -85,6 +85,9 @@ describe('imageFileName', () => {
       'rock-party-at-the-pub-2026-11-07.png',
     );
     expect(imageFileName({ title: 'Bogotá ✨', date: '2026-11-07' })).toBe('bogota-2026-11-07.png');
+    expect(imageFileName({ title: 'Bogotá', date: '2026-11-07' }, true)).toBe(
+      'bogota-ensayo-2026-11-07.png',
+    );
     expect(imageFileName({ title: '✨', date: '2026-11-07' })).toBe('setlist-2026-11-07.png');
   });
 });

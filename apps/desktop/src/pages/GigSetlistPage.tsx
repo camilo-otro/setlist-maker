@@ -32,6 +32,7 @@ import { MarkPlayedDialog } from '../gigs/MarkPlayedDialog';
 import { RatePlayedDialog } from '../gigs/RatePlayedDialog';
 import { setlistChanges } from '../setlist/changes';
 import { keptMessage } from '../setlist/keptNotice';
+import { rehearsalSet } from '../setlist/rehearsal';
 import { RehearsalList } from '../setlist/RehearsalList';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ChangeLogDialog } from '../gigs/ChangeLogDialog';
@@ -387,7 +388,8 @@ export function GigSetlistPage() {
           bandName={band.name}
           gig={gig}
           venue={venue}
-          blocks={blocks}
+          blocks={rehearsing && songHistory ? rehearsalSet(blocks, songsById, songHistory) : blocks}
+          rehearsal={rehearsing && Boolean(songHistory)}
           songsById={songsById}
           sharing={sharing}
           canMakeLink={canEdit && Boolean(sharing)}

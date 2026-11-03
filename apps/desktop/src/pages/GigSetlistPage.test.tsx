@@ -349,6 +349,29 @@ describe('GigSetlistPage', () => {
     expect(songsIn('Set 1')).toEqual(['Here Without You', 'Basurita', 'Untimed']);
   });
 
+  it('shares the rehearsal order as WhatsApp text, the link keeping the gig order', async () => {
+    const { user } = await setup({ history: ['Here Without You'], date: localDateString() });
+    for (const title of ['Here Without You', 'Basurita', 'Untimed']) {
+      await user.click(library().getByRole('button', { name: `Agregar ${title}` }));
+    }
+    await waitFor(() => expect(songsIn('Set 1')).toHaveLength(3));
+    await user.click(screen.getByRole('button', { name: 'Orden de ensayo' }));
+
+    await user.click(header().getByRole('button', { name: 'Compartir' }));
+    const sheet = within(screen.getByRole('dialog', { name: 'Compartir el orden de ensayo' }));
+    expect(
+      sheet.getByText(
+        'WhatsApp, la imagen y la impresión van en orden de ensayo. El enlace y la playlist siguen el orden del toque.',
+      ),
+    ).toBeTruthy();
+    await user.click(sheet.getByRole('button', { name: 'WhatsApp' }));
+    expect(await sheet.findByRole('button', { name: 'Copiado' })).toBeTruthy();
+    const text = await navigator.clipboard.readText();
+    expect(text).toContain(
+      '*Orden de ensayo* (7:43)\n1. Basurita · A\n2. Untimed\n3. Here Without You · Bb',
+    );
+  });
+
   it('starts the setlist from a past gig, after saying it replaces what is there', async () => {
     const { user, workspace } = await setup({ history: ['Here Without You'] });
     const { repository } = workspace;

@@ -2979,3 +2979,9 @@ body {
     max-width: calc(100% - 32px);
   }
 }
+
+/* Sharing from the rehearsal order says what follows it. */
+.share-sheet__note {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+}

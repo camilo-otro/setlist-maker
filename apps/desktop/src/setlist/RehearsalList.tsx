@@ -1,5 +1,6 @@
-import { sortByHistory, type Song } from '@setlist/core';
+import type { Song } from '@setlist/core';
 import { HistoryMarks } from './HistoryMarks';
+import { rehearsalOrder } from './rehearsal';
 import { historyHint, type SongHistory } from './songHistory';
 import type { BlockWithEntries } from './useGigSetlist';
 
@@ -18,17 +19,7 @@ export function RehearsalList({
   songsById: ReadonlyMap<string, Song>;
   history: SongHistory;
 }) {
-  const items = blocks.flatMap(({ block, entries }) => {
-    let number = 0;
-    return entries.flatMap((entry) => {
-      if (entry.kind !== 'song') return [];
-      number += 1;
-      const song = entry.songId ? songsById.get(entry.songId) : undefined;
-      if (!song || song.deletedAt) return [];
-      return [{ id: song.id, entry, song, place: `${block.name} · ${number}` }];
-    });
-  });
-  const sorted = sortByHistory(items, history.stats, 'to-review', history.today);
+  const sorted = rehearsalOrder(blocks, songsById, history);
 
   if (sorted.length === 0) {
     return <p className="muted">Este setlist aún no tiene canciones.</p>;

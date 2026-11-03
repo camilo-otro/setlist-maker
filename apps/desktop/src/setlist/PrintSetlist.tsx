@@ -20,11 +20,14 @@ export function PrintSetlist({
   gig,
   blocks,
   songsById,
+  rehearsal = false,
 }: {
   bandName: string;
   gig: Gig;
   blocks: readonly BlockWithEntries[];
   songsById: ReadonlyMap<string, Song>;
+  /** The blocks are the rehearsal order: the file says so. */
+  rehearsal?: boolean;
 }) {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
 
@@ -32,7 +35,7 @@ export function PrintSetlist({
     setStatus({ kind: 'busy' });
     try {
       const bytes = await makeSetlistPdf({ bandName, gig, blocks, songsById });
-      const name = pdfFileName(gig);
+      const name = pdfFileName(gig, rehearsal);
       const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
       const file = new File([blob], name, { type: 'application/pdf' });
       if (canShareSheet() && navigator.canShare?.({ files: [file] })) {
