@@ -3,6 +3,7 @@ import {
   daysSinceLastPlayed,
   gigsPerMonth,
   gigsSinceLastPlayed,
+  lastPlayedDates,
   originalsAndCovers,
   performancesOf,
   playedHereLastTime,
@@ -123,6 +124,27 @@ describe('sortByHistory', () => {
       'never',
       'older',
       'c',
+      'a',
+      'b',
+    ]);
+  });
+
+  it('counts dates set by hand for before the app', () => {
+    // "never" was played last month, before the app; c's gig on 4 jul beats its older date.
+    const lastPlayed = lastPlayedDates(stats, [
+      { id: 'never', lastPlayedOn: '2026-09-20', deletedAt: null },
+      { id: 'c', lastPlayedOn: '2025-01-01', deletedAt: null },
+    ]);
+    expect(lastPlayed.get('c')).toBe('2026-07-04');
+    expect(ids(sortByHistory(songs, stats, 'to-review', TODAY, lastPlayed))).toEqual([
+      'c',
+      'a',
+      'b',
+      'never',
+    ]);
+    expect(ids(sortByHistory(songs, stats, 'longest-ago', TODAY, lastPlayed))).toEqual([
+      'c',
+      'never',
       'a',
       'b',
     ]);

@@ -232,6 +232,11 @@ export const MIGRATIONS: readonly Migration[] = [
       `DELETE FROM "pull_cursors"`,
     ],
   },
+  {
+    version: 9,
+    name: 'Add when a song was last played before the app',
+    statements: [`ALTER TABLE "songs" ADD COLUMN "last_played_on" TEXT`],
+  },
 ];
 
 /**

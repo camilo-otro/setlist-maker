@@ -4,6 +4,7 @@ import {
   formatDate,
   formatDuration,
   formatTime,
+  lastPlayedDates,
   localDateString,
   missingCounts,
   playedHereLastTime,
@@ -113,13 +114,16 @@ export function GigSetlistPage() {
   const missing = useMemo(() => data?.gig.missingTags ?? [], [data]);
   // The band's history, for hints while picking songs (#33).
   const songHistory = useMemo(() => {
-    if (!data || !performances.rows || !gigs.rows) return undefined;
+    if (!data || !performances.rows || !gigs.rows || !songs.rows) return undefined;
+    const stats = songStatistics(performances.rows, gigs.rows);
     return {
-      stats: songStatistics(performances.rows, gigs.rows),
+      stats,
+      // Songs played before the app count too, from the dates set on them by hand.
+      lastPlayed: lastPlayedDates(stats, songs.rows),
       hereLastTime: playedHereLastTime(data.gig, gigs.rows, performances.rows),
       today: localDateString(),
     };
-  }, [data, performances.rows, gigs.rows]);
+  }, [data, performances.rows, gigs.rows, songs.rows]);
   const warnings = useMemo(
     () => setlistWarnings(allEntries, songsById, missing),
     [allEntries, songsById, missing],

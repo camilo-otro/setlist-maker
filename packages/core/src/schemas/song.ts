@@ -5,6 +5,7 @@ import {
   DurationSecSchema,
   HttpsUrlSchema,
   IdSchema,
+  LocalDateSchema,
   MusicalKeySchema,
   nullable,
   optionalText,
@@ -34,6 +35,11 @@ export const SongSchema = BandScopedSchema.extend({
   tags: TagsSchema.default([]),
   notes: optionalText(5000),
   status: SongStatusSchema.default('active'),
+  /**
+   * When the band last played it before recording gigs in the app, set by hand. Gigs marked as
+   * played count on their own; whichever is later is the song's last time.
+   */
+  lastPlayedOn: nullable(LocalDateSchema),
 });
 
 export type SongStatus = z.infer<typeof SongStatusSchema>;
