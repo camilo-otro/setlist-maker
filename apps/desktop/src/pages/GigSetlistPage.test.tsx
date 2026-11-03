@@ -302,7 +302,8 @@ describe('GigSetlistPage', () => {
   });
 
   it("shows each song's history in the library, and sorts by it", async () => {
-    const { user } = await setup({ history: ['Here Without You'] });
+    // Today's gig: the earlier one, 10 days ago at the same venue, counts as "here last time".
+    const { user } = await setup({ history: ['Here Without You'], date: localDateString() });
     const row = (title: string) =>
       within(
         library()
@@ -311,13 +312,17 @@ describe('GigSetlistPage', () => {
       );
     expect(row('Here Without You').getByText('1× este mes · 1× este trimestre')).toBeTruthy();
     expect(row('Here Without You').getByText('Se tocó aquí la última vez')).toBeTruthy();
-    expect(row('Basurita').getByText('Nunca se ha tocado')).toBeTruthy();
+    expect(row('Basurita').getByText('Nunca se ha tocado').className).toContain('history-mark');
 
-    await user.selectOptions(library().getByRole('combobox', { name: 'Ordenar' }), 'Más tocadas');
-    const titles = [...document.querySelectorAll('.library-song__title')].map(
-      (el) => el.textContent,
-    );
-    expect(titles[0]).toBe('Here Without You');
+    const titles = () =>
+      [...document.querySelectorAll('.library-song__title')].map((el) => el.textContent);
+    const sortBy = (option: string) =>
+      user.selectOptions(library().getByRole('combobox', { name: 'Ordenar' }), option);
+    await sortBy('Más tocadas');
+    expect(titles()[0]).toBe('Here Without You');
+    // What's worth rehearsing first: the songs never played at a gig.
+    await sortBy('Por repasar primero');
+    expect(titles()).toEqual(['Basurita', 'Untimed', 'Here Without You']);
   });
 
   it('starts the setlist from a past gig, after saying it replaces what is there', async () => {

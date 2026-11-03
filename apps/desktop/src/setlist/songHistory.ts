@@ -21,15 +21,20 @@ function shortDate(date: string, today: string) {
 
 /**
  * One song's history in a few words, e.g. "3× este mes · 7× este trimestre" or "Última vez: 14
- * de jun", and whether to mark it as not played in a while.
+ * de jun", and whether to mark it as never played or not played in a while, worth rehearsing.
+ * Once the band has played a gig, a never-played song is marked instead of described; before
+ * that, every song is new, so none is marked.
  */
 export function historyHint(
   songId: string,
   history: SongHistory,
-): { text: string; stale: boolean; hereLastTime: boolean } {
+): { text: string; never: boolean; stale: boolean; hereLastTime: boolean } {
   const stats = history.stats.get(songId);
   const hereLastTime = history.hereLastTime.has(songId);
-  if (!stats) return { text: 'Nunca se ha tocado', stale: false, hereLastTime };
+  if (!stats) {
+    const never = history.stats.size > 0;
+    return { text: never ? '' : 'Nunca se ha tocado', never, stale: false, hereLastTime };
+  }
   const month = timesPlayedWithin(stats, history.today, 30);
   const quarter = timesPlayedWithin(stats, history.today, 91);
   const parts = [];
@@ -37,5 +42,5 @@ export function historyHint(
   if (quarter > 0) parts.push(`${quarter}× este trimestre`);
   if (parts.length === 0) parts.push(`Última vez: ${shortDate(stats.lastPlayed, history.today)}`);
   const days = daysSinceLastPlayed(stats, history.today) ?? 0;
-  return { text: parts.join(' · '), stale: days >= STALE_AFTER_DAYS, hereLastTime };
+  return { text: parts.join(' · '), never: false, stale: days >= STALE_AFTER_DAYS, hereLastTime };
 }

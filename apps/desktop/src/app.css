@@ -2056,6 +2056,18 @@ body {
   color: var(--sm-accent-text);
 }
 
+/* Worth rehearsing: never played stands out most, then not played in a while. */
+.history-mark--never {
+  background: var(--sm-accent);
+  color: var(--sm-accent-contrast);
+}
+
+.history-mark--stale {
+  border: 1px solid var(--sm-accent-text);
+  background: transparent;
+  color: var(--sm-accent-text);
+}
+
 /* Start from another gig or a template (#24) */
 .start-from {
   display: grid;

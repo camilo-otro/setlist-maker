@@ -116,24 +116,38 @@ export function playedHereLastTime(
   );
 }
 
-/** How to order songs by their history in the setlist builder. */
-export type HistorySort = 'most-played' | 'least-played' | 'longest-ago';
+/**
+ * How to order songs by their history in the setlist builder. `to-review` puts first what's worth
+ * rehearsing: songs never played, then ones not played in a while, oldest first.
+ */
+export type HistorySort = 'to-review' | 'most-played' | 'least-played' | 'longest-ago';
 
 /**
  * Songs ordered by history. Never-played songs count as least played and longest ago. Ties keep
- * the order they came in (alphabetical, when the list is already sorted by title).
+ * the order they came in (alphabetical, when the list is already sorted by title). `today`
+ * (`YYYY-MM-DD`) says what "a while" counts from, for `to-review`.
  */
 export function sortByHistory<T extends { id: string }>(
   songs: readonly T[],
   stats: ReadonlyMap<string, SongStats>,
   sort: HistorySort,
+  today?: string,
 ): T[] {
   const times = (song: T) => stats.get(song.id)?.timesPlayed ?? 0;
   // Never played sorts as the oldest.
   const last = (song: T) => stats.get(song.id)?.lastPlayed ?? '';
+  // Never played, then not played in a while, then the rest as they came.
+  const review = (song: T) => {
+    const days = today ? daysSinceLastPlayed(stats.get(song.id), today) : null;
+    if (days === null) return stats.has(song.id) ? 2 : 0;
+    return days >= STALE_AFTER_DAYS ? 1 : 2;
+  };
   return [...songs].sort((a, b) => {
     if (sort === 'most-played') return times(b) - times(a);
     if (sort === 'least-played') return times(a) - times(b);
+    if (sort === 'to-review') {
+      return review(a) - review(b) || (review(a) === 1 ? last(a).localeCompare(last(b)) : 0);
+    }
     return last(a).localeCompare(last(b));
   });
 }
