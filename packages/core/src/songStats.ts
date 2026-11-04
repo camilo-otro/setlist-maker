@@ -91,6 +91,24 @@ export function daysSinceLastPlayed(stats: SongStats | undefined, today: string)
 export const STALE_AFTER_DAYS = 90;
 
 /**
+ * When each song was last played, by song ID: at a gig marked as played, or on the date the band
+ * set by hand for before the app (`lastPlayedOn`), whichever is later. Songs with neither are left
+ * out, and so are deleted songs' dates.
+ */
+export function lastPlayedDates(
+  stats: ReadonlyMap<string, SongStats>,
+  songs: readonly Pick<Song, 'id' | 'lastPlayedOn' | 'deletedAt'>[],
+): Map<string, string> {
+  const dates = new Map([...stats].map(([id, s]) => [id, s.lastPlayed]));
+  for (const song of songs) {
+    if (song.deletedAt || !song.lastPlayedOn) continue;
+    const atGigs = dates.get(song.id);
+    if (!atGigs || song.lastPlayedOn > atGigs) dates.set(song.id, song.lastPlayedOn);
+  }
+  return dates;
+}
+
+/**
  * Songs played at the most recent earlier gig at the same venue, for "played here last time".
  * Empty when the gig has no venue or the band hasn't played there before.
  */
@@ -125,22 +143,26 @@ export type HistorySort = 'to-review' | 'most-played' | 'least-played' | 'longes
 /**
  * Songs ordered by history. Never-played songs count as least played and longest ago. Ties keep
  * the order they came in (alphabetical, when the list is already sorted by title). `today`
- * (`YYYY-MM-DD`) says what "a while" counts from, for `to-review`.
+ * (`YYYY-MM-DD`) says what "a while" counts from, for `to-review`. `lastPlayed`, from
+ * `lastPlayedDates`, counts the dates set by hand for before the app in how long ago songs were
+ * played; without it, only gigs count.
  */
 export function sortByHistory<T extends { id: string }>(
   songs: readonly T[],
   stats: ReadonlyMap<string, SongStats>,
   sort: HistorySort,
   today?: string,
+  lastPlayed?: ReadonlyMap<string, string>,
 ): T[] {
   const times = (song: T) => stats.get(song.id)?.timesPlayed ?? 0;
   // Never played sorts as the oldest.
-  const last = (song: T) => stats.get(song.id)?.lastPlayed ?? '';
+  const last = (song: T) =>
+    (lastPlayed ? lastPlayed.get(song.id) : stats.get(song.id)?.lastPlayed) ?? '';
   // Never played, then not played in a while, then the rest as they came.
   const review = (song: T) => {
-    const days = today ? daysSinceLastPlayed(stats.get(song.id), today) : null;
-    if (days === null) return stats.has(song.id) ? 2 : 0;
-    return days >= STALE_AFTER_DAYS ? 1 : 2;
+    const date = last(song);
+    if (!date) return 0;
+    return today && daysBetween(date, today) >= STALE_AFTER_DAYS ? 1 : 2;
   };
   return [...songs].sort((a, b) => {
     if (sort === 'most-played') return times(b) - times(a);

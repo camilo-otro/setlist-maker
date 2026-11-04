@@ -1,4 +1,4 @@
-import { songStatistics } from '@setlist/core';
+import { lastPlayedDates, songStatistics, type Song } from '@setlist/core';
 import { describe, expect, it } from 'vitest';
 import { historyHint, type SongHistory } from './songHistory';
 
@@ -14,11 +14,16 @@ const play = (songId: string, playedAt: string, gigId = playedAt) => ({
 const history = (
   performances: ReturnType<typeof play>[],
   hereLastTime: string[] = [],
-): SongHistory => ({
-  stats: songStatistics(performances, []),
-  hereLastTime: new Set(hereLastTime),
-  today: '2026-10-20',
-});
+  songs: Pick<Song, 'id' | 'lastPlayedOn' | 'deletedAt'>[] = [],
+): SongHistory => {
+  const stats = songStatistics(performances, []);
+  return {
+    stats,
+    lastPlayed: lastPlayedDates(stats, songs),
+    hereLastTime: new Set(hereLastTime),
+    today: '2026-10-20',
+  };
+};
 
 describe('historyHint', () => {
   it('counts plays this month and this quarter', () => {
@@ -44,6 +49,20 @@ describe('historyHint', () => {
       stale: false,
       hereLastTime: false,
     });
+  });
+
+  it('counts when a song was last played before the app', () => {
+    const before = [{ id: 'b', lastPlayedOn: '2025-12-07', deletedAt: null }];
+    // A date set by hand is history too: other songs are now marked as never played.
+    expect(historyHint('b', history([], [], before))).toEqual({
+      text: 'Última vez: 7 de dic de 2025',
+      never: false,
+      stale: true,
+      hereLastTime: false,
+    });
+    expect(historyHint('c', history([], [], before)).never).toBe(true);
+    // A gig after it wins.
+    expect(historyHint('b', history([play('b', '2026-10-10')], [], before)).stale).toBe(false);
   });
 
   it('only says never played before any gig, and when it was played here last time', () => {
