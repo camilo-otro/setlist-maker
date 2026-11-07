@@ -19,6 +19,7 @@ import {
 import { SongTags } from '../components/SongTags';
 import { HistoryMarks } from './HistoryMarks';
 import { historyHint, type SongHistory } from './songHistory';
+import { SongPanel, songPanelId } from './SongPanel';
 
 /** What an entry is called: the song title, the break's label, or the note. */
 export function entryTitle(entry: SetEntry, song: Song | undefined): string {
@@ -34,6 +35,9 @@ export function EntryRow({
   warnings,
   missing = [],
   history,
+  open = false,
+  onToggle,
+  onEditSong,
   onEdit,
   onRemove,
 }: {
@@ -46,6 +50,12 @@ export function EntryRow({
   missing?: readonly string[];
   /** The band's history, to mark songs worth rehearsing. */
   history?: SongHistory;
+  /** Whether the song is open, showing its notes and player below the row. */
+  open?: boolean;
+  /** Opens or closes the song. Songs open one at a time, so the page keeps which is open. */
+  onToggle?: () => void;
+  /** Opens the song's own form from its open row; left out for viewers. */
+  onEditSong?: (song: Song, link?: boolean) => void;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -62,6 +72,25 @@ export function EntryRow({
   const hint = entry.kind === 'song' && song && history ? historyHint(song.id, history) : null;
   const key = entry.keyOverride ?? song?.key ?? null;
   const tempo = entry.tempoOverride ?? song?.tempoBpm ?? null;
+  // A song opens from its title, artist and marks: the whole middle of the row.
+  const opens = entry.kind === 'song' && song && onToggle;
+  const main = (
+    <>
+      {entry.kind === 'break' && <Coffee size={14} aria-hidden="true" />}
+      {entry.kind === 'note' && <StickyNote size={14} aria-hidden="true" />}
+      <span className="entry__title" title={title}>
+        {title}
+      </span>
+      {entry.kind === 'song' && song?.artist && (
+        <span className="entry__artist muted">· {song.artist}</span>
+      )}
+      {hint && <HistoryMarks hint={hint} />}
+      {entry.notes && <span className="entry__notes muted">{entry.notes}</span>}
+      {entry.kind === 'song' && song && (
+        <SongTags tags={song.tags} missing={missing} className="entry__tags" />
+      )}
+    </>
+  );
 
   return (
     <li
@@ -72,6 +101,7 @@ export function EntryRow({
         `entry--${entry.kind}`,
         isDragging && 'entry--dragging',
         (hint?.never || hint?.stale) && 'entry--marked',
+        open && 'entry--open',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -87,21 +117,19 @@ export function EntryRow({
         <GripVertical size={16} aria-hidden="true" />
       </button>
       <span className="entry__number">{number ?? ''}</span>
-      <span className="entry__main">
-        {entry.kind === 'break' && <Coffee size={14} aria-hidden="true" />}
-        {entry.kind === 'note' && <StickyNote size={14} aria-hidden="true" />}
-        <span className="entry__title" title={title}>
-          {title}
-        </span>
-        {entry.kind === 'song' && song?.artist && (
-          <span className="entry__artist muted">· {song.artist}</span>
-        )}
-        {hint && <HistoryMarks hint={hint} />}
-        {entry.notes && <span className="entry__notes muted">{entry.notes}</span>}
-        {entry.kind === 'song' && song && (
-          <SongTags tags={song.tags} missing={missing} className="entry__tags" />
-        )}
-      </span>
+      {opens ? (
+        <button
+          type="button"
+          className="entry__main entry__toggle"
+          aria-expanded={open}
+          aria-controls={open ? songPanelId(entry.id) : undefined}
+          onClick={onToggle}
+        >
+          {main}
+        </button>
+      ) : (
+        <span className="entry__main">{main}</span>
+      )}
       {entry.segueToNext && (
         <span className="entry__segue" title="Enlaza con la siguiente canción">
           <ArrowDown size={14} aria-hidden="true" />
@@ -154,6 +182,15 @@ export function EntryRow({
           <X size={14} aria-hidden="true" />
         </button>
       </span>
+      {open && song && (
+        <SongPanel
+          entry={entry}
+          song={song}
+          history={history}
+          missing={missing}
+          onEditSong={onEditSong && ((link) => onEditSong(song, link))}
+        />
+      )}
     </li>
   );
 }

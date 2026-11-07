@@ -34,7 +34,16 @@ async function setup({
     startTime: '21:00',
   });
   await repository.songs.createMany([
-    { bandId, title: 'Basurita', artist: '1280 Almas', key: 'A', tempoBpm: 120, durationSec: 225 },
+    {
+      bandId,
+      title: 'Basurita',
+      artist: '1280 Almas',
+      key: 'A',
+      tempoBpm: 120,
+      durationSec: 225,
+      notes: 'Entra el bajo solo',
+      tuning: 'Drop D',
+    },
     {
       bandId,
       title: 'Here Without You',
@@ -42,6 +51,7 @@ async function setup({
       key: 'Bb',
       durationSec: 238,
       tags: ['piano'],
+      spotifyId: '3NLrRZoMF0Lx6zTlYqeIo4',
     },
     { bandId, title: 'Untimed', artist: 'Someone' },
   ]);
@@ -382,6 +392,43 @@ describe('GigSetlistPage', () => {
         .map((item) => item.querySelector('.rehearsal-list__title')!.textContent),
     ).toEqual(['Untimed', 'Basurita', 'Here Without You']);
     expect(rehearsal.getByText('Última vez: 15 de mar de 2025')).toBeTruthy();
+  });
+
+  it('opens a song for rehearsing, one at a time, in the setlist and the rehearsal order', async () => {
+    const { user } = await setup({ history: ['Here Without You'], date: localDateString() });
+    for (const title of ['Here Without You', 'Basurita']) {
+      await user.click(library().getByRole('button', { name: `Agregar ${title}` }));
+    }
+    await waitFor(() => expect(songsIn('Set 1')).toHaveLength(2));
+    const toggle = (title: string) =>
+      set('Set 1').getByRole('button', { name: new RegExp(`^${title}`), expanded: false });
+
+    await user.click(toggle('Basurita'));
+    const open = () => within(document.querySelector<HTMLElement>('.song-panel')!);
+    expect(open().getByText('Entra el bajo solo')).toBeTruthy();
+    expect(open().getByText('Drop D')).toBeTruthy();
+    expect(open().getByText('Nunca se ha tocado.')).toBeTruthy();
+    expect(open().getByText('No está vinculada a Spotify.')).toBeTruthy();
+
+    // Opening another closes the first, and its player loads.
+    await user.click(toggle('Here Without You'));
+    expect(document.querySelectorAll('.song-panel')).toHaveLength(1);
+    expect(open().getByTitle('Reproductor de Spotify: Here Without You')).toBeTruthy();
+    expect(open().getByText(/^Tocada una vez, la última el/)).toBeTruthy();
+    expect(open().getByRole('link', { name: 'Abrir Here Without You en Spotify' })).toBeTruthy();
+
+    // The rehearsal order keeps it open, and closes it from its title.
+    await user.click(screen.getByRole('button', { name: 'Orden de ensayo' }));
+    const rehearsal = within(screen.getByRole('list', { name: 'Canciones por repasar' }));
+    const opened = rehearsal.getByRole('button', { name: /^Here Without You/, expanded: true });
+    expect(open().getByTitle('Reproductor de Spotify: Here Without You')).toBeTruthy();
+    await user.click(opened);
+    expect(document.querySelector('.song-panel')).toBeNull();
+
+    // Its song can be edited from there.
+    await user.click(rehearsal.getByRole('button', { name: /^Basurita/ }));
+    await user.click(open().getByRole('button', { name: 'Editar canción' }));
+    expect(screen.getByRole('dialog', { name: 'Editar canción' })).toBeTruthy();
   });
 
   it('shares the rehearsal order as WhatsApp text, the link keeping the gig order', async () => {

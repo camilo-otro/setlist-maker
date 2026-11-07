@@ -43,13 +43,16 @@ export function CatalogPicker({
   librarySongs,
   onPick,
   onVideoLink,
+  initialQuery = '',
 }: {
   catalog: CatalogSearch;
   librarySongs: readonly Song[];
+  /** What to search for at first, e.g. the song being linked. */
+  initialQuery?: string;
   onPick: (track: CatalogTrack) => void;
   onVideoLink?: (youtubeId: string) => void;
 }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<{ query: string; tracks: CatalogTrack[] } | null>(null);
   const [failure, setFailure] = useState<{ query: string; message: string } | null>(null);
   const trimmed = query.trim();

@@ -34,7 +34,8 @@ import type { EntryWarning } from '@setlist/core';
 type Editing =
   | { kind: 'entry'; entry: SetEntry }
   // The song's own form, opened from its entry: back to the entry when it closes.
-  | { kind: 'song'; entry: SetEntry; song: Song }
+  // From the entry's dialog, closing goes back to it; from the song's open row, it just closes.
+  | { kind: 'song'; entry: SetEntry | null; song: Song; link?: boolean }
   | { kind: 'new-note'; blockId: string }
   | { kind: 'block'; block: SetBlock }
   | null;
@@ -94,6 +95,8 @@ export function SetlistEditor({
   run,
   onSongsChanged,
   readOnly = false,
+  openEntryId = null,
+  onToggleEntry,
 }: {
   setlistId: string;
   blocks: readonly BlockWithEntries[];
@@ -110,6 +113,9 @@ export function SetlistEditor({
   onSongsChanged?: () => void;
   /** For viewers: shows the setlist without any way to change it. */
   readOnly?: boolean;
+  /** The song open below its row (one at a time), kept by the page across its views. */
+  openEntryId?: string | null;
+  onToggleEntry?: (entry: SetEntry) => void;
 }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -278,6 +284,13 @@ export function SetlistEditor({
                   setLibraryOpen(true);
                 }}
                 onEditEntry={(entry) => setEditing({ kind: 'entry', entry })}
+                openEntryId={openEntryId}
+                onToggleEntry={onToggleEntry}
+                onEditSong={
+                  readOnly
+                    ? undefined
+                    : (song, link) => setEditing({ kind: 'song', entry: null, song, link })
+                }
                 onRemoveEntry={(entry) =>
                   void run(
                     changes.removeEntry(
@@ -348,7 +361,8 @@ export function SetlistEditor({
         <SongDialog
           song={editing.song}
           librarySongs={songs}
-          onClose={() => setEditing({ kind: 'entry', entry: editing.entry })}
+          linkSpotify={editing.link}
+          onClose={() => setEditing(editing.entry ? { kind: 'entry', entry: editing.entry } : null)}
           onChanged={() => onSongsChanged?.()}
         />
       )}

@@ -12,6 +12,8 @@ import {
   setDuration,
   setlistWarnings,
   type EntryWarning,
+  type SetEntry,
+  type Song,
 } from '@setlist/core';
 import {
   ArrowLeft,
@@ -35,6 +37,7 @@ import { setlistChanges } from '../setlist/changes';
 import { keptMessage } from '../setlist/keptNotice';
 import { rehearsalSet } from '../setlist/rehearsal';
 import { RehearsalList } from '../setlist/RehearsalList';
+import { SongDialog } from '../library/SongDialog';
 import { SetlistEditor } from '../setlist/SetlistEditor';
 import { ChangeLogDialog } from '../gigs/ChangeLogDialog';
 import { useSync } from '../sharing/SyncProvider';
@@ -91,6 +94,12 @@ export function GigSetlistPage() {
   const [showingChanges, setShowingChanges] = useState(false);
   // Rehearsing: the gig's songs in the order worth practising them, without changing the setlist.
   const [rehearsing, setRehearsing] = useState(false);
+  // The song open below its row, in either view: one at a time, like an accordion.
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null);
+  const toggleEntry = (entry: SetEntry) =>
+    setOpenEntryId((open) => (open === entry.id ? null : entry.id));
+  // A song being edited from its open row in the rehearsal order (the setlist edits its own).
+  const [editingSong, setEditingSong] = useState<{ song: Song; link?: boolean } | null>(null);
   const shared = sync?.shared ?? false;
   /** Rating the songs played (#32): `just-played` straight after marking the gig as played. */
   const [rating, setRating] = useState<'just-played' | 'later' | null>(null);
@@ -369,7 +378,15 @@ export function GigSetlistPage() {
             Primero las que nunca se han tocado y las que hace rato no se tocan. El orden del toque
             no cambia.
           </p>
-          <RehearsalList blocks={blocks} songsById={songsById} history={songHistory} />
+          <RehearsalList
+            blocks={blocks}
+            songsById={songsById}
+            history={songHistory}
+            missing={missing}
+            openEntryId={openEntryId}
+            onToggleEntry={toggleEntry}
+            onEditSong={canEdit ? (song, link) => setEditingSong({ song, link }) : undefined}
+          />
         </>
       ) : (
         <SetlistEditor
@@ -384,6 +401,8 @@ export function GigSetlistPage() {
           changes={changes}
           run={history.run}
           onSongsChanged={reloadSongs}
+          openEntryId={openEntryId}
+          onToggleEntry={toggleEntry}
         />
       )}
 
@@ -472,6 +491,15 @@ export function GigSetlistPage() {
           justPlayed={rating === 'just-played'}
           onClose={() => setRating(null)}
           onChanged={() => performances.reload()}
+        />
+      )}
+      {editingSong && (
+        <SongDialog
+          song={editingSong.song}
+          librarySongs={songs.rows}
+          linkSpotify={editingSong.link}
+          onClose={() => setEditingSong(null)}
+          onChanged={reloadSongs}
         />
       )}
       {editingGig && (
