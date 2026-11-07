@@ -4,7 +4,7 @@ import { createMemoryRepository, type CatalogSearch } from '@setlist/storage';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LibraryPage } from '../pages/LibraryPage';
 import { WorkspaceContextProvider } from '../storage/WorkspaceProvider';
 import { ensureBand, type Workspace } from '../storage/workspace';
@@ -167,5 +167,38 @@ describe('Add song from the catalog', () => {
     const { dialog } = await setup(null);
     expect(dialog.queryByRole('searchbox')).toBeNull();
     expect(document.activeElement).toBe(dialog.getByLabelText('Título'));
+  });
+});
+
+describe('Link a song to Spotify', () => {
+  it('links a song added without it, searching for it and keeping its title and artist', async () => {
+    const search = vi.fn(async () => [TRACKS[1]!]);
+    const catalog: CatalogSearch = { search, track: async () => null, video: async () => null };
+    const { user, workspace, dialog } = await setup(catalog, ({ repository, band }) =>
+      repository.songs.create({ bandId: band.id, title: 'Here without you', artist: '3DD' }),
+    );
+    await user.click(dialog.getByRole('button', { name: 'Cancelar' }));
+    await user.click(await screen.findByText('Here without you'));
+    await user.click(screen.getByRole('button', { name: 'Editar' }));
+    const form = within(screen.getByRole('dialog', { name: 'Editar canción' }));
+
+    await user.click(form.getByRole('button', { name: 'Vincular con Spotify' }));
+    expect((form.getByRole('searchbox') as HTMLInputElement).value).toBe('Here without you 3DD');
+    await user.click(await form.findByRole('button', { name: /Here Without You/ }));
+    expect(form.getByRole('status').textContent).toContain('Here Without You');
+    // The band's own title stays; the missing length comes from the match.
+    expect((form.getByLabelText('Título') as HTMLInputElement).value).toBe('Here without you');
+    expect((form.getByLabelText('Duración (m:ss)') as HTMLInputElement).value).toBe('3:58');
+
+    await user.click(form.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const [song] = await workspace.repository.songs.list();
+    expect(song).toMatchObject({
+      title: 'Here without you',
+      artist: '3DD',
+      durationSec: 238,
+      spotifyId: '3NLrRZoMF0Lx6zTlYqeIo4',
+    });
+    expect(search).toHaveBeenCalledWith('Here without you 3DD', expect.anything());
   });
 });

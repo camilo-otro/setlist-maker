@@ -1,6 +1,6 @@
 import { lastPlayedDates, songStatistics, type Song } from '@setlist/core';
 import { describe, expect, it } from 'vitest';
-import { historyHint, type SongHistory } from './songHistory';
+import { historyHint, historySummary, type SongHistory } from './songHistory';
 
 const play = (songId: string, playedAt: string, gigId = playedAt) => ({
   gigId,
@@ -63,6 +63,16 @@ describe('historyHint', () => {
     expect(historyHint('c', history([], [], before)).never).toBe(true);
     // A gig after it wins.
     expect(historyHint('b', history([play('b', '2026-10-10')], [], before)).stale).toBe(false);
+  });
+
+  it('sums up a song’s history in a sentence, for its open row', () => {
+    const before = [{ id: 'b', lastPlayedOn: '2025-12-07', deletedAt: null }];
+    const h = history([play('a', '2026-10-10'), play('a', '2026-08-01')], [], before);
+    expect(historySummary('a', h)).toBe('Tocada 2 veces, la última el 10 de oct de 2026.');
+    expect(historySummary('b', h)).toBe(
+      'La tocaron por última vez el 7 de dic de 2025, antes de usar la app.',
+    );
+    expect(historySummary('c', h)).toBe('Nunca se ha tocado.');
   });
 
   it('only says never played before any gig, and when it was played here last time', () => {

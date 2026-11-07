@@ -50,24 +50,32 @@ function TagSuggestions({ value, onAdd }: { value: string; onAdd: (tags: string)
 
 /**
  * Adds a song (`song` is null) or edits one. Saving, archiving, restoring and deleting all close the
- * dialog and call `onChanged`.
+ * dialog and call `onChanged`. A song added without Spotify can be linked to it later, here.
  */
 export function SongDialog({
   song,
   librarySongs = [],
+  linkSpotify = false,
   onClose,
   onChanged,
 }: {
   song: Song | null;
   /** The band's songs, to mark catalog matches already in the library. */
   librarySongs?: readonly Song[];
+  /** Opens an existing song on the search for linking it to Spotify. */
+  linkSpotify?: boolean;
   onClose: () => void;
   onChanged: () => void;
 }) {
   const { repository, band, catalog } = useWorkspace();
-  /** The catalog recording a new song was picked from; its IDs and artwork are saved with it. */
+  /**
+   * The catalog recording the song was picked from; its IDs and artwork are saved with it. For a
+   * song being edited, only its IDs and artwork: the band's title and artist stay.
+   */
   const [linked, setLinked] = useState<CatalogTrack | null>(null);
-  const showPicker = !song && !!catalog && !linked;
+  const canLink = !!catalog && !!song && !song.spotifyId;
+  const [linking, setLinking] = useState(linkSpotify && canLink);
+  const showPicker = !!catalog && !linked && (!song || linking);
   const [form, setForm] = useState<SongFormValues>(song ? songToForm(song) : EMPTY_SONG_FORM);
   const [errors, setErrors] = useState<SongFormErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
@@ -114,19 +122,27 @@ export function SongDialog({
       : {};
     void run(() =>
       song
-        ? repository.songs.update(song.id, read.result)
+        ? repository.songs.update(song.id, { ...read.result, ...link })
         : repository.songs.create({ bandId: band.id, ...read.result, ...link }),
     );
   }
 
   function pick(track: CatalogTrack) {
     setLinked(track);
-    setForm((current) => ({
-      ...current,
-      title: track.title,
-      artist: track.artists.join(', '),
-      duration: track.durationSec === null ? current.duration : formatDuration(track.durationSec),
-    }));
+    setLinking(false);
+    const duration = track.durationSec === null ? null : formatDuration(track.durationSec);
+    // Linking a song the band already has keeps its title and artist, and only fills a missing
+    // length.
+    setForm((current) =>
+      song
+        ? { ...current, duration: current.duration || (duration ?? '') }
+        : {
+            ...current,
+            title: track.title,
+            artist: track.artists.join(', '),
+            duration: duration ?? current.duration,
+          },
+    );
   }
 
   async function startDelete() {
@@ -195,7 +211,22 @@ export function SongDialog({
 
         <form className="song-form" onSubmit={save} noValidate>
           {showPicker && (
-            <CatalogPicker catalog={catalog} librarySongs={librarySongs} onPick={pick} />
+            <CatalogPicker
+              catalog={catalog}
+              librarySongs={song ? [] : librarySongs}
+              initialQuery={song ? [song.title, song.artist].filter(Boolean).join(' ') : ''}
+              onPick={pick}
+            />
+          )}
+          {canLink && !linking && !linked && (
+            <button
+              type="button"
+              className="sm-button song-form__wide song-form__link"
+              onClick={() => setLinking(true)}
+            >
+              <Link2 size={14} aria-hidden="true" />
+              Vincular con Spotify
+            </button>
           )}
           {linked && (
             <div className="catalog-link form-grid__wide" role="status">

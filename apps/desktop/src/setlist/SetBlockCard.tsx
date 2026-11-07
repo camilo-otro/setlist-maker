@@ -26,6 +26,9 @@ export function SetBlockCard({
   onAddSongs,
   onEditEntry,
   onRemoveEntry,
+  openEntryId,
+  onToggleEntry,
+  onEditSong,
 }: {
   item: BlockWithEntries;
   songsById: ReadonlyMap<string, Song>;
@@ -42,6 +45,10 @@ export function SetBlockCard({
   onAddSongs: () => void;
   onEditEntry: (entry: SetEntry) => void;
   onRemoveEntry: (entry: SetEntry) => void;
+  /** The song open below its row, if any (one at a time). */
+  openEntryId?: string | null;
+  onToggleEntry?: (entry: SetEntry) => void;
+  onEditSong?: (song: Song, link?: boolean) => void;
 }) {
   const { block, entries } = item;
   const {
@@ -141,6 +148,9 @@ export function SetBlockCard({
                 warnings={warnings.get(entry.id) ?? []}
                 missing={missing}
                 history={history}
+                open={entry.id === openEntryId}
+                onToggle={onToggleEntry && (() => onToggleEntry(entry))}
+                onEditSong={onEditSong}
                 onEdit={() => onEditEntry(entry)}
                 onRemove={() => onRemoveEntry(entry)}
               />

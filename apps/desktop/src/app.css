@@ -2985,3 +2985,107 @@ body {
   margin: 0 0 12px;
   font-size: 0.8125rem;
 }
+
+/* A song opens below its row, in the setlist and the rehearsal order, for rehearsing: its
+   notes, the gig's note, tuning, tags, history and Spotify's player. One at a time. */
+.entry__toggle,
+.rehearsal-list__toggle {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rehearsal-list__toggle {
+  display: block;
+}
+
+.entry--open {
+  flex-wrap: wrap;
+  background: var(--sm-hover);
+}
+
+.entry > .song-panel,
+.rehearsal-list__song > .song-panel {
+  flex: 0 0 100%;
+}
+
+.song-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 4px 8px 30px;
+  font-style: normal;
+  white-space: normal;
+}
+
+.rehearsal-list__song > .song-panel {
+  padding: 8px 0 0;
+}
+
+.song-panel__section h4 {
+  margin: 0 0 2px;
+  color: var(--sm-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.song-panel__notes {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.song-panel__section .muted,
+.song-panel__unlinked {
+  margin: 0;
+}
+
+.song-panel__facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.song-panel__facts > div {
+  display: contents;
+}
+
+.song-panel__facts dt {
+  color: var(--sm-text-muted);
+}
+
+.song-panel__facts dd {
+  margin: 0;
+}
+
+.song-panel__player {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.player--compact {
+  height: 80px;
+  margin-bottom: 0;
+}
+
+.song-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.song-form__link {
+  justify-self: start;
+}

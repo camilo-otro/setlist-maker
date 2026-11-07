@@ -51,3 +51,16 @@ export function historyHint(
   const stale = daysBetween(last, history.today) >= STALE_AFTER_DAYS;
   return { text: parts.join(' · '), never: false, stale, hereLastTime };
 }
+
+/**
+ * One song's history as a sentence, for its open row in the setlist: how often and when it was
+ * last played, e.g. "Tocada 3 veces, la última el 14 de jun de 2026."
+ */
+export function historySummary(songId: string, history: SongHistory): string {
+  const stats = history.stats.get(songId);
+  const last = history.lastPlayed.get(songId);
+  if (!last) return 'Nunca se ha tocado.';
+  if (!stats) return `La tocaron por última vez el ${formatDate(last)}, antes de usar la app.`;
+  const times = stats.timesPlayed === 1 ? 'una vez' : `${stats.timesPlayed} veces`;
+  return `Tocada ${times}, la última el ${formatDate(last)}.`;
+}
