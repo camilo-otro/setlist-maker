@@ -1,4 +1,10 @@
-import { formatDuration, parseDuration, type Song, type SongStatus } from '@setlist/core';
+import {
+  formatDuration,
+  localDateString,
+  parseDuration,
+  type Song,
+  type SongStatus,
+} from '@setlist/core';
 
 /** What the song form holds: text as typed, before it becomes song values. */
 export interface SongFormValues {
@@ -12,6 +18,8 @@ export interface SongFormValues {
   status: SongStatus;
   tags: string;
   notes: string;
+  /** `YYYY-MM-DD` from the date input, or blank. */
+  lastPlayedOn: string;
 }
 
 export type SongFormField = keyof SongFormValues;
@@ -29,6 +37,7 @@ export interface SongFormResult {
   status: SongStatus;
   tags: string[];
   notes: string;
+  lastPlayedOn: string | null;
 }
 
 export const EMPTY_SONG_FORM: SongFormValues = {
@@ -42,6 +51,7 @@ export const EMPTY_SONG_FORM: SongFormValues = {
   status: 'active',
   tags: '',
   notes: '',
+  lastPlayedOn: '',
 };
 
 export function songToForm(song: Song): SongFormValues {
@@ -56,15 +66,18 @@ export function songToForm(song: Song): SongFormValues {
     status: song.status,
     tags: song.tags.join(', '),
     notes: song.notes ?? '',
+    lastPlayedOn: song.lastPlayedOn ?? '',
   };
 }
 
 /**
  * Turns form text into song values, checking what the schema can't see: a tempo that isn't a whole
- * number, or a length that isn't `m:ss`. Blank text fields become null when the schema parses them.
+ * number, a length that isn't `m:ss`, or a last time played after `today`. Blank text fields
+ * become null when the schema parses them.
  */
 export function readSongForm(
   form: SongFormValues,
+  today = localDateString(),
 ): { result: SongFormResult; errors?: undefined } | { result?: undefined; errors: SongFormErrors } {
   const errors: SongFormErrors = {};
 
@@ -76,6 +89,9 @@ export function readSongForm(
 
   const durationSec = parseDuration(form.duration);
   if (durationSec === undefined) errors.duration = 'Usa minutos y segundos, p. ej. 3:20';
+
+  const lastPlayedOn = form.lastPlayedOn.trim() || null;
+  if (lastPlayedOn && lastPlayedOn > today) errors.lastPlayedOn = 'Usa una fecha que ya pasó';
 
   if (Object.keys(errors).length > 0) return { errors };
 
@@ -96,6 +112,7 @@ export function readSongForm(
       status: form.status,
       tags,
       notes: form.notes,
+      lastPlayedOn,
     },
   };
 }
@@ -109,6 +126,7 @@ const MESSAGES: Partial<Record<SongFormField, string>> = {
   tempoBpm: 'Usa un tempo entre 20 y 400',
   duration: 'Usa una duración de hasta 4 horas',
   tags: 'Las etiquetas deben ser distintas entre sí, de hasta 40 caracteres cada una',
+  lastPlayedOn: 'Usa una fecha como 2025-12-07',
 };
 
 /** Form errors for a validation error thrown by the repository (a ZodError), or null for anything else. */

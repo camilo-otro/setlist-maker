@@ -1,5 +1,6 @@
 import {
   formatDuration,
+  localDateString,
   MUSICAL_KEYS,
   SONG_STATUS_LABELS,
   type CatalogTrack,
@@ -140,13 +141,24 @@ export function SongDialog({
 
   const title = song ? 'Editar canción' : 'Agregar canción';
   // The error sits outside the <label> so it isn't read as part of the field's name;
-  // aria-describedby announces it instead.
-  const field = (name: SongFormField, label: string, input: ReactNode, wide = false) => (
+  // aria-describedby announces it instead, with the hint, if the field has one.
+  const field = (
+    name: SongFormField,
+    label: string,
+    input: ReactNode,
+    wide = false,
+    hint?: string,
+  ) => (
     <div className={`sm-field${wide ? ' song-form__wide' : ''}`}>
       <label className="sm-field__label" htmlFor={`song-${name}`}>
         {label}
       </label>
       {input}
+      {hint && (
+        <span className="sm-field__hint muted" id={`song-${name}-hint`}>
+          {hint}
+        </span>
+      )}
       {errors[name] && (
         <span className="sm-field__error" id={`song-${name}-error`}>
           {errors[name]}
@@ -154,12 +166,15 @@ export function SongDialog({
       )}
     </div>
   );
-  const inputProps = (name: SongFormField) => ({
+  const inputProps = (name: SongFormField, hint = false) => ({
     className: 'sm-input',
     id: `song-${name}`,
     name,
     'aria-invalid': errors[name] ? true : undefined,
-    'aria-describedby': errors[name] ? `song-${name}-error` : undefined,
+    'aria-describedby':
+      [hint && `song-${name}-hint`, errors[name] && `song-${name}-error`]
+        .filter(Boolean)
+        .join(' ') || undefined,
   });
 
   return (
@@ -288,6 +303,19 @@ export function SongDialog({
                 </option>
               ))}
             </select>,
+          )}
+          {field(
+            'lastPlayedOn',
+            'Última vez que la tocaron',
+            <input
+              {...inputProps('lastPlayedOn', true)}
+              type="date"
+              max={localDateString()}
+              value={form.lastPlayedOn}
+              onChange={(e) => set('lastPlayedOn', e.target.value)}
+            />,
+            false,
+            'Si la tocaron antes de usar la app. Los toques que marques como tocados cuentan solos.',
           )}
           {field(
             'tags',

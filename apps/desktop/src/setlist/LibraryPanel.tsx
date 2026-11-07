@@ -155,7 +155,7 @@ export function LibraryPanel({
     const byTitle = sortSongs(searchSongs(shown, query), 'title');
     return sort === 'title' || !history
       ? byTitle
-      : sortByHistory(byTitle, history.stats, sort, history.today);
+      : sortByHistory(byTitle, history.stats, sort, history.today, history.lastPlayed);
   }, [playable, query, tags, showMissing, missing, sort, history]);
 
   const toggleTag = (tag: string) =>

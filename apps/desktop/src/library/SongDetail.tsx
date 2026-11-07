@@ -114,9 +114,14 @@ export function SongDetail({
 
       <section className="song-detail__section song-detail__history" aria-label="Historial">
         <h3>Historial</h3>
+        {song.lastPlayedOn && (
+          <p className="song-timeline__summary">
+            Antes de usar la app, la tocaron por última vez el {formatDate(song.lastPlayedOn)}.
+          </p>
+        )}
         {history && history.length > 0 ? (
           <SongTimeline song={song} history={history} />
-        ) : (
+        ) : song.lastPlayedOn && history ? null : (
           <p className="muted">
             <History size={16} aria-hidden="true" />
             {history

@@ -38,6 +38,17 @@ describe('readSongForm', () => {
       duration: 'Usa minutos y segundos, p. ej. 3:20',
     });
   });
+
+  it('keeps when it was last played, which must have passed', () => {
+    const form = { ...EMPTY_SONG_FORM, title: 'X', lastPlayedOn: '2025-12-07' };
+    expect(readSongForm(form, '2026-11-03').result).toMatchObject({ lastPlayedOn: '2025-12-07' });
+    expect(readSongForm({ ...form, lastPlayedOn: '' }).result).toMatchObject({
+      lastPlayedOn: null,
+    });
+    expect(readSongForm({ ...form, lastPlayedOn: '2026-11-04' }, '2026-11-03').errors).toEqual({
+      lastPlayedOn: 'Usa una fecha que ya pasó',
+    });
+  });
 });
 
 describe('songToForm', () => {

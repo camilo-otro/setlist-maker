@@ -31,7 +31,7 @@ export function rehearsalOrder(
       return [{ id: song.id, entry, song, place: `${block.name} · ${number}` }];
     });
   });
-  return sortByHistory(items, history.stats, 'to-review', history.today);
+  return sortByHistory(items, history.stats, 'to-review', history.today, history.lastPlayed);
 }
 
 /**

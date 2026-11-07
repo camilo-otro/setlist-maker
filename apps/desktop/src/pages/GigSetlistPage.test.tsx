@@ -13,8 +13,15 @@ import { GigsPage } from './GigsPage';
 afterEach(cleanup);
 
 /** Opens a gig's setlist page, with three songs in the library. */
-/** `history`: songs (by title) played at an earlier gig at the same venue, ten days ago. */
-async function setup({ history = [] as string[], date = '2026-10-23' } = {}) {
+/**
+ * `history`: songs (by title) played at an earlier gig at the same venue, ten days ago.
+ * `before`: when songs (by title) were last played before the app, set on the song by hand.
+ */
+async function setup({
+  history = [] as string[],
+  date = '2026-10-23',
+  before = {} as Record<string, string>,
+} = {}) {
   const repository = createMemoryRepository();
   const workspace: Workspace = { repository, band: await ensureBand(repository), persistent: true };
   const bandId = workspace.band.id;
@@ -38,6 +45,10 @@ async function setup({ history = [] as string[], date = '2026-10-23' } = {}) {
     },
     { bandId, title: 'Untimed', artist: 'Someone' },
   ]);
+  for (const song of await repository.songs.list()) {
+    const lastPlayedOn = before[song.title];
+    if (lastPlayedOn) await repository.songs.update(song.id, { lastPlayedOn });
+  }
   if (history.length > 0) {
     const ago = new Date();
     ago.setDate(ago.getDate() - 10);
@@ -347,6 +358,30 @@ describe('GigSetlistPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Orden del toque' }));
     expect(songsIn('Set 1')).toEqual(['Here Without You', 'Basurita', 'Untimed']);
+  });
+
+  it('counts songs played before the app, from the date set on them', async () => {
+    // No gigs in the app yet: Basurita was last played long ago, and Here Without You recently.
+    const recently = new Date();
+    recently.setDate(recently.getDate() - 20);
+    const { user } = await setup({
+      before: { Basurita: '2025-03-15', 'Here Without You': localDateString(recently) },
+    });
+    for (const title of ['Here Without You', 'Basurita', 'Untimed']) {
+      await user.click(library().getByRole('button', { name: `Agregar ${title}` }));
+    }
+    await waitFor(() => expect(songsIn('Set 1')).toHaveLength(3));
+    expect(set('Set 1').getAllByText('Nunca se ha tocado')).toHaveLength(1);
+    expect(set('Set 1').getAllByText('Hace rato no se toca')).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: 'Orden de ensayo' }));
+    const rehearsal = within(screen.getByRole('list', { name: 'Canciones por repasar' }));
+    expect(
+      rehearsal
+        .getAllByRole('listitem')
+        .map((item) => item.querySelector('.rehearsal-list__title')!.textContent),
+    ).toEqual(['Untimed', 'Basurita', 'Here Without You']);
+    expect(rehearsal.getByText('Última vez: 15 de mar de 2025')).toBeTruthy();
   });
 
   it('shares the rehearsal order as WhatsApp text, the link keeping the gig order', async () => {
