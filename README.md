@@ -52,12 +52,29 @@ The desktop app keeps its data in a SQLite file, `setlist-maker.db`, in its data
 
 ## Test builds
 
-Every pull request into `main` that touches the desktop app (and every push to `main`) runs the **Desktop build** workflow; pushes to `dev` don't. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
+Every pull request into `main` that touches the desktop app (and every push to `main`, see [Desktop releases](#desktop-releases)) runs the **Desktop build** workflow; pushes to `dev` don't. When it finishes, open the run from the PR's checks and download **setlist-maker-Windows** (`.msi` and `.exe` installers) or **setlist-maker-macOS** (a `.dmg` for Apple Silicon and Intel) from its _Artifacts_ section. Artifacts are kept for 14 days.
 
 These builds aren't signed with a developer certificate yet, so the OS warns before opening them:
 
 - **Windows:** on the SmartScreen prompt, choose _More info_ → _Run anyway_.
 - **macOS:** after dragging the app to Applications, run `xattr -cr "/Applications/Setlist Maker.app"` once, then open it normally. Without that, macOS reports the app as damaged.
+
+## Desktop releases
+
+Every merge to `main` that changes the desktop app publishes a new version, `0.2.<run number>`, as a GitHub Release tagged `desktop-v…`. People install it from the [latest release](https://github.com/camilo-otro/setlist-maker/releases/latest): the `x64-setup.exe` on Windows, the `.dmg` on macOS. The first install shows the warnings above.
+
+Installed apps update themselves after that. When the app starts, it reads `latest.json` from the latest release (Tauri's updater). If there's a newer version, a banner offers it, and "Actualizar" downloads it, installs it and restarts the app. Updates are signed with the app's **update key**, not a code-signing certificate. The app only installs a download whose signature matches the public key built into it, so nothing else can pass as an update. Apps installed before updates existed (0.1.0) don't check; they need the new version installed once by hand.
+
+**Setting up the update key** (once, by the owner). The key is free, made on your own computer:
+
+1. In Git Bash, run `mkdir -p ~/.tauri && pnpm --filter @setlist/desktop tauri signer generate -w ~/.tauri/setlist-maker.key` and choose a password. It writes the private key to `~/.tauri/setlist-maker.key` and the public key next to it, in `setlist-maker.key.pub`.
+2. In GitHub, under _Settings → Secrets and variables → Actions_, add two repository secrets:
+   - `TAURI_SIGNING_PRIVATE_KEY`, with the contents of `setlist-maker.key`
+   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, with the password
+3. Put the contents of `setlist-maker.key.pub` in `plugins.updater.pubkey` in `apps/desktop/src-tauri/tauri.conf.json`. It's public by design.
+4. Keep the private key and its password backed up, for example in a password manager. Without them, no update can ever reach the installed apps again: everyone would have to reinstall an app built with a new key.
+
+Without the secrets, merges to `main` still build test installers, but publish no release; the run warns about it. The `release.conf.json` the workflow writes sets the version and turns on the signed update files for that build only, so pull request builds need no key.
 
 ## Supabase
 

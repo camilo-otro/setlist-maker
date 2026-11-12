@@ -19,6 +19,14 @@ pub fn run() {
         )?;
       }
 
+      // Updates come from the repository's GitHub Releases, signed with the app's update key
+      // (README, "Desktop releases"). The app asks before installing, then restarts.
+      #[cfg(desktop)]
+      {
+        app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+        app.handle().plugin(tauri_plugin_process::init())?;
+      }
+
       let data_dir = app.path().app_data_dir()?;
       std::fs::create_dir_all(&data_dir)?;
       let connection = db::open(&data_dir.join("setlist-maker.db"))?;

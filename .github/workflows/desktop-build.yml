@@ -1,7 +1,11 @@
 name: Desktop build
 
-# Builds unsigned test installers for Windows and macOS and attaches them to the run as artifacts.
-# Only runs when something the desktop app is built from changes, since Rust builds take minutes.
+# Builds the desktop app for Windows and macOS. Only runs when something the desktop app is built
+# from changes, since Rust builds take minutes.
+# - Pull requests: unsigned test installers, attached to the run as artifacts.
+# - Merges to main: a new version (0.2.<run number>) published as a GitHub Release, with the
+#   files installed apps update from (README, "Desktop releases"). Needs the update signing key in
+#   the TAURI_SIGNING_PRIVATE_KEY secrets; without them, main builds test installers only.
 on:
   pull_request:
     paths:
@@ -22,16 +26,23 @@ on:
 
 concurrency:
   group: desktop-build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
+
+env:
+  # Each run's own number, so every release is newer than the last.
+  VERSION: 0.2.${{ github.run_number }}
+  RELEASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
 jobs:
   build:
     name: Build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    outputs:
+      release: ${{ steps.release.outputs.release }}
     strategy:
       fail-fast: false
       matrix:
@@ -87,11 +98,34 @@ jobs:
             echo "::warning::SUPABASE_PROJECT_ID or SUPABASE_PUBLISHABLE_KEY variable missing; these installers won't have catalog search. See README, 'Song catalog'."
           fi
 
+      # A release builds the version number in and signs the update files. Its settings go in a
+      # file the build reads on top of tauri.conf.json.
+      - name: Release settings
+        id: release
+        shell: bash
+        env:
+          HAS_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          if [ "$RELEASE" != "true" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo '{}' > "$RUNNER_TEMP/release.conf.json"
+          elif [ "$HAS_KEY" != "true" ]; then
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY secret missing, so this merge publishes no desktop release. See README, 'Desktop releases'."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo '{}' > "$RUNNER_TEMP/release.conf.json"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "{\"version\":\"$VERSION\",\"bundle\":{\"createUpdaterArtifacts\":true}}" > "$RUNNER_TEMP/release.conf.json"
+          fi
+
       - name: Build installers
+        shell: bash
         env:
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_PROJECT_ID && format('https://{0}.supabase.co', vars.SUPABASE_PROJECT_ID) || '' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-        run: pnpm --filter @setlist/desktop tauri build --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ steps.release.outputs.release == 'true' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ steps.release.outputs.release == 'true' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+        run: pnpm --filter @setlist/desktop tauri build --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --config "$RUNNER_TEMP/release.conf.json"
 
       # After the build, so the web assets the Rust crate embeds exist.
       - name: Rust tests
@@ -103,3 +137,68 @@ jobs:
           path: ${{ matrix.artifacts }}
           if-no-files-found: error
           retention-days: 14
+
+      # The release's files, with names without spaces (GitHub would turn them into dots). Windows
+      # releases only the NSIS installer, the one updates use, so nobody ends up with two installs.
+      - name: Gather release files
+        if: steps.release.outputs.release == 'true'
+        shell: bash
+        run: |
+          out="$RUNNER_TEMP/release"
+          mkdir -p "$out"
+          bundle="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+          if [ "${{ matrix.name }}" = "Windows" ]; then
+            setup=$(ls "$bundle"/nsis/*-setup.exe)
+            cp "$setup" "$out/setlist-maker_${VERSION}_x64-setup.exe"
+            cp "$setup.sig" "$out/setlist-maker_${VERSION}_x64-setup.exe.sig"
+          else
+            cp "$bundle"/dmg/*.dmg "$out/setlist-maker_${VERSION}_universal.dmg"
+            archive=$(ls "$bundle"/macos/*.app.tar.gz)
+            cp "$archive" "$out/setlist-maker_${VERSION}_universal.app.tar.gz"
+            cp "$archive.sig" "$out/setlist-maker_${VERSION}_universal.app.tar.gz.sig"
+          fi
+          ls -l "$out"
+
+      - uses: actions/upload-artifact@v7
+        if: steps.release.outputs.release == 'true'
+        with:
+          name: release-${{ matrix.name }}
+          path: ${{ runner.temp }}/release/*
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Publish release
+    needs: build
+    if: needs.build.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release
+
+      - name: Write latest.json
+        run: node apps/desktop/build/updaterManifest.ts "$VERSION" release "https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/"
+
+      # The newest release is the one installed apps check (the updater's endpoint in
+      # tauri.conf.json), and the one people download a first install from.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "desktop-v$VERSION" release/* \
+            --title "Setlist Maker $VERSION" \
+            --notes "Para instalar: en Windows, descarga el archivo que termina en x64-setup.exe; en Mac, el .dmg. Las apps ya instaladas se actualizan solas: al abrirlas ofrecen la nueva versión." \
+            --target "${{ github.sha }}" \
+            --latest
