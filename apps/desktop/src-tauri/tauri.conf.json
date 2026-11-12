@@ -41,5 +41,16 @@
     "macOS": {
       "signingIdentity": "-"
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "PUBLIC_KEY_PENDING",
+      "endpoints": [
+        "https://github.com/camilo-otro/setlist-maker/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

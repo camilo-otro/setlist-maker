@@ -186,7 +186,7 @@ Print/PDF setlists (large font, one page per set), sharing a setlist to chats as
 
 ### Phase 7 — Release and distribution
 
-**Status:** not started; test installers are built on every change.
+**Status:** in progress. Every merge to `main` publishes a numbered GitHub Release, and installed apps offer to update to it, signed with a free update key (README, "Desktop releases"). Still to do: code-signing certificates (so Windows and macOS stop warning on the first install) and opt-in crash logging.
 
 Signed installers for Windows and macOS, auto-update, release workflow, crash/error logging (opt-in).
 **Exit:** a tagged release produces downloadable installers.

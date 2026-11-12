@@ -16,6 +16,7 @@ import { BandNameDialog } from './BandNameDialog';
 import { InstallHint } from './InstallHint';
 import { SyncStatusLine } from './SyncStatusLine';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { UpdateBanner } from './UpdateBanner';
 
 /** `onPhone`: shown in the phone's bottom tab bar too; the rest is desktop-only for now (#42). */
 export const NAV_ITEMS = [
@@ -89,6 +90,7 @@ export function AppLayout() {
       </aside>
       <main className="app-main">
         <InstallHint />
+        <UpdateBanner />
         <Outlet />
       </main>
       {renaming && (
